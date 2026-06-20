@@ -696,13 +696,13 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:'
         <div class="cam-hint">Toca para abrir la cámara<br>Asegúrate de que todos los alimentos sean visibles</div>
       </div>
       <input type="file" id="cam-input" accept="image/*" capture="environment" onchange="analyzePhoto(this)">
-      <button class="btn btn-cyan" id="cam-analyze-btn" style="display:none;margin-top:12px" onclick="sendPhotoAnalysis()">✨ Analizar con Gemini</button>
+      <button class="btn btn-cyan" id="cam-analyze-btn" style="display:none;margin-top:12px" onclick="sendPhotoAnalysis()">✨ Analizar con IA</button>
     </div>
     <!-- TEXT -->
     <div id="ft-text" style="display:none">
       <div class="ai-badge">✨ Gemini calcula las calorías</div>
       <textarea class="txtarea" id="txt-food" placeholder="Escribe lo que comiste:&#10;&#10;• 2 huevos revueltos&#10;• 1 taza de avena con banano&#10;• Café negro&#10;&#10;Gemini calculará todo automáticamente"></textarea>
-      <button class="btn btn-cyan" style="margin-top:10px" onclick="analyzeText()">✨ Analizar con Gemini</button>
+      <button class="btn btn-cyan" style="margin-top:10px" onclick="analyzeText()">✨ Analizar con IA</button>
     </div>
     <!-- QUICK -->
     <div id="ft-quick" style="display:none"><div class="qgrid" id="qgrid"></div></div>
@@ -1140,7 +1140,7 @@ async function sendPhotoAnalysis() {
     photoBase64 = null;
   } catch(e) {
     toast('❌ Error al analizar la foto — intenta de nuevo','err');
-    btn.textContent = '✨ Analizar con Gemini'; btn.disabled = false;
+    btn.textContent = '✨ Analizar con IA'; btn.disabled = false;
   }
 }
 
@@ -1151,19 +1151,15 @@ async function analyzeText() {
   const btn = document.querySelector('#ft-text .btn');
   btn.textContent = '✨ Analizando...'; btn.disabled = true;
   try {
-    const res = await fetch(geminiURL(), {
-      method:'POST', headers: geminiHeaders(),
-      body: JSON.stringify({ contents:[{parts:[{text:`Eres nutricionista experto. Analiza y devuelve SOLO JSON sin texto extra ni backticks:\n{"items":[{"name":"nombre","kcal":número,"prot":número,"carb":número,"fat":número}]}\n\nAlimentos:\n${txt}`}]}]})
-    });
-    const data = await res.json();
-    const raw = data.candidates[0].content.parts[0].text.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(raw);
+    const prompt = `Devuelve SOLO JSON sin texto ni backticks:\n{"items":[{"name":"nombre","kcal":número,"prot":número,"carb":número,"fat":número}]}\n\nAlimentos:\n${txt}`;
+    const raw = await callAI('Eres nutricionista. Analiza alimentos y calcula macros precisos.', prompt);
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
     parsed.items.forEach(it => addFood(it));
     document.getElementById('txt-food').value = '';
   } catch(e) {
-    toast('❌ Error con Gemini — verifica la API key','err');
+    toast(`❌ ${e.message}`, 'err');
   }
-  btn.textContent = '✨ Analizar con Gemini'; btn.disabled = false;
+  btn.textContent = '✨ Analizar con IA'; btn.disabled = false;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1250,21 +1246,12 @@ async function aiSend() {
   const goal = ST.profile.goal==='lose'?'perder grasa':ST.profile.goal==='gain'?'ganar músculo':'mantener peso';
   const system = `Eres Zestly AI, coach nutricional personal. El usuario quiere ${goal}. Meta: ${ST.nutrition.kcal} kcal, proteína ${ST.nutrition.prot}g, carbos ${ST.nutrition.carb}g, grasas ${ST.nutrition.fat}g. Hoy lleva ${ST.today.kcal} kcal y ${ST.today.prot}g de proteína. Responde en español, amigable, máximo 3 párrafos cortos, sin asteriscos ni markdown.`;
   try {
-    const res = await fetch(geminiURL(), {
-      method:'POST', headers: geminiHeaders(),
-      body: JSON.stringify({ contents:[
-        {role:'user', parts:[{text: system + '\n\nPregunta del usuario: ' + msg}]}
-      ]})
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) {
-      throw new Error(`${res.status} - ${data.error?.message || JSON.stringify(data.error)}`);
-    }
+    const text = await callAI(system, msg);
     typ.remove();
-    aiMsg(data.candidates[0].content.parts[0].text, 'bot');
+    aiMsg(text, 'bot');
   } catch(e) {
     typ.remove();
-    aiMsg('Problema de conexión con Gemini. Verifica tu conexión e intenta de nuevo.','bot');
+    aiMsg(`⚠️ ${e.message}`, 'bot');
   }
 }
 

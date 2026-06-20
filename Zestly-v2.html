@@ -611,6 +611,7 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:'
     <div class="sec-title" style="padding:8px 0">Cuenta</div>
     <div class="sg">
       <div class="si" onclick="exportData()"><div class="si-icon">📤</div><div class="si-label">Exportar datos</div><div class="si-arr">›</div></div>
+      <div class="si" onclick="openGeminiKeyModal()"><div class="si-icon">🤖</div><div class="si-label">Gemini API Key</div><div class="si-val" id="gemini-status">⚠️ Sin configurar</div></div>
       <div class="si" id="lo-btn" style="display:none" onclick="gSignOut()"><div class="si-icon">🚪</div><div class="si-label">Cerrar sesión</div><div class="si-arr">›</div></div>
     </div>
     <div style="padding:0 0 12px"><button class="btn btn-danger" onclick="resetApp()" style="width:100%">🗑 Reiniciar todos los datos</button></div>
@@ -674,12 +675,31 @@ html, body { height:100%; background:var(--bg); color:var(--text); font-family:'
   </div>
 </div>
 
+<!-- GEMINI KEY MODAL -->
+<div class="overlay" id="ov-gkey">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="text-align:center;margin-bottom:18px">
+      <div style="font-size:40px;margin-bottom:10px">🤖</div>
+      <div class="sheet-title">Configurar Gemini AI</div>
+      <div class="sheet-sub">Pega tu API key de Google AI Studio para activar el análisis de fotos, texto y el coach nutricional.</div>
+    </div>
+    <div style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.25);border-radius:var(--rs);padding:12px;margin-bottom:14px;font-size:12px;color:var(--t2);line-height:1.6">
+      🔒 Tu key se guarda <strong style="color:var(--text)">solo en este dispositivo</strong> — nunca en el código ni en servidores.
+    </div>
+    <input id="gkey-input" class="num-big" type="text" placeholder="AQ.Ab8RN6..." style="font-size:14px;letter-spacing:.3px;font-family:'Inter',sans-serif;text-align:left;padding:14px" oninput="this.value=this.value.trim()">
+    <div style="font-size:11px;color:var(--t3);margin-bottom:16px">Obtén tu key gratuita en <strong style="color:var(--cyan)">aistudio.google.com</strong> → Claves de API → Crear clave</div>
+    <button class="btn btn-cyan" onclick="saveGeminiKey()">✅ Guardar y activar IA</button>
+    <button class="btn btn-ghost" onclick="closeOverlay('ov-gkey')" style="margin-top:0">Ahora no</button>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════
-const GEMINI_KEY = 'AQ.Ab8RN6JY54Lpdfyk-KRwir85hD6XlvYPWJO_yqx4RlaDp0FO-A';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+let GEMINI_KEY = localStorage.getItem('zs_gkey') || '';
+const getGeminiURL = () => `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
 
 // ═══════════════════════════════════════════════════════
 // STATE
@@ -756,6 +776,7 @@ window.appReady = function() {
   updateHome();
   updateProfile();
   updateProgress();
+  checkGeminiKey();
   const li = document.getElementById('li-section');
   const lo = document.getElementById('lo-section');
   const lb = document.getElementById('lo-btn');
@@ -993,7 +1014,7 @@ async function sendPhotoAnalysis() {
   const btn = document.getElementById('cam-analyze-btn');
   btn.textContent = '✨ Analizando...'; btn.disabled = true;
   try {
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(getGeminiURL(), {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ contents:[{ parts:[
         {text:'Eres un nutricionista. Analiza este plato y devuelve SOLO JSON válido sin texto adicional ni backticks: {"items":[{"name":"nombre del alimento","kcal":número,"prot":número,"carb":número,"fat":número}]}. Estima porciones realistas.'},
@@ -1018,7 +1039,7 @@ async function analyzeText() {
   const btn = document.querySelector('#ft-text .btn');
   btn.textContent = '✨ Analizando...'; btn.disabled = true;
   try {
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(getGeminiURL(), {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ contents:[{parts:[{text:`Eres nutricionista experto. Analiza y devuelve SOLO JSON sin texto extra ni backticks:\n{"items":[{"name":"nombre","kcal":número,"prot":número,"carb":número,"fat":número}]}\n\nAlimentos:\n${txt}`}]}]})
     });
@@ -1117,7 +1138,7 @@ async function aiSend() {
   const goal = ST.profile.goal==='lose'?'perder grasa':ST.profile.goal==='gain'?'ganar músculo':'mantener peso';
   const system = `Eres Zestly AI, coach nutricional personal. El usuario quiere ${goal}. Meta: ${ST.nutrition.kcal} kcal, proteína ${ST.nutrition.prot}g, carbos ${ST.nutrition.carb}g, grasas ${ST.nutrition.fat}g. Hoy lleva ${ST.today.kcal} kcal y ${ST.today.prot}g de proteína. Responde en español, amigable, máximo 3 párrafos cortos, sin asteriscos ni markdown.`;
   try {
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(getGeminiURL(), {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ contents:[
         {role:'user', parts:[{text: system + '\n\nPregunta del usuario: ' + msg}]}
@@ -1173,6 +1194,8 @@ function updateProfile() {
   document.getElementById('set-p').textContent    = n.prot + 'g';
   document.getElementById('set-c').textContent    = n.carb + 'g';
   document.getElementById('set-f').textContent    = n.fat  + 'g';
+  const gs = document.getElementById('gemini-status');
+  if (gs) gs.textContent = geminiStatus();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1267,6 +1290,7 @@ function openOverlay(id)  { document.getElementById(id).classList.add('open'); }
 function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
 document.getElementById('ov-food').addEventListener('click', e => { if(e.target===document.getElementById('ov-food')) closeOverlay('ov-food'); });
 document.getElementById('ov-pick').addEventListener('click', e => { if(e.target===document.getElementById('ov-pick')) closeOverlay('ov-pick'); });
+document.getElementById('ov-gkey').addEventListener('click', e => { if(e.target===document.getElementById('ov-gkey')) closeOverlay('ov-gkey'); });
 
 // ═══════════════════════════════════════════════════════
 // TOAST
@@ -1281,6 +1305,31 @@ window.toast = function(msg, type='') {
 };
 
 // ═══════════════════════════════════════════════════════
+// GEMINI KEY
+// ═══════════════════════════════════════════════════════
+function checkGeminiKey() {
+  if (!localStorage.getItem('zs_gkey')) {
+    setTimeout(() => openOverlay('ov-gkey'), 1500);
+  }
+}
+function saveGeminiKey() {
+  const key = document.getElementById('gkey-input').value.trim();
+  if (!key || key.length < 10) { toast('❌ Key inválida — verifica que la copiaste completa','err'); return; }
+  GEMINI_KEY = key;
+  localStorage.setItem('zs_gkey', key);
+  closeOverlay('ov-gkey');
+  toast('🤖 Gemini AI activado correctamente','ok');
+  updateProfile();
+}
+function openGeminiKeyModal() {
+  document.getElementById('gkey-input').value = localStorage.getItem('zs_gkey') || '';
+  openOverlay('ov-gkey');
+}
+function geminiStatus() {
+  return localStorage.getItem('zs_gkey') ? '✅ Activo' : '⚠️ Sin configurar';
+}
+
+// ═══════════════════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════════════════
 function exportData() {
@@ -1293,13 +1342,16 @@ function resetApp() {
 }
 
 // ═══════════════════════════════════════════════════════
-// INIT — sin checkNewDay para evitar el bug del reset
+// INIT
 // ═══════════════════════════════════════════════════════
 (() => {
+  // Load saved key
+  const savedKey = localStorage.getItem('zs_gkey');
+  if (savedKey) GEMINI_KEY = savedKey;
+
   const local = localStorage.getItem('zs2');
   if (local) try { Object.assign(window.ST, JSON.parse(local)); } catch(e) {}
 
-  // Firebase takes over — if after 4s still on welcome screen, check if local data exists
   setTimeout(() => {
     if (document.getElementById('sw').classList.contains('active') && window.ST.onboarded) {
       window.appReady();

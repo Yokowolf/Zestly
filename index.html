@@ -1083,12 +1083,16 @@ function renderMeals() {
     const itemsHTML = items.map((it,idx) => {
       const qty = it.qty || 100;
       const unitLabel = it.unit || 'g';
+      const canEdit = it.fromDB && unitLabel === 'g';
+      const qtyCtrl = canEdit
+        ? `<input type="number" value="${qty}" min="1" max="2000"
+            style="width:52px;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--cyan);font-size:12px;font-weight:700;text-align:center;padding:3px;outline:none"
+            onchange="editFoodQty('${key}',${idx},this.value)">${unitLabel}`
+        : `<span style="font-size:11px;color:var(--t3);background:var(--card2);padding:2px 7px;border-radius:6px">1 porción</span>`;
       return `<div class="meal-item">
         <span class="mi-name">${it.name}</span>
         <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" value="${qty}" min="1" max="2000"
-            style="width:52px;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--cyan);font-size:12px;font-weight:700;text-align:center;padding:3px;outline:none"
-            onchange="editFoodQty('${key}',${idx},this.value)">${unitLabel}
+          ${qtyCtrl}
           <span class="mi-kcal">${it.kcal} kcal</span>
           <span class="mi-del" onclick="removeFood('${key}',${idx})">✕</span>
         </div>
@@ -1102,19 +1106,20 @@ function renderMeals() {
 
 function editFoodQty(meal, idx, newQty) {
   const it = ST.meals[meal][idx];
-  const qty = parseFloat(newQty) || 1;
-  const ratio = it.isUnit ? qty : qty / 100;
+  if (!it.fromDB) return; // AI items are fixed portions
+  const qty = parseFloat(newQty) || 100;
+  const ratio = qty / 100; // Always per 100g for DB items
   // Remove old from totals
   ST.today.kcal = Math.max(0, ST.today.kcal - it.kcal);
   ST.today.prot = Math.max(0, ST.today.prot - it.prot);
   ST.today.carb = Math.max(0, ST.today.carb - it.carb);
   ST.today.fat  = Math.max(0, ST.today.fat  - it.fat);
-  // Update item
+  // Update with new qty
   it.qty  = qty;
-  it.kcal = Math.round((it.baseKcal||it.kcal) * ratio);
-  it.prot = Math.round((it.baseProt||it.prot) * ratio * 10)/10;
-  it.carb = Math.round((it.baseCarb||it.carb) * ratio * 10)/10;
-  it.fat  = Math.round((it.baseFat||it.fat)   * ratio * 10)/10;
+  it.kcal = Math.round((it.baseKcal) * ratio);
+  it.prot = Math.round((it.baseProt) * ratio * 10)/10;
+  it.carb = Math.round((it.baseCarb) * ratio * 10)/10;
+  it.fat  = Math.round((it.baseFat)  * ratio * 10)/10;
   // Add new to totals
   ST.today.kcal += it.kcal;
   ST.today.prot += it.prot;
@@ -1153,23 +1158,24 @@ function doSearch() {
 }
 
 function addFood(food) {
+  const fromDB = !!food.unit; // Database items have unit (100g); AI items don't
   const base = food.unit || '100g';
-  const isUnit = base.includes('unidad') || base.includes('porción') || base.includes('pieza');
-  const qty = isUnit ? 1 : 100;
-  const ratio = isUnit ? 1 : qty / 100;
+  const isUnit = !fromDB || base.includes('unidad') || base.includes('porción');
+  const qty = fromDB && !isUnit ? 100 : 1;
+  const ratio = fromDB && !isUnit ? 1 : 1; // AI values already represent full portion
   const it = {
     name: food.name,
     qty: qty,
-    unit: isUnit ? 'u' : 'g',
-    isUnit: isUnit,
+    unit: fromDB && !isUnit ? 'g' : 'porción',
+    fromDB: fromDB,        // true = database (editable grams), false = AI (fixed portion)
     baseKcal: food.kcal||0,
     baseProt: food.prot||0,
     baseCarb: food.carb||0,
     baseFat:  food.fat||0,
-    kcal: Math.round((food.kcal||0) * ratio),
-    prot: Math.round((food.prot||0) * ratio * 10)/10,
-    carb: Math.round((food.carb||0) * ratio * 10)/10,
-    fat:  Math.round((food.fat||0)  * ratio * 10)/10
+    kcal: Math.round((food.kcal||0)),
+    prot: Math.round((food.prot||0) * 10)/10,
+    carb: Math.round((food.carb||0) * 10)/10,
+    fat:  Math.round((food.fat||0)  * 10)/10
   };
   ST.meals[ST.curMeal].push(it);
   ST.today.kcal += it.kcal;
@@ -1179,7 +1185,8 @@ function addFood(food) {
   save();
   closeOverlay('ov-food');
   updateHome();
-  toast('✅ ' + food.name + ' añadido (' + qty + (isUnit?'u':'g') + ')', 'ok');
+  const label = fromDB && !isUnit ? '100g' : '1 porción';
+  toast('✅ ' + food.name + ' añadido (' + label + ')', 'ok');
 }
 
 function updateQtyPreview(kcal, prot, carb, fat, baseQty, newQty) {

@@ -1080,10 +1080,47 @@ function renderMeals() {
     const items = ST.meals[key] || [];
     const mkcal = items.reduce((s,i) => s+i.kcal, 0);
     const div = document.createElement('div'); div.className = 'meal-card fu';
+    const itemsHTML = items.map((it,idx) => {
+      const qty = it.qty || 100;
+      const unitLabel = it.unit || 'g';
+      return `<div class="meal-item">
+        <span class="mi-name">${it.name}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" value="${qty}" min="1" max="2000"
+            style="width:52px;background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--cyan);font-size:12px;font-weight:700;text-align:center;padding:3px;outline:none"
+            onchange="editFoodQty('${key}',${idx},this.value)">${unitLabel}
+          <span class="mi-kcal">${it.kcal} kcal</span>
+          <span class="mi-del" onclick="removeFood('${key}',${idx})">✕</span>
+        </div>
+      </div>`;
+    }).join('');
     div.innerHTML = `<div class="meal-head"><div class="meal-left"><span class="meal-icon">${info.icon}</span><div><div class="meal-nm">${info.name}</div><div class="meal-kc">${mkcal} kcal</div></div></div><div class="meal-add" onclick="openFood('${key}')">+</div></div>
-    ${items.length?`<div class="meal-items">${items.map((it,idx)=>`<div class="meal-item"><span class="mi-name">${it.name}</span><span class="mi-kcal">${it.kcal} kcal</span><span class="mi-del" onclick="removeFood('${key}',${idx})">✕</span></div>`).join('')}</div>`:''}`
+    ${items.length ? `<div class="meal-items">${itemsHTML}</div>` : ''}`;
     c.appendChild(div);
   }
+}
+
+function editFoodQty(meal, idx, newQty) {
+  const it = ST.meals[meal][idx];
+  const qty = parseFloat(newQty) || 1;
+  const ratio = it.isUnit ? qty : qty / 100;
+  // Remove old from totals
+  ST.today.kcal = Math.max(0, ST.today.kcal - it.kcal);
+  ST.today.prot = Math.max(0, ST.today.prot - it.prot);
+  ST.today.carb = Math.max(0, ST.today.carb - it.carb);
+  ST.today.fat  = Math.max(0, ST.today.fat  - it.fat);
+  // Update item
+  it.qty  = qty;
+  it.kcal = Math.round((it.baseKcal||it.kcal) * ratio);
+  it.prot = Math.round((it.baseProt||it.prot) * ratio * 10)/10;
+  it.carb = Math.round((it.baseCarb||it.carb) * ratio * 10)/10;
+  it.fat  = Math.round((it.baseFat||it.fat)   * ratio * 10)/10;
+  // Add new to totals
+  ST.today.kcal += it.kcal;
+  ST.today.prot += it.prot;
+  ST.today.carb += it.carb;
+  ST.today.fat  += it.fat;
+  save(); updateHome();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1115,75 +1152,34 @@ function doSearch() {
     `<div class="fr-item" onclick='addFood(${JSON.stringify(f)})'><div><div class="fr-name">${f.name}</div><div class="fr-detail">P:${f.prot}g · C:${f.carb}g · G:${f.fat}g</div></div><div><div class="fr-kcal">${f.kcal}</div><div class="fr-unit">${f.unit}</div></div></div>`).join('');
 }
 
-let _pendingFood = null;
-
 function addFood(food) {
-  // Show quantity picker before adding
-  _pendingFood = {...food};
-  showQtyPicker(food);
-}
-
-function showQtyPicker(food) {
   const base = food.unit || '100g';
   const isUnit = base.includes('unidad') || base.includes('porción') || base.includes('pieza');
-  const baseQty = isUnit ? 1 : 100;
-  document.getElementById('pick-title').textContent = food.name;
-  const pc = document.getElementById('picker-content');
-
-  // Build DOM elements instead of innerHTML to avoid escaping issues
-  pc.innerHTML = '';
-
-  // Info card
-  const info = document.createElement('div');
-  info.className = 'weight-input-card';
-  info.style.marginBottom = '14px';
-  info.innerHTML = '<div style="font-size:12px;color:var(--t2);margin-bottom:6px">Por ' + base + ': ' + food.kcal + ' kcal · P:' + (food.prot||0) + 'g · C:' + (food.carb||0) + 'g · G:' + (food.fat||0) + 'g</div><div id="qty-preview" style="font-size:16px;font-weight:700;color:var(--cyan)">' + food.kcal + ' kcal</div>';
-  pc.appendChild(info);
-
-  // Qty row
-  const row = document.createElement('div');
-  row.className = 'weight-row';
-  row.style.marginBottom = '14px';
-  const lbl = document.createElement('div');
-  lbl.className = 'weight-label';
-  lbl.textContent = isUnit ? 'Cantidad' : 'Gramos / ml';
-  const inp = document.createElement('input');
-  inp.id = 'qty-input';
-  inp.className = 'weight-input';
-  inp.type = 'number';
-  inp.value = baseQty;
-  inp.min = 1; inp.max = 2000;
-  inp.step = isUnit ? 1 : 5;
-  inp.style.width = '80px';
-  inp.style.fontSize = '22px';
-  inp.addEventListener('input', function() {
-    updateQtyPreview(food.kcal, food.prot||0, food.carb||0, food.fat||0, baseQty, this.value);
-  });
-  const unit = document.createElement('span');
-  unit.className = 'weight-unit';
-  unit.textContent = isUnit ? 'u' : 'g';
-  row.appendChild(lbl);
-  row.appendChild(inp);
-  row.appendChild(unit);
-  pc.appendChild(row);
-
-  // Preset buttons
-  const presets = isUnit ? [1,2,3] : [50,100,150,200,250,300];
-  const pg = document.createElement('div');
-  pg.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:center';
-  presets.forEach(v => {
-    const btn = document.createElement('div');
-    btn.className = 'pick-opt';
-    btn.style.padding = '8px 14px';
-    btn.textContent = isUnit ? v + ' u' : v + 'g';
-    btn.addEventListener('click', function() {
-      document.getElementById('qty-input').value = v;
-      updateQtyPreview(food.kcal, food.prot||0, food.carb||0, food.fat||0, baseQty, v);
-    });
-    pg.appendChild(btn);
-  });
-  pc.appendChild(pg);
-  openOverlay('ov-pick');
+  const qty = isUnit ? 1 : 100;
+  const ratio = isUnit ? 1 : qty / 100;
+  const it = {
+    name: food.name,
+    qty: qty,
+    unit: isUnit ? 'u' : 'g',
+    isUnit: isUnit,
+    baseKcal: food.kcal||0,
+    baseProt: food.prot||0,
+    baseCarb: food.carb||0,
+    baseFat:  food.fat||0,
+    kcal: Math.round((food.kcal||0) * ratio),
+    prot: Math.round((food.prot||0) * ratio * 10)/10,
+    carb: Math.round((food.carb||0) * ratio * 10)/10,
+    fat:  Math.round((food.fat||0)  * ratio * 10)/10
+  };
+  ST.meals[ST.curMeal].push(it);
+  ST.today.kcal += it.kcal;
+  ST.today.prot += it.prot;
+  ST.today.carb += it.carb;
+  ST.today.fat  += it.fat;
+  save();
+  closeOverlay('ov-food');
+  updateHome();
+  toast('✅ ' + food.name + ' añadido (' + qty + (isUnit?'u':'g') + ')', 'ok');
 }
 
 function updateQtyPreview(kcal, prot, carb, fat, baseQty, newQty) {
@@ -1193,36 +1189,13 @@ function updateQtyPreview(kcal, prot, carb, fat, baseQty, newQty) {
 }
 
 function confirmPick() {
-  // If we have a pending food (qty picker), add it with the specified quantity
-  if (_pendingFood) {
-    const qtyEl = document.getElementById('qty-input');
-    const qty = parseFloat(qtyEl?.value) || 100;
-    const base = _pendingFood.unit || '100g';
-    const isUnit = base.includes('unidad') || base.includes('porción') || base.includes('pieza');
-    const ratio = isUnit ? qty : qty / 100;
-    const it = {
-      name: `${_pendingFood.name} (${isUnit ? qty+'u' : qty+'g'})`,
-      kcal: Math.round((_pendingFood.kcal||0) * ratio),
-      prot: Math.round((_pendingFood.prot||0) * ratio * 10)/10,
-      carb: Math.round((_pendingFood.carb||0) * ratio * 10)/10,
-      fat:  Math.round((_pendingFood.fat||0)  * ratio * 10)/10
-    };
-    ST.meals[ST.curMeal].push(it);
-    ST.today.kcal += it.kcal; ST.today.prot += it.prot;
-    ST.today.carb += it.carb; ST.today.fat  += it.fat;
-    save(); closeOverlay('ov-pick'); closeOverlay('ov-food');
-    updateHome(); toast('✅ ' + _pendingFood.name + ' añadido', 'ok');
-    _pendingFood = null;
-    return;
-  }
-  // Normal picker (profile fields)
   closeOverlay('ov-pick');
   calcNutr(); save(); updateProfile(); updateHome();
   const map = {sex:'v-sex',age:'v-age',height:'v-height',weight:'v-weight',name:'v-name'};
   Object.entries(map).forEach(([f,id]) => {
     const el = document.getElementById(id); if (!el) return;
     const p = ST.profile;
-    if (f==='sex')    el.textContent = p.sex==='male'?'Masculino':'Femenino';
+    if (f==='sex')         el.textContent = p.sex==='male'?'Masculino':'Femenino';
     else if (f==='name')   el.textContent = p.name||'Ingresar';
     else if (f==='age')    el.textContent = p.age+' años';
     else if (f==='height') el.textContent = p.height+' cm';
@@ -1290,18 +1263,23 @@ async function sendPhotoAnalysis() {
 async function analyzeText() {
   const txt = document.getElementById('txt-food').value.trim();
   if (!txt) return;
+  if (!GEMINI_KEY) { toast('⚠️ Configura tu clave IA en Perfil primero','err'); return; }
   const btn = document.querySelector('#ft-text .btn');
-  btn.textContent = '✨ Analizando...'; btn.disabled = true;
+  btn.textContent = '⏳ Analizando...'; btn.disabled = true;
   try {
-    const prompt = `Devuelve SOLO JSON sin texto ni backticks:\n{"items":[{"name":"nombre","kcal":número,"prot":número,"carb":número,"fat":número}]}\n\nAlimentos:\n${txt}`;
-    const raw = await callAI('Eres nutricionista. Analiza alimentos y calcula macros precisos.', prompt);
-    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    const prompt = 'Devuelve SOLO JSON sin texto ni backticks, sin explicaciones:\n{"items":[{"name":"nombre en español","kcal":número,"prot":número,"carb":número,"fat":número}]}\n\nAlimentos:\n' + txt;
+    const raw = await callAI('Eres nutricionista. Analiza los alimentos y devuelve SOLO el JSON pedido.', prompt);
+    const clean = raw.replace(/```json|```/g,'').trim();
+    const s = clean.indexOf('{'), e2 = clean.lastIndexOf('}');
+    if (s === -1) throw new Error('Respuesta inesperada de la IA');
+    const parsed = JSON.parse(clean.slice(s, e2+1));
+    if (!parsed.items?.length) throw new Error('No se encontraron alimentos');
     parsed.items.forEach(it => addFood(it));
     document.getElementById('txt-food').value = '';
+    toast('✅ ' + parsed.items.length + ' alimento(s) añadidos', 'ok');
   } catch(e) {
-    const msg = (e.message || '').substring(0, 80);
-    toast('❌ Error IA — intenta de nuevo o revisa la key','err');
-    console.error('analyzeText error:', e.message);
+    console.error('analyzeText:', e.message);
+    toast('❌ Error IA: ' + (e.message||'').slice(0,60),'err');
   }
   btn.textContent = '✨ Analizar con IA'; btn.disabled = false;
 }

@@ -1041,6 +1041,12 @@ const FOOD_CATS = {
     {name:'Sandía',kcal:30,prot:0.6,carb:7.6,fat:0.2,unit:'100g'},
     {name:'Melón',kcal:34,prot:0.8,carb:8.2,fat:0.2,unit:'100g'},
     {name:'Kiwi',kcal:61,prot:1.1,carb:15,fat:0.5,unit:'100g'},
+    {name:'Platano / banano verde',kcal:89,prot:1.1,carb:23,fat:0.3,unit:'100g'},
+    {name:'Platano maduro (solo)',kcal:122,prot:1.3,carb:31,fat:0.4,unit:'100g'},
+    {name:'Platano pasa / deshidratado',kcal:346,prot:3.9,carb:88,fat:1.2,unit:'100g'},
+    {name:'Tomate de arbol',kcal:31,prot:1.5,carb:7,fat:0.2,unit:'100g'},
+    {name:'Curuba',kcal:38,prot:0.7,carb:9,fat:0.1,unit:'100g'},
+    {name:'Uva espina / uchuva',kcal:53,prot:1.9,carb:11,fat:0.7,unit:'100g'},
   ],
   '🫒 Grasas y aceites': [
     {name:'Aceite de oliva',kcal:884,prot:0,carb:0,fat:100,unit:'100ml'},
@@ -1053,12 +1059,105 @@ const FOOD_CATS = {
   ],
   '🥤 Bebidas': [
     {name:'Leche entera',kcal:61,prot:3.2,carb:4.8,fat:3.3,unit:'100ml'},
-    {name:'Jugo de naranja natural',kcal:45,prot:0.7,carb:10,fat:0.2,unit:'100ml'},
-    {name:'Café negro (sin azúcar)',kcal:2,prot:0.3,carb:0,fat:0,unit:'100ml'},
-    {name:'Café con leche (50/50)',kcal:31,prot:1.7,carb:2.4,fat:1.6,unit:'100ml'},
+    {name:'Leche descremada',kcal:35,prot:3.4,carb:4.9,fat:0.1,unit:'100ml'},
+    {name:'Leche de almendra',kcal:17,prot:0.6,carb:0.6,fat:1.5,unit:'100ml'},
+    {name:'Leche de coco (bebida)',kcal:45,prot:0.5,carb:4.5,fat:2.5,unit:'100ml'},
     {name:'Leche de soya',kcal:43,prot:3.6,carb:3,fat:1.8,unit:'100ml'},
+    {name:'Jugo de naranja natural',kcal:45,prot:0.7,carb:10,fat:0.2,unit:'100ml'},
+    {name:'Jugo de mango natural',kcal:60,prot:0.5,carb:15,fat:0.3,unit:'100ml'},
+    {name:'Jugo de mora natural',kcal:35,prot:0.8,carb:8,fat:0.3,unit:'100ml'},
+    {name:'Jugo de lulo natural',kcal:33,prot:0.7,carb:7.5,fat:0.2,unit:'100ml'},
+    {name:'Jugo de maracuya natural',kcal:55,prot:1.5,carb:12,fat:0.3,unit:'100ml'},
+    {name:'Jugo de guanabana',kcal:58,prot:0.7,carb:14.5,fat:0.3,unit:'100ml'},
+    {name:'Cafe negro (sin azucar)',kcal:2,prot:0.3,carb:0,fat:0,unit:'100ml'},
+    {name:'Cafe con leche (50/50)',kcal:31,prot:1.7,carb:2.4,fat:1.6,unit:'100ml'},
+    {name:'Chocolate caliente con leche',kcal:68,prot:2.4,carb:11.2,fat:1.6,unit:'100ml'},
+    {name:'Te negro sin azucar',kcal:2,prot:0.1,carb:0.4,fat:0,unit:'100ml'},
     {name:'Agua de coco',kcal:19,prot:0.7,carb:3.7,fat:0.2,unit:'100ml'},
-    {name:'Aguapanela (sin leche)',kcal:44,prot:0.1,carb:11,fat:0,unit:'100ml'},
+    {name:'Aguapanela sin leche',kcal:44,prot:0.1,carb:11,fat:0,unit:'100ml'},
+    {name:'Aguapanela con leche',kcal:75,prot:2,carb:14,fat:2,unit:'100ml'},
+    {name:'Gaseosa / refresco cola',kcal:42,prot:0,carb:10.6,fat:0,unit:'100ml'},
+    {name:'Kumis',kcal:65,prot:3.5,carb:7,fat:2.5,unit:'100ml'},
+  ],
+
+  '🫒 Aceites y grasas': [
+    {name:'Aceite de oliva',kcal:884,prot:0,carb:0,fat:100,unit:'100ml'},
+    {name:'Aceite vegetal / girasol',kcal:884,prot:0,carb:0,fat:100,unit:'100ml'},
+    {name:'Aceite de coco',kcal:862,prot:0,carb:0,fat:100,unit:'100ml'},
+    {name:'Aceite de aguacate',kcal:884,prot:0,carb:0,fat:100,unit:'100ml'},
+    {name:'Aceite de canola',kcal:884,prot:0,carb:0,fat:100,unit:'100ml'},
+    {name:'Mantequilla',kcal:717,prot:0.9,carb:0.1,fat:81,unit:'100g'},
+    {name:'Mantequilla de mani',kcal:588,prot:25,carb:20,fat:50,unit:'100g'},
+    {name:'Ghee / mantequilla clarificada',kcal:900,prot:0.1,carb:0,fat:99.5,unit:'100g'},
+    {name:'Margarina',kcal:717,prot:0.2,carb:0.7,fat:80,unit:'100g'},
+    {name:'Mayonesa',kcal:680,prot:1.5,carb:3,fat:74,unit:'100g'},
+    {name:'Crema de leche',kcal:340,prot:2.5,carb:3,fat:35,unit:'100ml'},
+    {name:'Aguacate',kcal:160,prot:2,carb:9,fat:15,unit:'100g'},
+    {name:'Almendras',kcal:579,prot:21,carb:22,fat:50,unit:'100g'},
+    {name:'Mani / cacahuate',kcal:567,prot:26,carb:16,fat:49,unit:'100g'},
+    {name:'Nuez',kcal:654,prot:15,carb:14,fat:65,unit:'100g'},
+    {name:'Semillas de chia',kcal:486,prot:17,carb:42,fat:31,unit:'100g'},
+    {name:'Semillas de linaza',kcal:534,prot:18,carb:29,fat:42,unit:'100g'},
+    {name:'Semillas de girasol',kcal:584,prot:21,carb:20,fat:51,unit:'100g'},
+    {name:'Coco rallado',kcal:354,prot:3.3,carb:15,fat:33,unit:'100g'},
+  ],
+
+  '🧂 Condimentos y salsas': [
+    {name:'Hogao (sofrito colombiano)',kcal:80,prot:1.5,carb:8,fat:4.5,unit:'100g'},
+    {name:'Guacamole',kcal:160,prot:2,carb:9,fat:14,unit:'100g'},
+    {name:'Ketchup / salsa de tomate',kcal:112,prot:1.3,carb:27,fat:0.1,unit:'100g'},
+    {name:'Mostaza amarilla',kcal:66,prot:3.7,carb:6,fat:3.3,unit:'100g'},
+    {name:'Salsa de soya',kcal:60,prot:10,carb:6,fat:0.1,unit:'100ml'},
+    {name:'Salsa negra / inglesa',kcal:78,prot:2.8,carb:19,fat:0.1,unit:'100ml'},
+    {name:'Salsa de ajo',kcal:160,prot:1.5,carb:8,fat:14,unit:'100g'},
+    {name:'Crema agria / sour cream',kcal:198,prot:3.2,carb:4.6,fat:19,unit:'100g'},
+    {name:'Vinagre blanco',kcal:18,prot:0.4,carb:3.6,fat:0,unit:'100ml'},
+    {name:'Azucar blanca',kcal:387,prot:0,carb:100,fat:0,unit:'100g'},
+    {name:'Miel de abeja',kcal:304,prot:0.3,carb:82,fat:0,unit:'100g'},
+    {name:'Mermelada de frutas',kcal:250,prot:0.5,carb:65,fat:0.1,unit:'100g'},
+    {name:'Arequipe / dulce de leche',kcal:328,prot:7,carb:55,fat:7,unit:'100g'},
+    {name:'Chocolate en polvo (puro)',kcal:228,prot:19,carb:58,fat:14,unit:'100g'},
+    {name:'Sal comun',kcal:0,prot:0,carb:0,fat:0,unit:'100g'},
+  ],
+
+  '🌿 Especias y saborizantes': [
+    {name:'Ajo fresco',kcal:149,prot:6.4,carb:33,fat:0.5,unit:'100g'},
+    {name:'Jengibre fresco',kcal:80,prot:1.8,carb:18,fat:0.8,unit:'100g'},
+    {name:'Canela en polvo',kcal:247,prot:4,carb:81,fat:1.2,unit:'100g'},
+    {name:'Curcuma en polvo',kcal:312,prot:9.7,carb:68,fat:3.3,unit:'100g'},
+    {name:'Comino en polvo',kcal:375,prot:18,carb:44,fat:22,unit:'100g'},
+    {name:'Pimienta negra',kcal:251,prot:10,carb:64,fat:3.3,unit:'100g'},
+    {name:'Oregano seco',kcal:265,prot:9,carb:69,fat:4.3,unit:'100g'},
+    {name:'Sazon / condimento completo',kcal:120,prot:5,carb:22,fat:2,unit:'100g'},
+    {name:'Levadura nutricional',kcal:325,prot:50,carb:38,fat:7,unit:'100g'},
+    {name:'Caldo de pollo en cubo',kcal:250,prot:12,carb:38,fat:6,unit:'100g'},
+  ],
+
+  '🥩 Embutidos y procesados': [
+    {name:'Jamon de cerdo',kcal:145,prot:19,carb:2,fat:7,unit:'100g'},
+    {name:'Salchichon',kcal:300,prot:15,carb:3,fat:26,unit:'100g'},
+    {name:'Salchicha de res',kcal:290,prot:12,carb:4,fat:26,unit:'100g'},
+    {name:'Mortadela',kcal:256,prot:12,carb:3,fat:22,unit:'100g'},
+    {name:'Chorizo colombiano',kcal:370,prot:16,carb:2,fat:33,unit:'100g'},
+    {name:'Tocineta / bacon',kcal:458,prot:35,carb:1.4,fat:35,unit:'100g'},
+    {name:'Atun en aceite',kcal:198,prot:23,carb:0,fat:12,unit:'100g'},
+    {name:'Sardinas en salsa de tomate',kcal:150,prot:18,carb:3,fat:7,unit:'100g'},
+    {name:'Granola',kcal:450,prot:10,carb:64,fat:18,unit:'100g'},
+    {name:'Galletas integrales',kcal:420,prot:8,carb:65,fat:14,unit:'100g'},
+    {name:'Chips / papas fritas',kcal:536,prot:7,carb:53,fat:35,unit:'100g'},
+    {name:'Chocolate negro 70%',kcal:600,prot:8,carb:46,fat:43,unit:'100g'},
+    {name:'Chocolate con leche',kcal:535,prot:7.7,carb:60,fat:30,unit:'100g'},
+  ],
+
+  '💊 Suplementos': [
+    {name:'Proteina whey concentrada',kcal:400,prot:80,carb:8,fat:6,unit:'100g'},
+    {name:'Proteina whey isolada',kcal:370,prot:90,carb:2,fat:1,unit:'100g'},
+    {name:'Caseina en polvo',kcal:380,prot:82,carb:8,fat:3,unit:'100g'},
+    {name:'Creatina monohidratada',kcal:0,prot:0,carb:0,fat:0,unit:'100g'},
+    {name:'BCAA en polvo',kcal:100,prot:25,carb:0,fat:0,unit:'100g'},
+    {name:'Colageno hidrolizado',kcal:360,prot:90,carb:0,fat:0,unit:'100g'},
+    {name:'Proteina vegetal (guisante)',kcal:380,prot:80,carb:5,fat:4,unit:'100g'},
+    {name:'Maltodextrina',kcal:381,prot:0,carb:95,fat:0,unit:'100g'},
   ],
 };
 
@@ -1356,7 +1455,9 @@ function doSearch() {
     return;
   }
   if (cats) cats.style.display = 'none';
-  const m = FOODS.filter(f => f.name.toLowerCase().includes(q)).slice(0, 10);
+  const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  const qn = norm(q);
+  const m = FOODS.filter(f => norm(f.name).includes(qn)).slice(0, 10);
   if (!m.length) {
     res.innerHTML = `<div style="text-align:center;color:var(--t3);padding:16px;font-size:12px">
       Sin resultados para "<strong>${q}</strong>"<br><span style="font-size:11px">Prueba Texto IA para descripciones libres ✨</span></div>`;

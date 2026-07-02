@@ -33,6 +33,12 @@ window.cloudSave = async function() {
       setDoc(doc(db,'users',window.currentUser.uid,'d','today'), {
         date: new Date().toDateString(),
         today:s.today, meals:s.meals, ts: Date.now()
+      }, {merge:true}),
+      setDoc(doc(db,'users',window.currentUser.uid,'d','fitness'), {
+        routines: s.routines || [],
+        workoutLogs: s.workoutLogs || [],
+        activeWorkout: s.activeWorkout || null,
+        ts: Date.now()
       }, {merge:true})
     ]);
     window.showSync();
@@ -42,10 +48,18 @@ window.cloudSave = async function() {
 // ── LOAD ─────────────────────────────────────────────────────────────────
 async function cloudLoad(uid) {
   try {
-    const [pS, tS] = await Promise.all([
+    const [pS, tS, fS] = await Promise.all([
       getDoc(doc(db,'users',uid,'d','profile')),
-      getDoc(doc(db,'users',uid,'d','today'))
+      getDoc(doc(db,'users',uid,'d','today')),
+      getDoc(doc(db,'users',uid,'d','fitness'))
     ]);
+
+    if (fS.exists()) {
+      const f = fS.data();
+      window.ST.routines      = f.routines      || [];
+      window.ST.workoutLogs   = f.workoutLogs   || [];
+      window.ST.activeWorkout = f.activeWorkout || null;
+    }
 
     if (pS.exists()) {
       const d = pS.data();

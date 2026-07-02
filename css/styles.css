@@ -327,3 +327,37 @@ details[open] > summary span:last-child::before { content:'▾ '; }
 details:not([open]) > summary span:last-child::before { content:'▸ '; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 .fu { animation:fadeUp .35s ease forwards; }
+
+/* ── ENTRENA ─────────────────────────────────────── */
+#st { background:var(--bg); padding-bottom:90px; }
+.tr-active { display:none; align-items:center; justify-content:space-between; gap:10px; background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(124,58,237,.08)); border:1px solid rgba(0,212,255,.3); border-radius:var(--r); padding:13px 14px; margin-bottom:10px; }
+.tr-mini-btn { padding:8px 14px; border-radius:10px; background:linear-gradient(135deg,var(--cyan),var(--cyan2)); border:none; color:#000; font-size:12px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; flex-shrink:0; }
+.tr-mini-btn:active { transform:scale(.95); }
+.tr-link { font-size:12px; color:var(--cyan); cursor:pointer; font-weight:600; }
+.tr-empty { text-align:center; color:var(--t3); font-size:12px; padding:16px; line-height:1.6; background:var(--card); border:1px dashed var(--border); border-radius:var(--r); margin-bottom:8px; }
+.tr-chip { padding:9px 13px; border-radius:18px; border:1.5px solid var(--border); background:var(--card); color:var(--t2); font-size:12px; font-weight:600; cursor:pointer; transition:all .18s; }
+.tr-chip:active { border-color:var(--violet); color:#a78bfa; }
+.tr-chips-w { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:14px; }
+
+/* Constructor de rutina */
+.day-chip { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--border); background:var(--card); color:var(--t2); font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .18s; }
+.day-chip.on { background:rgba(0,212,255,.12); border-color:var(--cyan); color:var(--cyan); }
+.rb-ex { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:12px; margin-bottom:8px; }
+.rb-f { flex:1; display:flex; flex-direction:column; gap:3px; font-size:10px; color:var(--t3); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+.rb-f input { width:100%; background:var(--card2); border:1.5px solid var(--border); border-radius:8px; color:var(--text); font-size:14px; font-weight:600; padding:8px; text-align:center; outline:none; font-family:'Inter',sans-serif; }
+.rb-f input:focus { border-color:var(--cyan); }
+
+/* Sesión de entrenamiento */
+.set-row { display:flex; align-items:center; gap:7px; }
+.set-row.done input { opacity:.55; }
+.set-n { width:22px; height:22px; border-radius:50%; background:var(--card2); border:1px solid var(--border); color:var(--t2); font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.set-row input { flex:1; min-width:0; background:var(--card2); border:1.5px solid var(--border); border-radius:8px; color:var(--text); font-size:15px; font-weight:700; font-family:'Space Grotesk',sans-serif; padding:8px; text-align:center; outline:none; }
+.set-row input:focus { border-color:var(--cyan); }
+.set-row input:disabled { opacity:.35; }
+.set-check { width:34px; height:34px; border-radius:9px; background:var(--card2); border:1.5px solid var(--border); color:var(--t3); font-size:15px; cursor:pointer; flex-shrink:0; transition:all .15s; }
+.set-check.on { background:var(--green); border-color:var(--green); color:#000; }
+
+/* Barra de descanso */
+.rest-bar { display:none; position:sticky; top:0; z-index:5; align-items:center; gap:10px; background:var(--card2); border:1px solid rgba(0,212,255,.35); border-radius:var(--rs); padding:10px 13px; margin-bottom:12px; }
+.rest-track { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+.rest-fill { height:100%; background:linear-gradient(90deg,var(--cyan),var(--violet)); border-radius:3px; transition:width .25s linear; }

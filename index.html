@@ -128,7 +128,7 @@
     <div class="qstat" onclick="toggleFast()"><div class="qstat-icon">⏱</div><div class="qstat-val" id="qs-fast">OFF</div><div class="qstat-lab">Ayuno</div></div>
     <div class="qstat" onclick="addWater()"><div class="qstat-icon">💧</div><div class="qstat-val" id="qs-water">0/8</div><div class="qstat-lab">Agua</div></div>
     <div class="qstat"><div class="qstat-icon">🔥</div><div class="qstat-val" id="qs-streak">1</div><div class="qstat-lab">Racha</div></div>
-    <div class="qstat" onclick="showScreen('sp');setNav('p')"><div class="qstat-icon">📊</div><div class="qstat-val" id="qs-pct">0%</div><div class="qstat-lab">Meta</div></div>
+    <div class="qstat" onclick="showScreen('sp');setNav('sp');updateProgress()"><div class="qstat-icon">📊</div><div class="qstat-val" id="qs-pct">0%</div><div class="qstat-lab">Meta</div></div>
   </div>
   <div class="fast-card" id="fast-card" style="display:none">
     <div class="fast-head"><div class="fast-title">⏱ Ayuno Intermitente</div><div class="toggle on" id="fast-tog" onclick="toggleFast()"><div class="toggle-th"></div></div></div>
@@ -160,6 +160,22 @@
     </div>
     <div class="chart-card fu"><div class="chart-h"><div class="chart-t">Calorías — 7 días</div></div><div class="mini-chart" id="ch-kcal"></div></div>
     <div class="chart-card fu"><div class="chart-h"><div class="chart-t">Evolución de peso</div></div><div class="mini-chart" id="ch-w"></div></div>
+  </div>
+</div>
+
+<!-- TRAIN -->
+<div id="st" class="screen">
+  <div class="pg-head"><div class="pg-h">Entrenamiento</div><div class="pg-sub">Rutinas, sesiones y récords</div></div>
+  <div class="pg-sec">
+    <div class="tr-active" id="tr-active"></div>
+    <button class="btn btn-cyan" onclick="startFreeWorkout()">▶️ Entreno libre</button>
+    <div class="sec-title" style="margin-top:14px">Mis rutinas</div>
+    <div id="tr-routines"></div>
+    <button class="btn btn-ghost" onclick="openRoutineBuilder()">＋ Crear rutina</button>
+    <div class="sec-title" style="margin-top:14px">Plantillas sugeridas</div>
+    <div class="tr-chips-w" id="tr-templates"></div>
+    <div class="sec-title">Historial reciente</div>
+    <div id="tr-history"></div>
   </div>
 </div>
 
@@ -238,6 +254,7 @@
 <nav class="bnav" id="bnav" style="display:none">
   <div class="bnav-item on" onclick="navTo('sh',this)"><div class="bnav-icon">🏠</div><div class="bnav-label">Inicio</div></div>
   <div class="bnav-item" onclick="navTo('sp',this)"><div class="bnav-icon">📊</div><div class="bnav-label">Progreso</div></div>
+  <div class="bnav-item" onclick="navTo('st',this)"><div class="bnav-icon">🏋️</div><div class="bnav-label">Entrena</div></div>
   <div class="bnav-item" onclick="navTo('sai',this)"><div class="bnav-icon">🤖</div><div class="bnav-label">IA Coach</div></div>
   <div class="bnav-item" onclick="navTo('spf',this)"><div class="bnav-icon">👤</div><div class="bnav-label">Perfil</div></div>
 </nav>
@@ -307,6 +324,54 @@
   </div>
 </div>
 
+<!-- ROUTINE BUILDER MODAL -->
+<div class="overlay" id="ov-routine">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Rutina</div>
+    <div class="sheet-sub">Nombre, días y ejercicios con sets × reps</div>
+    <input class="fsearch" id="rb-name" placeholder="Nombre — ej. Push A: Pecho y Tríceps" style="margin-bottom:12px" autocomplete="off">
+    <div style="display:flex;gap:7px;justify-content:center;margin-bottom:14px" id="rb-days"></div>
+    <div class="sec-title">Ejercicios de la rutina</div>
+    <div id="rb-list" style="margin-bottom:12px"></div>
+    <div class="sec-title">Agregar del banco</div>
+    <div class="fsearch-w">
+      <span class="fs-icon">🔍</span>
+      <input class="fsearch" id="rb-search" placeholder="Press, sentadilla, espalda..." oninput="rbSearch()" autocomplete="off">
+    </div>
+    <div class="fresults" id="rb-results" style="max-height:220px"></div>
+    <div id="rb-cats" style="margin-top:8px"></div>
+    <button class="btn btn-cyan" style="margin-top:14px" onclick="saveRoutine()">💾 Guardar rutina</button>
+  </div>
+</div>
+
+<!-- WORKOUT SESSION MODAL -->
+<div class="overlay" id="ov-workout">
+  <div class="sheet" style="max-height:92vh">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sheet-title" id="wk-title" style="margin-bottom:0">Entrenamiento</div>
+      <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--cyan)" id="wk-elapsed">00:00</div>
+    </div>
+    <div class="sheet-sub">Registra peso y reps — ✓ marca el set y arranca el descanso</div>
+    <div class="rest-bar" id="rest-bar">
+      <span style="font-size:15px">⏱</span>
+      <div class="rest-track"><div class="rest-fill" id="rest-fill" style="width:100%"></div></div>
+      <span style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:var(--cyan)" id="rest-time">--:--</span>
+      <span class="tr-link" onclick="skipRest()">Saltar</span>
+    </div>
+    <div id="wk-list"></div>
+    <div class="sec-title" style="margin-top:6px">Agregar ejercicio</div>
+    <div class="fsearch-w">
+      <span class="fs-icon">🔍</span>
+      <input class="fsearch" id="wk-search" placeholder="Buscar ejercicio..." oninput="wkSearch()" autocomplete="off">
+    </div>
+    <div class="fresults" id="wk-results" style="max-height:180px"></div>
+    <button class="btn btn-cyan" style="margin-top:14px" onclick="finishWorkout()">🏁 Terminar entrenamiento</button>
+    <button class="btn btn-danger" onclick="cancelWorkout()">Descartar sesión</button>
+  </div>
+</div>
+
 <!-- GEMINI KEY MODAL -->
 <div class="overlay" id="ov-gkey">
   <div class="sheet">
@@ -336,6 +401,7 @@
 <script src="js/ai.js"></script>
 <script src="js/state.js"></script>
 <script src="js/data/foods.js"></script>
+<script src="js/data/exercises.js"></script>
 <script src="js/onboarding.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/home.js"></script>
@@ -343,6 +409,7 @@
 <script src="js/progress.js"></script>
 <script src="js/coach.js"></script>
 <script src="js/profile.js"></script>
+<script src="js/train.js"></script>
 <script src="js/app.js"></script>
 <script type="module" src="js/firebase.js"></script>
 </body>

@@ -8,7 +8,7 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
 }
 function setNav(id) {
-  const map = {'sh':0,'sp':1,'sai':2,'spf':3};
+  const map = {'sh':0,'sp':1,'st':2,'sai':3,'spf':4};
   document.querySelectorAll('.bnav-item').forEach((n,i) => n.classList.toggle('on', i === map[id]));
 }
 function navTo(id, el) {
@@ -17,6 +17,7 @@ function navTo(id, el) {
   el.classList.add('on');
   if (id === 'sh')  updateHome();
   if (id === 'sp')  updateProgress();
+  if (id === 'st')  updateTrain();
   if (id === 'spf') updateProfile();
 }
 
@@ -162,6 +163,8 @@ function closeOverlay(id) { document.getElementById(id).classList.remove('open')
 document.getElementById('ov-food').addEventListener('click', e => { if(e.target===document.getElementById('ov-food')) closeOverlay('ov-food'); });
 document.getElementById('ov-pick').addEventListener('click', e => { if(e.target===document.getElementById('ov-pick')) closeOverlay('ov-pick'); });
 document.getElementById('ov-gkey').addEventListener('click', e => { if(e.target===document.getElementById('ov-gkey')) closeOverlay('ov-gkey'); });
+document.getElementById('ov-routine').addEventListener('click', e => { if(e.target===document.getElementById('ov-routine')) closeOverlay('ov-routine'); });
+// ov-workout NO se cierra tocando afuera — evita perder la sesión por error
 
 // ═══════════════════════════════════════════════════════
 // TOAST

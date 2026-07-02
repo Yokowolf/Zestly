@@ -9,7 +9,11 @@ window.ST = {
   meals:{breakfast:[],lunch:[],dinner:[],snack:[]},
   log:[],weightLog:[],streak:1,
   fastingActive:false,fastingStart:null,
-  curMeal:'breakfast'
+  curMeal:'breakfast',
+  // Fitness
+  routines:[],        // rutinas creadas por el usuario
+  workoutLogs:[],     // historial de sesiones (últimas 60)
+  activeWorkout:null  // sesión en curso (sobrevive recargas)
 };
 
 const MEALS = {
@@ -33,6 +37,7 @@ window.appReady = function() {
   updateHome();
   updateProfile();
   updateProgress();
+  if (typeof updateTrain === 'function') updateTrain();
   checkGeminiKey();
   const li = document.getElementById('li-section');
   const lo = document.getElementById('lo-section');

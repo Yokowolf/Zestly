@@ -361,3 +361,8 @@ details:not([open]) > summary span:last-child::before { content:'▸ '; }
 .rest-bar { display:none; position:sticky; top:0; z-index:5; align-items:center; gap:10px; background:var(--card2); border:1px solid rgba(0,212,255,.35); border-radius:var(--rs); padding:10px 13px; margin-bottom:12px; }
 .rest-track { flex:1; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
 .rest-fill { height:100%; background:linear-gradient(90deg,var(--cyan),var(--violet)); border-radius:3px; transition:width .25s linear; }
+
+/* Toggle de unidad KG/LB */
+.unit-tog { display:flex; background:var(--card); border:1.5px solid var(--border); border-radius:10px; overflow:hidden; cursor:pointer; flex-shrink:0; }
+.unit-tog span { padding:6px 11px; font-size:11px; font-weight:700; color:var(--t3); transition:all .18s; font-family:'Inter',sans-serif; }
+.unit-tog span.on { background:rgba(0,212,255,.14); color:var(--cyan); }

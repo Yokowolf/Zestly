@@ -11,6 +11,7 @@ window.ST = {
   fastingActive:false,fastingStart:null,
   curMeal:'breakfast',
   // Fitness
+  unit:'kg',          // unidad de peso preferida: 'kg' | 'lb' (interno siempre kg)
   routines:[],        // rutinas creadas por el usuario
   workoutLogs:[],     // historial de sesiones (últimas 60)
   activeWorkout:null  // sesión en curso (sobrevive recargas)

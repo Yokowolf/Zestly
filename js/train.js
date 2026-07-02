@@ -10,6 +10,27 @@ let _wkTimer = null;
 // ── Helpers ──────────────────────────────────────────────
 function exName(id) { return EX_BY_ID[id]?.name || id; }
 
+// Unidad de peso: interno SIEMPRE en kg; se convierte solo al mostrar/capturar
+const LB_PER_KG = 2.20462;
+function unitLbl() { return (ST.unit || 'kg') === 'lb' ? 'lb' : 'kg'; }
+function fromKg(kg) { return unitLbl() === 'lb' ? Math.round(kg * LB_PER_KG * 10) / 10 : Math.round(kg * 10) / 10; }
+function toKg(val)  { return unitLbl() === 'lb' ? Math.round(val / LB_PER_KG * 100) / 100 : val; }
+
+function toggleUnit() {
+  ST.unit = unitLbl() === 'lb' ? 'kg' : 'lb';
+  save();
+  renderUnitBtns();
+  if (ST.activeWorkout && document.getElementById('ov-workout').classList.contains('open')) renderWorkout();
+  updateTrain();
+  toast('⚖️ Pesos en ' + unitLbl().toUpperCase(), 'ok');
+}
+
+function renderUnitBtns() {
+  document.querySelectorAll('.unit-tog').forEach(el => {
+    el.innerHTML = `<span class="${unitLbl()==='kg'?'on':''}">KG</span><span class="${unitLbl()==='lb'?'on':''}">LB</span>`;
+  });
+}
+
 function bestWeight(exId) {
   let best = 0;
   (ST.workoutLogs || []).forEach(l => l.exercises.forEach(e => {
@@ -27,6 +48,7 @@ function sessionVolume(log) {
 
 // ── Pantalla Entrena ─────────────────────────────────────
 function updateTrain() {
+  renderUnitBtns();
   const banner = document.getElementById('tr-active');
   if (ST.activeWorkout) {
     const min = Math.round((Date.now() - ST.activeWorkout.startTs) / 60000);
@@ -69,7 +91,7 @@ function updateTrain() {
     return `<div class="meal-card" style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center">
       <div><div style="font-size:13px;font-weight:600">${l.name}</div>
         <div style="font-size:11px;color:var(--t2);margin-top:2px">${l.date} · ${l.duration_min} min</div></div>
-      <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--cyan)">${l.volume} kg</div>
+      <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--cyan)">${fromKg(l.volume)} ${unitLbl()}</div>
         <div style="font-size:10px;color:${prs?'var(--gold)':'var(--t3)'}">${prs ? '🏆 ' + prs + ' PR' : 'volumen'}</div></div>
     </div>`;
   }).join('') : `<div class="tr-empty">Tus sesiones aparecerán aquí</div>`;
@@ -217,6 +239,7 @@ function startWorkout(routineIdx) {
 function startFreeWorkout() { startWorkout(-1); }
 
 function openWorkout() {
+  renderUnitBtns();
   renderWorkout();
   openOverlay('ov-workout');
   clearInterval(_wkTimer);
@@ -241,13 +264,13 @@ function renderWorkout() {
         <span class="mi-del" onclick="wkRemoveEx(${ei})">✕</span>
       </div>
       <div style="font-size:11px;color:var(--t2);margin-bottom:8px">
-        Objetivo: ${e.reps} reps · descanso ${e.rest}s${best ? ` · 🏆 mejor: ${best} kg` : ''}${ex.notes ? `<br>💡 ${ex.notes}` : ''}
+        Objetivo: ${e.reps} reps · descanso ${e.rest}s${best ? ` · 🏆 mejor: ${fromKg(best)} ${unitLbl()}` : ''}${ex.notes ? `<br>💡 ${ex.notes}` : ''}
       </div>
       <div style="display:flex;flex-direction:column;gap:5px">
         ${e.sets.map((s, si) => `
           <div class="set-row ${s.done?'done':''}">
             <span class="set-n">${si + 1}</span>
-            <input type="number" inputmode="decimal" placeholder="${ex.weight === false ? '—' : 'kg'}" value="${s.w ?? ''}" ${ex.weight === false ? 'disabled' : ''}
+            <input type="number" inputmode="decimal" placeholder="${ex.weight === false ? '—' : unitLbl()}" value="${s.w != null ? fromKg(s.w) : ''}" ${ex.weight === false ? 'disabled' : ''}
               onchange="wkSet(${ei},${si},'w',this.value)">
             <span style="color:var(--t3);font-size:11px">×</span>
             <input type="number" inputmode="numeric" placeholder="reps" value="${s.r ?? ''}"
@@ -269,7 +292,8 @@ function renderWorkout() {
 
 function wkSet(ei, si, field, val) {
   const s = ST.activeWorkout.exercises[ei].sets[si];
-  s[field] = val === '' ? null : parseFloat(val);
+  const num = val === '' ? null : parseFloat(val);
+  s[field] = (field === 'w' && num != null) ? toKg(num) : num;
   save();
 }
 
@@ -375,7 +399,7 @@ function finishWorkout() {
   ST.activeWorkout = null;
   skipRest(); clearInterval(_wkTimer);
   save(); closeOverlay('ov-workout'); updateTrain();
-  toast(`🎉 ${log.duration_min} min · ${log.volume} kg de volumen${prCount ? ` · 🏆 ${prCount} PR!` : ''}`, 'ok');
+  toast(`🎉 ${log.duration_min} min · ${fromKg(log.volume)} ${unitLbl()} de volumen${prCount ? ` · 🏆 ${prCount} PR!` : ''}`, 'ok');
 }
 
 function cancelWorkout() {

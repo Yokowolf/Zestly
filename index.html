@@ -165,7 +165,10 @@
 
 <!-- TRAIN -->
 <div id="st" class="screen">
-  <div class="pg-head"><div class="pg-h">Entrenamiento</div><div class="pg-sub">Rutinas, sesiones y récords</div></div>
+  <div class="pg-head" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+    <div><div class="pg-h">Entrenamiento</div><div class="pg-sub">Rutinas, sesiones y récords</div></div>
+    <div class="unit-tog" onclick="toggleUnit()" title="Cambiar unidad de peso"></div>
+  </div>
   <div class="pg-sec">
     <div class="tr-active" id="tr-active"></div>
     <button class="btn btn-cyan" onclick="startFreeWorkout()">▶️ Entreno libre</button>
@@ -351,7 +354,10 @@
     <div class="sheet-handle"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div class="sheet-title" id="wk-title" style="margin-bottom:0">Entrenamiento</div>
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--cyan)" id="wk-elapsed">00:00</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="unit-tog" onclick="toggleUnit()" title="Cambiar unidad de peso"></div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:var(--cyan)" id="wk-elapsed">00:00</div>
+      </div>
     </div>
     <div class="sheet-sub">Registra peso y reps — ✓ marca el set y arranca el descanso</div>
     <div class="rest-bar" id="rest-bar">

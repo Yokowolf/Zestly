@@ -35,6 +35,7 @@ window.cloudSave = async function() {
         today:s.today, meals:s.meals, ts: Date.now()
       }, {merge:true}),
       setDoc(doc(db,'users',window.currentUser.uid,'d','fitness'), {
+        unit: s.unit || 'kg',
         routines: s.routines || [],
         workoutLogs: s.workoutLogs || [],
         activeWorkout: s.activeWorkout || null,
@@ -56,6 +57,7 @@ async function cloudLoad(uid) {
 
     if (fS.exists()) {
       const f = fS.data();
+      window.ST.unit          = f.unit          || 'kg';
       window.ST.routines      = f.routines      || [];
       window.ST.workoutLogs   = f.workoutLogs   || [];
       window.ST.activeWorkout = f.activeWorkout || null;

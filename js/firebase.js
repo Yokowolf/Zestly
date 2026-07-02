@@ -39,6 +39,8 @@ window.cloudSave = async function() {
         routines: s.routines || [],
         workoutLogs: s.workoutLogs || [],
         activeWorkout: s.activeWorkout || null,
+        anthro: s.anthro || [],
+        mealPlan: s.mealPlan || null,
         ts: Date.now()
       }, {merge:true})
     ]);
@@ -61,6 +63,8 @@ async function cloudLoad(uid) {
       window.ST.routines      = f.routines      || [];
       window.ST.workoutLogs   = f.workoutLogs   || [];
       window.ST.activeWorkout = f.activeWorkout || null;
+      window.ST.anthro        = f.anthro        || [];
+      window.ST.mealPlan      = f.mealPlan      || null;
     }
 
     if (pS.exists()) {

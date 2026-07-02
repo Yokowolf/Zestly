@@ -366,3 +366,45 @@ details:not([open]) > summary span:last-child::before { content:'▸ '; }
 .unit-tog { display:flex; background:var(--card); border:1.5px solid var(--border); border-radius:10px; overflow:hidden; cursor:pointer; flex-shrink:0; }
 .unit-tog span { padding:6px 11px; font-size:11px; font-weight:700; color:var(--t3); transition:all .18s; font-family:'Inter',sans-serif; }
 .unit-tog span.on { background:rgba(0,212,255,.14); color:var(--cyan); }
+
+/* Fix: campos del constructor en pantallas angostas + sin spinners */
+.rb-f { min-width:0; }
+.rb-f input::-webkit-inner-spin-button, .rb-f input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.rb-f input[type=number] { -moz-appearance:textfield; }
+.set-row input::-webkit-inner-spin-button, .set-row input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+.set-row input[type=number] { -moz-appearance:textfield; }
+
+/* Barras horizontales (volumen por músculo) */
+.hbar-row { display:flex; align-items:center; gap:8px; margin-bottom:7px; }
+.hbar-l { width:88px; font-size:11px; color:var(--t2); flex-shrink:0; }
+.hbar-t { flex:1; height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
+.hbar-f { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--cyan),var(--violet)); transition:width .5s ease; }
+.hbar-v { width:64px; text-align:right; font-size:11px; font-weight:700; color:var(--cyan); flex-shrink:0; }
+
+/* Antropometría */
+.an-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.an-sum { display:flex; flex-wrap:wrap; gap:6px; }
+.an-pill { background:var(--card2); border:1px solid var(--border); border-radius:10px; padding:6px 10px; font-size:11px; color:var(--t2); }
+.an-pill b { color:var(--text); font-size:12px; }
+
+/* Chips seleccionables (PR / medidas / generador IA) */
+.sel-chip { padding:7px 12px; border-radius:18px; border:1.5px solid var(--border); background:var(--card); color:var(--t2); font-size:11px; font-weight:600; cursor:pointer; transition:all .18s; }
+.sel-chip.on { background:rgba(0,212,255,.1); border-color:var(--cyan); color:var(--cyan); }
+.sel-row { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+
+/* Logros */
+.badges-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.badge-c { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:12px 6px; text-align:center; }
+.badge-c.on { border-color:rgba(245,158,11,.4); background:rgba(245,158,11,.06); }
+.badge-c.off { opacity:.35; }
+.badge-i { font-size:22px; }
+.badge-l { font-size:9px; color:var(--t2); margin-top:4px; font-weight:600; line-height:1.3; }
+
+/* Plan semanal */
+.mp-day { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:12px; margin-bottom:8px; }
+.mp-day-h { display:flex; justify-content:space-between; font-size:13px; font-weight:700; margin-bottom:8px; }
+.mp-meal { display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:5px 0; border-bottom:1px dashed var(--border); }
+.mp-meal:last-child { border-bottom:none; }
+.mp-meal-t { color:var(--t3); font-size:10px; text-transform:uppercase; font-weight:700; flex-shrink:0; width:74px; }
+.mp-meal-n { flex:1; color:var(--text); }
+.mp-meal-k { color:var(--cyan); font-weight:700; flex-shrink:0; }

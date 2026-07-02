@@ -164,6 +164,9 @@ document.getElementById('ov-food').addEventListener('click', e => { if(e.target=
 document.getElementById('ov-pick').addEventListener('click', e => { if(e.target===document.getElementById('ov-pick')) closeOverlay('ov-pick'); });
 document.getElementById('ov-gkey').addEventListener('click', e => { if(e.target===document.getElementById('ov-gkey')) closeOverlay('ov-gkey'); });
 document.getElementById('ov-routine').addEventListener('click', e => { if(e.target===document.getElementById('ov-routine')) closeOverlay('ov-routine'); });
+document.getElementById('ov-anthro').addEventListener('click', e => { if(e.target===document.getElementById('ov-anthro')) closeOverlay('ov-anthro'); });
+document.getElementById('ov-aigen').addEventListener('click', e => { if(e.target===document.getElementById('ov-aigen')) closeOverlay('ov-aigen'); });
+document.getElementById('ov-mealplan').addEventListener('click', e => { if(e.target===document.getElementById('ov-mealplan')) closeOverlay('ov-mealplan'); });
 // ov-workout NO se cierra tocando afuera — evita perder la sesión por error
 
 // ═══════════════════════════════════════════════════════

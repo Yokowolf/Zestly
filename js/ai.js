@@ -14,7 +14,7 @@ function getAIProvider() {
   return 'gemini';
 }
 
-async function callAI(systemPrompt, userMessage) {
+async function callAI(systemPrompt, userMessage, maxTokens = 800) {
   if (!GEMINI_KEY) throw new Error('Sin API key — configúrala en Perfil');
   const provider = getAIProvider();
 
@@ -28,7 +28,7 @@ async function callAI(systemPrompt, userMessage) {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
         ],
-        max_tokens: 800, temperature: 0.7
+        max_tokens: maxTokens, temperature: 0.7
       })
     });
     const data = await res.json();

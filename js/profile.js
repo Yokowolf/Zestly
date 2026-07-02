@@ -25,6 +25,7 @@ function updateProfile() {
   document.getElementById('set-f').textContent    = n.fat  + 'g';
   const gs = document.getElementById('ai-status');
   if (gs) gs.textContent = geminiStatus();
+  renderBadges();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -65,4 +66,41 @@ function exportData() {
 }
 function resetApp() {
   if (confirm('¿Seguro? Se borrarán todos tus datos locales.')) { localStorage.clear(); location.reload(); }
+}
+
+// ═══════════════════════════════════════════════════════
+// LOGROS (gamificación)
+// ═══════════════════════════════════════════════════════
+function renderBadges() {
+  const c = document.getElementById('badges-grid'); if (!c) return;
+  const wl = ST.workoutLogs || [];
+  const badges = [
+    ['🌱', 'Primer día',       (ST.log || []).length >= 1 || ST.today.kcal > 0],
+    ['🔥', 'Racha 7 días',     ST.streak >= 7],
+    ['📅', '30 días de registro', (ST.log || []).length >= 30],
+    ['🏋️', 'Primer entreno',   wl.length >= 1],
+    ['💪', '10 entrenos',      wl.length >= 10],
+    ['⚡', '25 entrenos',      wl.length >= 25],
+    ['🏆', 'Primer PR',        wl.some(l => l.exercises.some(e => e.pr))],
+    ['📋', 'Primera rutina',   (ST.routines || []).length >= 1],
+    ['📏', 'Medidas al día',   (ST.anthro || []).length >= 1],
+  ];
+  c.innerHTML = badges.map(([i, l, on]) =>
+    `<div class="badge-c ${on ? 'on' : 'off'}"><div class="badge-i">${i}</div><div class="badge-l">${l}</div></div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// EXPORT CSV DE ENTRENAMIENTOS
+// ═══════════════════════════════════════════════════════
+function exportWorkoutsCSV() {
+  const wl = ST.workoutLogs || [];
+  if (!wl.length) { toast('⚠️ Aún no tienes entrenamientos registrados', 'err'); return; }
+  const rows = [['fecha','sesion','ejercicio','set','peso_kg','reps','pr']];
+  wl.forEach(l => l.exercises.forEach(e => e.sets.forEach((s, i) =>
+    rows.push([l.date, l.name, exName(e.exerciseId), i + 1, s.w || 0, s.r || 0, e.pr ? 'si' : '']))));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'zestly_entrenos.csv'; a.click();
+  toast('📤 CSV de entrenos descargado', 'ok');
 }

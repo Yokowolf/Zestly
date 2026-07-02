@@ -74,6 +74,7 @@ function updateTrain() {
         </div>
         <div style="display:flex;gap:12px;margin-top:9px">
           <span class="tr-link" onclick="editRoutine(${i})">✏️ Editar</span>
+          <span class="tr-link" style="color:#a78bfa" onclick="shareRoutine(${i})">🔗 Compartir</span>
           <span class="tr-link" style="color:var(--pink)" onclick="deleteRoutine(${i})">🗑 Eliminar</span>
         </div>
       </div>`).join('');
@@ -407,4 +408,36 @@ function cancelWorkout() {
   ST.activeWorkout = null;
   skipRest(); clearInterval(_wkTimer);
   save(); closeOverlay('ov-workout'); updateTrain();
+}
+
+// ── Compartir rutina por link ────────────────────────────
+function shareRoutine(i) {
+  const r = ST.routines[i];
+  const payload = { name: r.name, days: r.days, exercises: r.exercises };
+  const data = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  const url = location.origin + location.pathname + '?r=' + data;
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(url)
+      .then(() => toast('🔗 Link de la rutina copiado', 'ok'))
+      .catch(() => prompt('Copia el link de la rutina:', url));
+  } else prompt('Copia el link de la rutina:', url);
+}
+
+function importSharedRoutine() {
+  const data = new URLSearchParams(location.search).get('r');
+  if (!data) return;
+  history.replaceState(null, '', location.pathname); // limpia la URL
+  try {
+    const r = JSON.parse(decodeURIComponent(escape(atob(data))));
+    if (!r.name || !Array.isArray(r.exercises)) throw new Error('inválida');
+    const exercises = r.exercises.filter(e => EX_BY_ID[e.exerciseId]);
+    if (!exercises.length) throw new Error('sin ejercicios válidos');
+    if (!confirm(`¿Importar la rutina compartida "${r.name}" (${exercises.length} ejercicios)?`)) return;
+    ST.routines.push({ name: r.name, days: r.days || [], exercises, createdAt: Date.now() });
+    save();
+    toast('✅ Rutina "' + r.name + '" importada', 'ok');
+    if (typeof updateTrain === 'function' && document.getElementById('tr-routines')) updateTrain();
+  } catch (e) {
+    toast('❌ El link de rutina no es válido', 'err');
+  }
 }

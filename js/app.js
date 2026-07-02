@@ -10,6 +10,9 @@
   const local = localStorage.getItem('zs2');
   if (local) try { Object.assign(window.ST, JSON.parse(local)); } catch(e) {}
 
+  // ¿Llegó una rutina compartida por link? (?r=...)
+  importSharedRoutine();
+
   // Si Firebase tarda más de 5s, mostrar pantalla sin esperar
   setTimeout(() => {
     const splash = document.getElementById('splash');

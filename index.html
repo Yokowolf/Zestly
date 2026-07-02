@@ -160,6 +160,26 @@
     </div>
     <div class="chart-card fu"><div class="chart-h"><div class="chart-t">Calorías — 7 días</div></div><div class="mini-chart" id="ch-kcal"></div></div>
     <div class="chart-card fu"><div class="chart-h"><div class="chart-t">Evolución de peso</div></div><div class="mini-chart" id="ch-w"></div></div>
+
+    <div class="sec-title" style="margin-top:6px">Entrenamiento</div>
+    <div class="sgrid">
+      <div class="scard cy fu"><div class="scard-l">Sesiones — 7 días</div><div class="scard-v" id="fp-freq">0</div><div class="scard-s">entrenamientos</div></div>
+      <div class="scard gr fu"><div class="scard-l">Volumen — 7 días</div><div class="scard-v" id="fp-vol">0</div><div class="scard-s" id="fp-vol-u">kg totales</div></div>
+    </div>
+    <div class="chart-card fu"><div class="chart-h"><div class="chart-t">Volumen por músculo — 7 días</div></div><div id="fp-muscles"></div></div>
+    <div class="chart-card fu">
+      <div class="chart-h"><div class="chart-t">Progresión de peso máximo</div></div>
+      <div class="sel-row" id="fp-pr-chips"></div>
+      <div class="mini-chart" id="fp-pr-chart" style="height:104px"></div>
+    </div>
+
+    <div class="sec-title">Medidas corporales</div>
+    <div class="chart-card fu">
+      <div class="chart-h"><div class="chart-t">📏 Antropometría</div><span class="tr-link" onclick="openAnthro()">＋ Registrar</span></div>
+      <div id="an-summary"></div>
+      <div class="sel-row" id="an-chips" style="margin:10px 0"></div>
+      <div class="mini-chart" id="an-chart" style="height:100px"></div>
+    </div>
   </div>
 </div>
 
@@ -175,6 +195,7 @@
     <div class="sec-title" style="margin-top:14px">Mis rutinas</div>
     <div id="tr-routines"></div>
     <button class="btn btn-ghost" onclick="openRoutineBuilder()">＋ Crear rutina</button>
+    <button class="btn btn-ghost" style="border-color:rgba(124,58,237,.4);color:#a78bfa" onclick="openAiGen()">✨ Generar rutina con IA</button>
     <div class="sec-title" style="margin-top:14px">Plantillas sugeridas</div>
     <div class="tr-chips-w" id="tr-templates"></div>
     <div class="sec-title">Historial reciente</div>
@@ -192,10 +213,12 @@
     <div class="ai-msg bot"><div class="ai-lbl">Zestly AI</div>¡Hola! Soy tu coach nutricional con IA. Puedo analizar tus comidas por foto o texto, sugerirte recetas personalizadas y responder dudas sobre nutrición. ¿En qué te ayudo?</div>
   </div>
   <div class="ai-chips">
+    <div class="ai-chip" style="border-color:rgba(0,212,255,.35);color:var(--cyan)" onclick="openMealPlan()">🍽 Plan semanal</div>
     <div class="ai-chip" onclick="chipSend(this)">¿Calorías del arroz con pollo?</div>
-    <div class="ai-chip" onclick="chipSend(this)">Sugiere desayuno alto en proteína</div>
     <div class="ai-chip" onclick="chipSend(this)">Analiza mi dieta de hoy</div>
     <div class="ai-chip" onclick="chipSend(this)">¿Qué comer antes de entrenar?</div>
+    <div class="ai-chip" onclick="chipSend(this)">Analiza mi último entrenamiento</div>
+    <div class="ai-chip" onclick="chipSend(this)">¿Cómo romper el estancamiento?</div>
   </div>
   <div class="ai-in-w">
     <input class="ai-in" id="ai-in" placeholder="Pregunta sobre nutrición..." onkeydown="if(event.key==='Enter')aiSend()">
@@ -228,6 +251,8 @@
     </button>
   </div>
   <div class="settings-sec">
+    <div class="sec-title" style="padding:0 0 8px">Logros</div>
+    <div class="badges-grid" id="badges-grid" style="margin-bottom:14px"></div>
     <div class="sec-title" style="padding:0 0 8px">Mis datos</div>
     <div class="sg">
       <div class="si" onclick="openPick('name')"><div class="si-icon">👤</div><div class="si-label">Nombre</div><div class="si-val" id="e-name">-</div></div>
@@ -245,7 +270,8 @@
     </div>
     <div class="sec-title" style="padding:8px 0">Cuenta</div>
     <div class="sg">
-      <div class="si" onclick="exportData()"><div class="si-icon">📤</div><div class="si-label">Exportar datos</div><div class="si-arr">›</div></div>
+      <div class="si" onclick="exportData()"><div class="si-icon">📤</div><div class="si-label">Exportar datos (JSON)</div><div class="si-arr">›</div></div>
+      <div class="si" onclick="exportWorkoutsCSV()"><div class="si-icon">📊</div><div class="si-label">Exportar entrenos (CSV)</div><div class="si-arr">›</div></div>
       <div class="si" onclick="openGeminiKeyModal()"><div class="si-icon">🤖</div><div class="si-label">Clave IA (Groq)</div><div class="si-val" id="ai-status">⚠️ Sin configurar</div></div>
       <div class="si" id="lo-btn" style="display:none" onclick="gSignOut()"><div class="si-icon">🚪</div><div class="si-label">Cerrar sesión</div><div class="si-arr">›</div></div>
     </div>
@@ -324,6 +350,42 @@
     <div class="sheet-title" id="pick-title" style="margin-bottom:14px">Seleccionar</div>
     <div id="pick-content"></div>
     <button class="btn btn-cyan" style="margin-top:14px" onclick="confirmPick()">Confirmar</button>
+  </div>
+</div>
+
+<!-- AI ROUTINE GENERATOR MODAL -->
+<div class="overlay" id="ov-aigen">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">✨ Rutina con IA</div>
+    <div class="sheet-sub">La IA arma una sesión con ejercicios del banco — la revisas antes de guardar</div>
+    <div class="sec-title">Objetivo</div><div class="sel-row" id="aigen-goal"></div>
+    <div class="sec-title">Días por semana</div><div class="sel-row" id="aigen-days"></div>
+    <div class="sec-title">Equipo disponible</div><div class="sel-row" id="aigen-equip"></div>
+    <div class="sec-title">Nivel</div><div class="sel-row" id="aigen-level"></div>
+    <button class="btn btn-cyan" id="aigen-btn" style="margin-top:8px" onclick="aiGenRoutine()">✨ Generar rutina</button>
+  </div>
+</div>
+
+<!-- WEEKLY MEAL PLAN MODAL -->
+<div class="overlay" id="ov-mealplan">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">🍽 Plan alimenticio semanal</div>
+    <div class="sheet-sub">Generado con IA según tu meta calórica y horario de entreno</div>
+    <div id="mp-content"></div>
+    <button class="btn btn-cyan" id="mp-btn" style="margin-top:12px" onclick="genMealPlan()">✨ Generar mi plan semanal</button>
+  </div>
+</div>
+
+<!-- ANTHROPOMETRY MODAL -->
+<div class="overlay" id="ov-anthro">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">📏 Registrar medidas</div>
+    <div class="sheet-sub">Llena solo las que midas hoy — sugerido cada 2 semanas</div>
+    <div class="an-grid" id="an-form"></div>
+    <button class="btn btn-cyan" style="margin-top:14px" onclick="saveAnthro()">💾 Guardar medidas</button>
   </div>
 </div>
 
@@ -416,6 +478,7 @@
 <script src="js/coach.js"></script>
 <script src="js/profile.js"></script>
 <script src="js/train.js"></script>
+<script src="js/plans.js"></script>
 <script src="js/app.js"></script>
 <script type="module" src="js/firebase.js"></script>
 </body>

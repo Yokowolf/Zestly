@@ -14,7 +14,9 @@ window.ST = {
   unit:'kg',          // unidad de peso preferida: 'kg' | 'lb' (interno siempre kg)
   routines:[],        // rutinas creadas por el usuario
   workoutLogs:[],     // historial de sesiones (últimas 60)
-  activeWorkout:null  // sesión en curso (sobrevive recargas)
+  activeWorkout:null, // sesión en curso (sobrevive recargas)
+  anthro:[],          // registro antropométrico (medidas corporales)
+  mealPlan:null       // plan alimenticio semanal generado con IA
 };
 
 const MEALS = {

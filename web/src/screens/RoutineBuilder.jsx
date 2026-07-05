@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, Trash2, Plus, ChevronDown, Info } from 'lucide-react'
+import { Search, Trash2, Plus, ChevronDown, Info, PersonStanding, List } from 'lucide-react'
 import { Sheet, Input, Button, Chip, SectionTitle, ExerciseImg, Empty } from '../components/ui'
 import { useStore } from '../store'
 import { EXERCISES, EX_BY_ID, MUSCLES, EQUIP, DAYS } from '../data/exercises'
 import { norm } from '../lib/calc'
 import ExerciseSheet from './ExerciseSheet'
+import BodyMap from '../components/BodyMap'
 
 // Constructor de rutinas: nombre, días, ejercicios con sets/reps/descanso
 export default function RoutineBuilder({ draft, onClose }) {
@@ -12,6 +13,8 @@ export default function RoutineBuilder({ draft, onClose }) {
   const [r, setR] = useState(null)
   const [q, setQ] = useState('')
   const [detail, setDetail] = useState(null)
+  const [bankMode, setBankMode] = useState('map') // 'map' | 'list'
+  const [muscleSel, setMuscleSel] = useState(null)
 
   // Inicializa el borrador cuando se abre / limpia al cerrar
   useEffect(() => {
@@ -106,7 +109,12 @@ export default function RoutineBuilder({ draft, onClose }) {
         })}
       </div>
 
-      <SectionTitle>Agregar del banco</SectionTitle>
+      <SectionTitle right={
+        <div className="flex overflow-hidden rounded-lg border border-line text-[10px] font-bold">
+          <button onClick={() => setBankMode('map')} className={`flex items-center gap-1 px-2.5 py-1.5 ${bankMode === 'map' ? 'bg-brand-600 text-white' : 'text-ink3'}`}><PersonStanding size={12} /> Mapa</button>
+          <button onClick={() => setBankMode('list')} className={`flex items-center gap-1 px-2.5 py-1.5 ${bankMode === 'list' ? 'bg-brand-600 text-white' : 'text-ink3'}`}><List size={12} /> Lista</button>
+        </div>
+      }>Agregar del banco</SectionTitle>
       <div className="relative mb-2">
         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink3" />
         <Input className="pl-10" placeholder="Press, sentadilla, espalda..." value={q} onChange={e => setQ(e.target.value)} />
@@ -116,6 +124,17 @@ export default function RoutineBuilder({ draft, onClose }) {
         <div className="flex flex-col gap-1.5">
           {results.length === 0 && <p className="py-4 text-center text-xs text-ink3">Sin resultados para "{q}"</p>}
           {results.map(ex => <BankRow key={ex.id} ex={ex} onAdd={() => addEx(ex)} onInfo={() => setDetail(ex)} />)}
+        </div>
+      ) : bankMode === 'map' ? (
+        <div className="card p-3">
+          <BodyMap selected={muscleSel} onSelect={setMuscleSel} />
+          {muscleSel && (
+            <div className="mt-2 flex flex-col gap-1.5">
+              {EXERCISES.filter(e => e.type !== 'warmup' && e.type !== 'stretch' && e.muscle.includes(muscleSel))
+                .sort((a, b) => (a.muscle[0] === muscleSel ? -1 : 1) - (b.muscle[0] === muscleSel ? -1 : 1))
+                .map(ex => <BankRow key={ex.id} ex={ex} onAdd={() => addEx(ex)} onInfo={() => setDetail(ex)} />)}
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex flex-col gap-2">

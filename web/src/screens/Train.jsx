@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { useStore, fromKg, unitLbl } from '../store'
 import { Button, Chip, SectionTitle, Empty, ExerciseImg, Sheet } from '../components/ui'
-import { ROUTINE_TEMPLATES, EX_BY_ID, DAYS, DAY_NAMES } from '../data/exercises'
+import { ROUTINE_TEMPLATES, TEMPLATE_LEVELS, EX_BY_ID, DAYS, DAY_NAMES } from '../data/exercises'
 import { startSession, todaysRoutineIndex } from '../lib/train'
 import RoutineBuilder from './RoutineBuilder'
 import Workout from './Workout'
@@ -17,6 +17,7 @@ export default function Train() {
   const [workoutOpen, setWorkoutOpen] = useState(!!s.activeWorkout)
   const [aiOpen, setAiOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [level, setLevel] = useState('principiante')
   const routines = s.routines || []
   const todayIdx = todaysRoutineIndex(routines)
   const dayName = DAY_NAMES[DAYS[(new Date().getDay() + 6) % 7][0]]
@@ -135,9 +136,14 @@ export default function Train() {
         ))}
       </div>
 
-      <SectionTitle>Plantillas sugeridas</SectionTitle>
+      <SectionTitle>Plantillas por nivel</SectionTitle>
+      <div className="mb-2 flex gap-1.5">
+        {Object.entries(TEMPLATE_LEVELS).map(([v, label]) => (
+          <Chip key={v} on={level === v} onClick={() => setLevel(v)}>{label}</Chip>
+        ))}
+      </div>
       <div className="flex flex-wrap gap-1.5">
-        {ROUTINE_TEMPLATES.map((t, i) => (
+        {ROUTINE_TEMPLATES.filter(t => t.level === level).map((t, i) => (
           <Chip key={i} onClick={() => setBuilderDraft({
             name: t.name, days: [...t.days],
             exercises: t.ex.filter(id => EX_BY_ID[id]).map(id => ({

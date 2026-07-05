@@ -2,3 +2,7 @@
 Zestly.html
 index_orig_backup.html
 .claude/
+
+# React app
+web/node_modules/
+web/dist/

@@ -97,12 +97,12 @@ export default function RoutineBuilder({ draft, onClose }) {
                 </button>
               </div>
               <div className="mt-2.5 grid grid-cols-3 gap-2">
-                <MiniField label="Series" type="number" value={e.sets}
-                  onChange={v => upd({ exercises: r.exercises.map((x, j) => j === i ? { ...x, sets: Math.max(1, parseInt(v) || 1) } : x) })} />
+                <StepField label="Series" value={e.sets} min={1} max={10} step={1}
+                  onCommit={v => upd({ exercises: r.exercises.map((x, j) => j === i ? { ...x, sets: v } : x) })} />
                 <MiniField label="Reps" value={e.reps}
                   onChange={v => upd({ exercises: r.exercises.map((x, j) => j === i ? { ...x, reps: v } : x) })} />
-                <MiniField label="Descanso (s)" type="number" value={e.rest}
-                  onChange={v => upd({ exercises: r.exercises.map((x, j) => j === i ? { ...x, rest: Math.max(0, parseInt(v) || 0) } : x) })} />
+                <StepField label="Descanso (s)" value={e.rest} min={0} max={600} step={15}
+                  onCommit={v => upd({ exercises: r.exercises.map((x, j) => j === i ? { ...x, rest: v } : x) })} />
               </div>
             </div>
           )
@@ -157,16 +157,46 @@ export default function RoutineBuilder({ draft, onClose }) {
   )
 }
 
-function MiniField({ label, value, onChange, type = 'text' }) {
+function MiniField({ label, value, onChange }) {
   return (
     <label className="flex min-w-0 flex-col gap-1 text-[9px] font-bold uppercase tracking-wide text-ink3">
       {label}
       <input
-        type={type} value={value} inputMode={type === 'number' ? 'numeric' : undefined}
+        type="text" value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full rounded-lg border border-line bg-card2 px-2 py-2 text-center text-sm font-semibold text-ink outline-none focus:border-brand-500"
+        className="h-9 w-full rounded-lg border border-line bg-card2 px-1 text-center text-sm font-semibold text-ink outline-none focus:border-brand-500"
       />
     </label>
+  )
+}
+
+// Campo numérico con − / +: permite escribir libre (incluso vacío) y
+// solo valida/limita al confirmar (blur o Enter) — evita el "1 pegado".
+function StepField({ label, value, onCommit, min = 0, max = 999, step = 1 }) {
+  const [draft, setDraft] = useState(null) // null = sin edición activa
+  const shown = draft !== null ? draft : String(value)
+  const commit = raw => {
+    const n = parseInt(raw, 10)
+    onCommit(isNaN(n) ? value : Math.max(min, Math.min(max, n)))
+    setDraft(null)
+  }
+  const nudge = d => { setDraft(null); onCommit(Math.max(min, Math.min(max, value + d))) }
+  return (
+    <div className="flex min-w-0 flex-col gap-1 text-[9px] font-bold uppercase tracking-wide text-ink3">
+      {label}
+      <div className="flex h-9 items-stretch overflow-hidden rounded-lg border border-line bg-card2">
+        <button type="button" onClick={() => nudge(-step)} className="w-7 shrink-0 text-base text-ink2 active:bg-line" aria-label="Menos">−</button>
+        <input
+          type="text" inputMode="numeric" value={shown}
+          onFocus={e => { setDraft(String(value)); requestAnimationFrame(() => e.target.select()) }}
+          onChange={e => setDraft(e.target.value.replace(/\D/g, ''))}
+          onBlur={e => commit(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && e.target.blur()}
+          className="w-0 flex-1 bg-transparent text-center text-sm font-semibold text-ink outline-none"
+        />
+        <button type="button" onClick={() => nudge(step)} className="w-7 shrink-0 bg-brand-600 text-base text-white active:bg-brand-700" aria-label="Más">+</button>
+      </div>
+    </div>
   )
 }
 

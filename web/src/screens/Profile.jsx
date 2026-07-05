@@ -4,12 +4,30 @@ import {
   Trophy, Flame, Dumbbell, CalendarCheck, Ruler, ClipboardList, Sprout, Zap, Medal,
   Pencil, Trash2,
 } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { useStore, serializable } from '../store'
 import { signIn, logOut } from '../lib/firebase'
 import { getKey, setKey } from '../lib/ai'
 import { calcNutrition, GOALS, ACTIVITIES } from '../lib/calc'
-import { Sheet, Button, Input, SectionTitle, Chip } from '../components/ui'
+import { Sheet, Button, Input, Chip } from '../components/ui'
 import { exName } from '../lib/train'
+
+// Sección plegable: solo el título a la vista, se expande al tocar
+function Section({ title, right, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="card mt-3 overflow-hidden">
+      <button onClick={() => setOpen(o => !o)} className="flex w-full items-center justify-between px-4 py-3.5">
+        <span className="text-[13px] font-bold">{title}</span>
+        <span className="flex items-center gap-2">
+          {right}
+          <ChevronDown size={16} className={`text-ink3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </span>
+      </button>
+      {open && <div className="border-t border-line px-3 pb-3 pt-2 fade-up">{children}</div>}
+    </div>
+  )
+}
 
 export default function Profile() {
   const s = useStore()
@@ -50,8 +68,8 @@ export default function Profile() {
       )}
 
       {/* Preferencias */}
-      <SectionTitle>Preferencias</SectionTitle>
-      <div className="card divide-y divide-[var(--border)] overflow-hidden">
+      <Section title="Preferencias" defaultOpen>
+      <div className="divide-y divide-[var(--border)]">
         <Row icon={s.theme === 'dark' ? Moon : Sun} label="Modo oscuro">
           <button
             onClick={() => s.patch({ theme: s.theme === 'dark' ? 'light' : 'dark' })}
@@ -73,9 +91,10 @@ export default function Profile() {
           </span>
         </Row>
       </div>
+      </Section>
 
       {/* Logros */}
-      <SectionTitle>Logros</SectionTitle>
+      <Section title="Logros" right={<span className="text-[11px] font-semibold text-amber-500">{badges.filter(b => b.on).length}/{badges.length}</span>}>
       <div className="grid grid-cols-3 gap-2">
         {badges.map(b => (
           <div key={b.label} className={`card flex flex-col items-center gap-1.5 p-3 text-center ${b.on ? 'border-amber-300 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-950/30' : 'opacity-40'}`}>
@@ -84,12 +103,13 @@ export default function Profile() {
           </div>
         ))}
       </div>
+      </Section>
 
       {/* Mis datos */}
-      <SectionTitle right={
-        <button onClick={() => setEditOpen(true)} className="flex items-center gap-1 text-xs font-semibold text-brand-600"><Pencil size={12} /> Editar</button>
-      }>Mis datos</SectionTitle>
-      <div className="card divide-y divide-[var(--border)]">
+      <Section title="Mis datos" right={
+        <span onClick={e => { e.stopPropagation(); setEditOpen(true) }} className="flex items-center gap-1 text-xs font-semibold text-brand-600"><Pencil size={12} /> Editar</span>
+      }>
+      <div className="divide-y divide-[var(--border)]">
         {[['Edad', `${s.profile.age} años`], ['Altura', `${s.profile.height} cm`], ['Peso', `${s.profile.weight} kg`],
           ['Actividad', ACTIVITIES[s.profile.activity]],
           ['Metas', `${s.nutrition.kcal} kcal · P${s.nutrition.prot} C${s.nutrition.carb} G${s.nutrition.fat}`]].map(([l, v]) => (
@@ -98,14 +118,16 @@ export default function Profile() {
           </div>
         ))}
       </div>
+      </Section>
 
       {/* Datos y cuenta */}
-      <SectionTitle>Datos</SectionTitle>
-      <div className="card divide-y divide-[var(--border)] overflow-hidden">
+      <Section title="Datos y respaldos">
+      <div className="divide-y divide-[var(--border)]">
         <Row icon={Download} label="Exportar datos (JSON)" onClick={() => exportJSON(s)} />
         <Row icon={FileSpreadsheet} label="Exportar entrenos (CSV)" onClick={() => exportCSV(s)} />
         {s.user && <Row icon={LogOut} label="Cerrar sesión" onClick={() => logOut().then(() => s.toast('Sesión cerrada'))} />}
       </div>
+      </Section>
 
       <button
         onClick={() => { if (confirm('¿Seguro? Se borrarán todos tus datos locales.')) { localStorage.clear(); location.reload() } }}

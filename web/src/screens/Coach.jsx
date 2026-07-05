@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Bot, SendHorizontal, UtensilsCrossed, Sparkles, ShoppingCart } from 'lucide-react'
+import { Bot, SendHorizontal, UtensilsCrossed, Sparkles, ShoppingCart, Share2, FileDown } from 'lucide-react'
 import { useStore } from '../store'
 import { callAI, parseAIJson, hasKey } from '../lib/ai'
 import { Sheet, Button, Chip } from '../components/ui'
@@ -108,6 +108,50 @@ export default function Coach() {
   )
 }
 
+// ── Compartir / exportar el plan ─────────────────────────
+function planToText(mp, nutrition) {
+  let t = `🍽 PLAN ALIMENTICIO SEMANAL — Zestly\nMeta: ${nutrition.kcal} kcal · ${nutrition.prot}g proteína/día\n`
+  mp.days.forEach(d => {
+    t += `\n📅 ${d.day.toUpperCase()} — ${d.kcal} kcal\n`
+    ;(d.meals || []).forEach(m => { t += `  • ${m.time}: ${m.name} (${m.kcal} kcal)\n` })
+  })
+  if (mp.shopping?.length) t += `\n🛒 LISTA DE COMPRAS\n${mp.shopping.map(i => '  • ' + i).join('\n')}\n`
+  return t
+}
+
+async function sharePlan(mp, nutrition, toast) {
+  const text = planToText(mp, nutrition)
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Mi plan semanal Zestly', text }); return } catch { /* usuario canceló */ }
+  }
+  // Fallback: WhatsApp directo
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank')
+  toast('Abriendo WhatsApp…')
+}
+
+function printPlan(mp, nutrition) {
+  const rows = mp.days.map(d => `
+    <h3>${d.day} — <span class="k">${d.kcal} kcal</span></h3>
+    <table>${(d.meals || []).map(m => `<tr><td class="t">${m.time}</td><td>${m.name}</td><td class="k">${m.kcal}</td></tr>`).join('')}</table>
+  `).join('')
+  const shop = mp.shopping?.length ? `<h3>Lista de compras</h3><p>${mp.shopping.join(' · ')}</p>` : ''
+  const w = window.open('', '_blank')
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Plan semanal Zestly</title><style>
+    body{font-family:system-ui,sans-serif;max-width:640px;margin:24px auto;color:#0f172a;font-size:13px}
+    h1{font-size:20px} h2{font-size:13px;color:#64748b;font-weight:500;margin-top:-8px}
+    h3{font-size:14px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin:18px 0 6px}
+    table{width:100%;border-collapse:collapse} td{padding:4px 6px;border-bottom:1px dashed #e2e8f0}
+    .t{color:#64748b;text-transform:uppercase;font-size:10px;font-weight:700;width:110px}
+    .k{color:#0891b2;font-weight:700;text-align:right;white-space:nowrap}
+  </style></head><body>
+    <h1>Plan alimenticio semanal — Zestly</h1>
+    <h2>Meta: ${nutrition.kcal} kcal · ${nutrition.prot}g proteína/día · generado ${new Date(mp.ts).toLocaleDateString('es')}</h2>
+    ${rows}${shop}
+  </body></html>`)
+  w.document.close()
+  setTimeout(() => { w.print() }, 350) // el diálogo de impresión permite "Guardar como PDF"
+}
+
 // ── Plan alimenticio semanal con IA ──────────────────────
 function MealPlanSheet({ open, onClose }) {
   const s = useStore()
@@ -168,7 +212,17 @@ Incluye los 7 días. La lista shopping con máx 15 items.`
           <p className="text-center text-[10px] text-ink3">Generado {new Date(mp.ts).toLocaleDateString('es')}</p>
         </div>
       )}
-      <Button variant="accent" className="mt-3 flex items-center justify-center gap-2" onClick={generate} disabled={busy}>
+      {mp && (
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Button variant="ghost" className="flex items-center justify-center gap-2 !py-2.5" onClick={() => sharePlan(mp, s.nutrition, s.toast)}>
+            <Share2 size={14} /> Compartir
+          </Button>
+          <Button variant="ghost" className="flex items-center justify-center gap-2 !py-2.5" onClick={() => printPlan(mp, s.nutrition)}>
+            <FileDown size={14} /> PDF
+          </Button>
+        </div>
+      )}
+      <Button variant="accent" className="mt-2 flex items-center justify-center gap-2" onClick={generate} disabled={busy}>
         <Sparkles size={15} /> {busy ? 'Generando plan…' : mp ? 'Regenerar plan' : 'Generar mi plan semanal'}
       </Button>
     </Sheet>

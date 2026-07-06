@@ -5,8 +5,8 @@ import {
 } from 'lucide-react'
 import { useStore } from '../store'
 import { Ring, Bars } from '../components/charts'
-import { Bar, SectionTitle } from '../components/ui'
-import AddFood from './AddFood'
+import { Bar, SectionTitle, Sheet, Button, Chip } from '../components/ui'
+import AddFood, { baseName } from './AddFood'
 import { round1 } from '../lib/calc'
 
 const MEALS = [
@@ -19,6 +19,7 @@ const MEALS = [
 export default function Home({ goTab }) {
   const s = useStore()
   const [foodMeal, setFoodMeal] = useState(null)
+  const [editing, setEditing] = useState(null) // { meal, idx } → editar porción
   const n = s.nutrition, t = s.today
   const rem = Math.max(0, n.kcal - t.kcal)
   const pct = Math.min(1, t.kcal / n.kcal)
@@ -102,7 +103,9 @@ export default function Home({ goTab }) {
                 <div className="flex flex-col gap-1.5 px-4 pb-3">
                   {items.map((it, idx) => (
                     <div key={idx} className="flex items-center justify-between gap-2 text-xs">
-                      <span className="truncate text-ink2">{it.name}</span>
+                      <button onClick={() => setEditing({ meal: key, idx })} className="min-w-0 flex-1 truncate text-left text-ink2 underline decoration-dotted decoration-[var(--border)] underline-offset-2">
+                        {it.name}
+                      </button>
                       <span className="flex shrink-0 items-center gap-2">
                         <b className="text-brand-600">{it.kcal} kcal</b>
                         <button onClick={() => removeFood(key, idx)} className="p-1 text-ink3" aria-label="Eliminar">
@@ -122,7 +125,69 @@ export default function Home({ goTab }) {
       </div>
 
       <AddFood meal={foodMeal} onClose={() => setFoodMeal(null)} />
+      <EditPortionSheet target={editing} onClose={() => setEditing(null)} />
     </div>
+  )
+}
+
+// ── Editar la porción de un alimento ya registrado ───────
+function EditPortionSheet({ target, onClose }) {
+  const s = useStore()
+  const item = target ? s.meals[target.meal]?.[target.idx] : null
+  const [qty, setQty] = useState(null)
+  useEffect(() => { setQty(item ? item.qty || (item.fromDB ? 100 : 1) : null) }, [target]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!item || qty == null) return null
+
+  const grams = item.unit === 'g' || item.unit === 'ml'
+  const step = grams ? 25 : 0.5
+  // Valores base: por 100g si viene de la BD, por porción si viene de IA/rápidos
+  const per = k => item['base' + k] ?? (item[k.toLowerCase()] / ((item.qty || 1) / (item.fromDB ? 100 : 1)) || 0)
+  const ratio = grams ? qty / 100 : qty
+  const calc = k => round1(per(k) * ratio)
+  const presets = grams ? [50, 75, 100, 150, 200, 250] : [0.5, 1, 1.5, 2]
+
+  const save = () => {
+    const updated = {
+      ...item, qty,
+      name: grams ? `${baseName(item.name)} (${qty}${item.unit})` : item.name,
+      kcal: Math.round(per('Kcal') * ratio), prot: calc('Prot'), carb: calc('Carb'), fat: calc('Fat'),
+    }
+    s.patch({
+      meals: { ...s.meals, [target.meal]: s.meals[target.meal].map((x, i) => i === target.idx ? updated : x) },
+      today: {
+        ...s.today,
+        kcal: Math.max(0, s.today.kcal - item.kcal + updated.kcal),
+        prot: Math.max(0, round1(s.today.prot - item.prot + updated.prot)),
+        carb: Math.max(0, round1(s.today.carb - item.carb + updated.carb)),
+        fat: Math.max(0, round1(s.today.fat - item.fat + updated.fat)),
+      },
+    })
+    s.toast('Porción actualizada', 'ok')
+    onClose()
+  }
+
+  return (
+    <Sheet open onClose={onClose} title={baseName(item.name)} subtitle="Ajusta la cantidad — las calorías y macros se recalculan">
+      <div className="mb-3 flex items-center justify-center gap-4">
+        <button className="h-10 w-10 rounded-full border border-line text-xl text-ink2" onClick={() => setQty(Math.max(step, round1(qty - step)))}>−</button>
+        <div className="text-center">
+          <input
+            type="number" inputMode="decimal" value={qty}
+            onChange={e => setQty(Math.max(0, parseFloat(e.target.value) || 0))}
+            className="w-24 bg-transparent text-center font-display text-3xl font-bold text-brand-600 outline-none"
+          />
+          <span className="text-xs text-ink3">{grams ? item.unit : qty === 1 ? 'porción' : 'porciones'}</span>
+        </div>
+        <button className="h-10 w-10 rounded-full bg-brand-600 text-xl text-white" onClick={() => setQty(round1(qty + step))}>+</button>
+      </div>
+      <div className="mb-3 flex flex-wrap justify-center gap-1.5">
+        {presets.map(v => <Chip key={v} on={qty === v} onClick={() => setQty(v)}>{v}{grams ? item.unit : 'x'}</Chip>)}
+      </div>
+      <p className="mb-4 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+        = {Math.round(per('Kcal') * ratio)} kcal · P:{calc('Prot')}g · C:{calc('Carb')}g · G:{calc('Fat')}g
+      </p>
+      <Button onClick={save} disabled={!qty}>Guardar cambios</Button>
+    </Sheet>
   )
 }
 

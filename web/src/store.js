@@ -26,6 +26,7 @@ const DEFAULTS = {
   // Nuevos (rediseño React)
   theme: 'light',     // 'light' | 'dark' — claro es el predeterminado
   waterGoal: 8,       // vasos por día, configurable
+  foodFreq: {},       // alimentos más usados: nombre → { count, item } (para Rápidos)
 }
 
 function loadLocal() {

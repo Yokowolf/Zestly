@@ -46,9 +46,15 @@ export default function AddFood({ meal, onClose }) {
   )
 }
 
+// Nombre base sin la porción: "Arroz blanco (150g)" → "Arroz blanco"
+export const baseName = name => name.replace(/\s*\([\d.]+\s*(g|ml)\)$/i, '')
+
 // ── Registrar un alimento en el estado ───────────────────
 export function logFood(meal, item) {
   const s = useStore.getState()
+  // Frecuencia de uso: alimenta la sección "Tus más usados" de Rápidos
+  const key = baseName(item.name)
+  const prev = (s.foodFreq || {})[key]
   s.patch({
     meals: { ...s.meals, [meal]: [...(s.meals[meal] || []), item] },
     today: {
@@ -56,6 +62,7 @@ export function logFood(meal, item) {
       kcal: s.today.kcal + item.kcal, prot: round1(s.today.prot + item.prot),
       carb: round1(s.today.carb + item.carb), fat: round1(s.today.fat + item.fat),
     },
+    foodFreq: { ...(s.foodFreq || {}), [key]: { count: (prev?.count || 0) + 1, item } },
   })
 }
 
@@ -296,21 +303,46 @@ function TextTab({ meal, onDone }) {
 }
 
 // ── Tab: Rápidos ─────────────────────────────────────────
+// Primero tus alimentos más usados (aprende de lo que registras),
+// luego los sugeridos de siempre.
 function QuickTab({ meal, onDone }) {
   const s = useStore()
+  const freq = s.foodFreq || {}
+  const top = Object.entries(freq)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 8)
+
+  const add = item => { logFood(meal, item); s.toast(`${baseName(item.name)} añadido`, 'ok'); onDone() }
+
   return (
-    <div className="grid grid-cols-2 gap-2">
-      {QUICK.map((q, i) => (
-        <button key={i}
-          onClick={() => {
-            logFood(meal, { name: q.name, qty: 1, unit: 'porción', fromDB: false, baseKcal: q.kcal, baseProt: q.prot, baseCarb: q.carb, baseFat: q.fat, kcal: q.kcal, prot: q.prot, carb: q.carb, fat: q.fat })
-            s.toast(`${q.name} añadido`, 'ok'); onDone()
-          }}
-          className="rounded-xl border border-line bg-card p-3 text-left">
-          <div className="text-xs font-semibold">{q.name}</div>
-          <div className="mt-1 text-[10px] text-ink3">{q.kcal} kcal · P:{q.prot}g</div>
-        </button>
-      ))}
+    <div>
+      {top.length > 0 && (
+        <>
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-ink3">Tus más usados</p>
+          <div className="mb-4 grid grid-cols-2 gap-2">
+            {top.map(([name, { count, item }]) => (
+              <button key={name} onClick={() => add(item)}
+                className="rounded-xl border border-brand-200 bg-brand-50/50 p-3 text-left dark:border-brand-800 dark:bg-brand-900/20">
+                <div className="text-xs font-semibold">{name}</div>
+                <div className="mt-1 text-[10px] text-ink3">
+                  {item.kcal} kcal · {item.qty}{item.unit === 'porción' ? ' porción' : item.unit} · {count}×
+                </div>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-ink3">Sugeridos</p>
+      <div className="grid grid-cols-2 gap-2">
+        {QUICK.map((q, i) => (
+          <button key={i}
+            onClick={() => add({ name: q.name, qty: 1, unit: 'porción', fromDB: false, baseKcal: q.kcal, baseProt: q.prot, baseCarb: q.carb, baseFat: q.fat, kcal: q.kcal, prot: q.prot, carb: q.carb, fat: q.fat })}
+            className="rounded-xl border border-line bg-card p-3 text-left">
+            <div className="text-xs font-semibold">{q.name}</div>
+            <div className="mt-1 text-[10px] text-ink3">{q.kcal} kcal · P:{q.prot}g</div>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

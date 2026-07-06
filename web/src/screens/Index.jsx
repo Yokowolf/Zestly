@@ -55,21 +55,32 @@ const FEATURES = [
 
 export default function Index({ go }) {
   const name = useStore(s => s.profile.name || s.user?.displayName?.split(' ')[0] || '')
+  const user = useStore(s => s.user)
+  const hour = new Date().getHours()
+  const greet = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
 
   return (
-    <div className="px-4 pt-5">
-      {/* Hero / presentación */}
-      <div className="flex flex-col items-center pb-5 pt-2 text-center">
-        <Logo size={56} />
-        <h1 className="font-display mt-2 text-3xl font-bold tracking-tight">
-          Ze<span className="text-brand-600">stly</span>
-        </h1>
-        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent-600">
-          Disciplina · Resiliencia · Compromiso
-        </p>
-        <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-ink2">
-          {name ? `Hola ${name}, ` : ''}tu centro de nutrición y entrenamiento con IA — todo en un solo lugar.
-        </p>
+    <div className="px-4 pt-4">
+      {/* Hero compacto */}
+      <div className="mb-4 flex items-center gap-3">
+        <Logo size={40} />
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display text-xl font-bold leading-tight tracking-tight">
+            Ze<span className="text-brand-600">stly</span>
+            <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.15em] text-accent-600">Estilo de vida Zen</span>
+          </h1>
+          <p className="truncate text-[11px] text-ink2">
+            {greet}{name ? `, ${name}` : ''} · Actividad física y entrenamiento
+          </p>
+        </div>
+        {!user && (
+          <button
+            onClick={() => go({ tab: 'profile' })}
+            className="shrink-0 rounded-xl border border-brand-300 bg-brand-50 px-3 py-2 text-[11px] font-bold text-brand-700 dark:border-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
+          >
+            Iniciar sesión
+          </button>
+        )}
       </div>
 
       {/* Tarjetas de categorías — cuadros */}

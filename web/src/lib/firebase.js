@@ -51,7 +51,7 @@ export async function cloudSave() {
         // nuevo sin configurar NUNCA borra la clave guardada en la nube
         ...(localStorage.getItem('zs_gkey') ? { geminiKey: localStorage.getItem('zs_gkey') } : {}),
         fastingActive: d.fastingActive, fastingStart: d.fastingStart,
-        theme: d.theme, waterGoal: d.waterGoal,
+        theme: d.theme, waterGoal: d.waterGoal, foodFreq: d.foodFreq || {},
         ts: Date.now(),
       }, { merge: true }),
       setDoc(doc(db, 'users', s.user.uid, 'd', 'today'), {
@@ -92,6 +92,7 @@ export async function cloudLoad(uid) {
         fastingStart: d.fastingStart || null,
         theme: d.theme || st.theme || 'light',
         waterGoal: d.waterGoal || st.waterGoal || 8,
+        foodFreq: d.foodFreq || st.foodFreq || {},
       })
       // La clave de la nube llega sola a cualquier dispositivo nuevo
       if (d.geminiKey) localStorage.setItem('zs_gkey', d.geminiKey)

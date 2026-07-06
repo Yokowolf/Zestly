@@ -1,8 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  Menu, X, Flame, UtensilsCrossed, Dumbbell, Play, BarChart3, Ruler,
-  Bot, User, LayoutGrid,
-} from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useStore, rolloverIfNewDay } from './store'
 import { watchAuth } from './lib/firebase'
 import { Toasts } from './components/ui'
@@ -15,45 +12,20 @@ import Coach from './screens/Coach'
 import Profile from './screens/Profile'
 import Index from './screens/Index'
 
-// Menú por categorías (drawer lateral)
-const MENU = [
-  { cat: 'Nutrición', items: [
-    { tab: 'home', label: 'Contador de calorías', icon: Flame },
-    { tab: 'coach', action: 'plan', label: 'Plan alimenticio IA', icon: UtensilsCrossed },
-  ]},
-  { cat: 'Entrenamiento', items: [
-    { tab: 'train', action: 'start', label: 'Entrenar hoy', icon: Play },
-    { tab: 'train', label: 'Mis rutinas', icon: Dumbbell },
-  ]},
-  { cat: 'Progreso', items: [
-    { tab: 'progress', label: 'Mi progreso', icon: BarChart3 },
-    { tab: 'progress', action: 'anthro', label: 'Medidas corporales', icon: Ruler },
-  ]},
-  { cat: 'General', items: [
-    { tab: 'coach', label: 'IA Coach', icon: Bot },
-    { tab: 'index', label: 'Índice de la app', icon: LayoutGrid },
-    { tab: 'profile', label: 'Perfil y ajustes', icon: User },
-  ]},
-]
-
 const TITLES = {
   home: 'Contador de calorías', train: 'Entrenamiento', progress: 'Mi progreso',
-  coach: 'IA Coach', profile: 'Perfil', index: 'Índice',
+  coach: 'IA Coach', profile: 'Perfil', index: 'Inicio',
 }
 
 export default function App() {
-  // La app SIEMPRE abre en el contador de calorías
-  const [nav, setNav] = useState({ tab: 'home', action: null, ts: 0 })
-  const [drawer, setDrawer] = useState(false)
+  // La app abre en el menú interactivo (Inicio)
+  const [nav, setNav] = useState({ tab: 'index', action: null, ts: 0 })
   const [booting, setBooting] = useState(true)
   const [screen, setScreen] = useState('app') // 'welcome' | 'onboarding' | 'app'
   const onboarded = useStore(s => s.onboarded)
   const theme = useStore(s => s.theme)
 
-  const go = target => {
-    setNav({ tab: target.tab, action: target.action || null, ts: Date.now() })
-    setDrawer(false)
-  }
+  const go = target => setNav({ tab: target.tab, action: target.action || null, ts: Date.now() })
 
   // Tema: claro predeterminado, .dark activa el modo oscuro
   useEffect(() => {
@@ -90,16 +62,19 @@ export default function App() {
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
       <Toasts />
 
-      {/* Barra superior */}
+      {/* Barra superior: en secciones muestra volver al menú */}
       <header className="sticky top-0 z-40 border-b border-line bg-bg2/95 backdrop-blur-lg">
-        <div className="mx-auto flex h-13 max-w-lg items-center gap-3 px-3 py-2.5">
-          <button onClick={() => setDrawer(true)} className="rounded-xl border border-line p-2 text-ink2" aria-label="Abrir menú">
-            <Menu size={19} />
-          </button>
-          <button onClick={() => go({ tab: 'home' })} className="flex items-center gap-2">
-            <Logo size={26} />
-            <span className="font-display text-[17px] font-bold tracking-tight">Ze<span className="text-brand-600">stly</span></span>
-          </button>
+        <div className="mx-auto flex max-w-lg items-center gap-3 px-3 py-2.5">
+          {tab !== 'index' ? (
+            <button onClick={() => go({ tab: 'index' })} className="flex items-center gap-1.5 rounded-xl border border-line py-2 pl-2 pr-3 text-[12px] font-semibold text-ink2" aria-label="Volver al menú">
+              <ArrowLeft size={16} /> Menú
+            </button>
+          ) : (
+            <span className="flex items-center gap-2 pl-1">
+              <Logo size={24} />
+              <span className="font-display text-[16px] font-bold tracking-tight">Ze<span className="text-brand-600">stly</span></span>
+            </span>
+          )}
           <span className="ml-auto pr-1 text-[11px] font-medium text-ink3">{TITLES[tab]}</span>
           <SyncDot />
         </div>
@@ -113,51 +88,6 @@ export default function App() {
         {tab === 'coach' && <Coach key={ts} initialAction={action} />}
         {tab === 'profile' && <Profile />}
       </main>
-
-      {/* Drawer de navegación por categorías */}
-      {drawer && (
-        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setDrawer(false) }}>
-          <aside className="flex h-full w-72 flex-col overflow-y-auto border-r border-line bg-bg2 shadow-2xl" style={{ animation: 'drawerIn .22s ease' }}>
-            <div className="flex items-center justify-between border-b border-line px-4 py-3.5">
-              <div className="flex items-center gap-2">
-                <Logo size={28} />
-                <div>
-                  <div className="font-display text-[15px] font-bold leading-tight">Ze<span className="text-brand-600">stly</span></div>
-                  <div className="text-[9px] uppercase tracking-widest text-ink3">Nutrición y Fitness</div>
-                </div>
-              </div>
-              <button onClick={() => setDrawer(false)} className="rounded-full border border-line p-1.5 text-ink3" aria-label="Cerrar menú">
-                <X size={15} />
-              </button>
-            </div>
-            <nav className="flex-1 px-3 py-2">
-              {MENU.map(group => (
-                <div key={group.cat} className="mb-1">
-                  <div className="px-2 pb-1 pt-3 text-[10px] font-bold uppercase tracking-wider text-ink3">{group.cat}</div>
-                  {group.items.map(item => {
-                    const active = tab === item.tab && !item.action
-                    return (
-                      <button
-                        key={item.label}
-                        onClick={() => go(item)}
-                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium ${
-                          active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-ink2'
-                        }`}
-                      >
-                        <item.icon size={17} className={active ? 'text-brand-600' : 'text-ink3'} />
-                        {item.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              ))}
-            </nav>
-            <div className="border-t border-line px-4 py-3 text-[10px] text-ink3">
-              Disciplina · Resiliencia · Compromiso
-            </div>
-          </aside>
-        </div>
-      )}
     </div>
   )
 }

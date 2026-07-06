@@ -1,73 +1,143 @@
-import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, User, ChevronRight } from 'lucide-react'
+import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, User, ChevronRight, Sparkles, Cloud, WifiOff, Film, Target, Eye } from 'lucide-react'
+import { Logo } from '../App'
+import { useStore } from '../store'
 
-// Índice de la app: tarjetas por módulo con descripción (pantalla "mapa" de Zestly)
+// ── Inicio: menú interactivo + presentación de la app ────
+// Tarjetas de categoría con foto (estilo referencia) y bloques
+// de misión, visión y funcionalidades entre secciones.
+
+const U = id => `https://images.unsplash.com/photo-${id}?w=800&q=60&auto=format&fit=crop`
+
 const CARDS = [
   {
     icon: Flame, title: 'Contador de calorías', target: { tab: 'home' },
-    desc: 'Registra comidas por búsqueda, foto o texto con IA. Anillo calórico, macros y agua.',
-    grad: 'from-cyan-600 to-sky-500',
+    desc: 'Registra comidas por búsqueda, foto o texto con IA',
+    img: U('1490645935967-10de6ba17061'), grad: 'from-cyan-700 to-sky-600',
   },
   {
     icon: Dumbbell, title: 'Rutinas y entrenamiento', target: { tab: 'train' },
-    desc: 'Banco de 107 ejercicios con GIF, rutinas por día, sesiones con timer y récords.',
-    grad: 'from-violet-600 to-purple-500',
+    desc: '107 ejercicios con GIF, sesiones con timer y récords',
+    img: U('1534438327276-14e5300c3a48'), grad: 'from-violet-700 to-purple-600',
   },
   {
     icon: UtensilsCrossed, title: 'Plan alimenticio', target: { tab: 'coach', action: 'plan' },
-    desc: 'Plan semanal generado con IA según tus metas, con lista de compras. Exporta a PDF o WhatsApp.',
-    grad: 'from-emerald-600 to-teal-500',
+    desc: 'Plan semanal con IA, exportable a PDF o WhatsApp',
+    img: U('1512621776951-a57141f2eefd'), grad: 'from-emerald-700 to-teal-600',
   },
   {
     icon: Ruler, title: 'Medidas antropométricas', target: { tab: 'progress', action: 'anthro' },
-    desc: 'Peso, % grasa y 9 medidas corporales con gráficas de evolución.',
-    grad: 'from-orange-500 to-amber-500',
+    desc: 'Peso, % grasa y 9 medidas con evolución',
+    img: U('1571019613454-1cb2f99b2d8b'), grad: 'from-orange-600 to-amber-500',
   },
   {
     icon: BarChart3, title: 'Progreso', target: { tab: 'progress' },
-    desc: 'Calendario de días entrenados, volumen por músculo y progresión de tus PRs.',
-    grad: 'from-pink-600 to-rose-500',
+    desc: 'Calendario, volumen por músculo y tus PRs',
+    img: U('1476480862126-209bfaa8edc8'), grad: 'from-pink-700 to-rose-600',
   },
   {
     icon: Bot, title: 'IA Coach', target: { tab: 'coach' },
-    desc: 'Chat con contexto de tus comidas y entrenos. Análisis, técnica y consejos.',
-    grad: 'from-indigo-600 to-blue-500',
+    desc: 'Chat que conoce tus comidas y entrenos',
+    img: U('1485827404703-89b55fcc595e'), grad: 'from-indigo-700 to-blue-600',
   },
   {
     icon: User, title: 'Perfil y ajustes', target: { tab: 'profile' },
-    desc: 'Tus datos y metas, modo oscuro, logros, exportar respaldos.',
-    grad: 'from-slate-600 to-slate-500',
+    desc: 'Metas, modo oscuro, logros y respaldos',
+    img: U('1507003211169-0a1dd7228f2d'), grad: 'from-slate-700 to-slate-600',
   },
 ]
 
+const FEATURES = [
+  [Sparkles, 'IA integrada', 'Analiza comidas y genera rutinas'],
+  [Cloud, 'Sync en la nube', 'Tus datos en todos tus equipos'],
+  [WifiOff, 'Funciona offline', 'Instálala como app y entrena sin señal'],
+  [Film, 'Ejercicios con GIF', 'Aprende la técnica viendo el movimiento'],
+]
+
 export default function Index({ go }) {
+  const name = useStore(s => s.profile.name || s.user?.displayName?.split(' ')[0] || '')
+
   return (
-    <div className="px-4 pt-4">
-      <h1 className="font-display text-[22px] font-bold tracking-tight">Zestly</h1>
-      <p className="mb-4 text-[11px] text-ink3">Todo lo que puedes hacer, en un vistazo</p>
+    <div className="px-4 pt-5">
+      {/* Hero / presentación */}
+      <div className="flex flex-col items-center pb-5 pt-2 text-center">
+        <Logo size={56} />
+        <h1 className="font-display mt-2 text-3xl font-bold tracking-tight">
+          Ze<span className="text-brand-600">stly</span>
+        </h1>
+        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-accent-600">
+          Disciplina · Resiliencia · Compromiso
+        </p>
+        <p className="mt-2 max-w-xs text-[13px] leading-relaxed text-ink2">
+          {name ? `Hola ${name}, ` : ''}tu centro de nutrición y entrenamiento con IA — todo en un solo lugar.
+        </p>
+      </div>
+
+      {/* Tarjetas de categorías */}
+      <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-ink3">¿Qué quieres hacer hoy?</h2>
       <div className="flex flex-col gap-3">
-        {CARDS.map(({ icon: Icon, title, desc, grad, target }) => (
+        {CARDS.map(({ icon: Icon, title, desc, img, grad, target }) => (
           <button
             key={title}
             onClick={() => go(target)}
-            className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${grad} p-4 text-left text-white shadow-md active:scale-[0.99]`}
+            className={`relative h-28 overflow-hidden rounded-2xl bg-gradient-to-br ${grad} text-left text-white shadow-md active:scale-[0.99]`}
           >
-            <div className="pointer-events-none absolute -right-6 -top-6 opacity-15">
-              <Icon size={110} strokeWidth={1.2} />
-            </div>
-            <div className="flex items-center gap-3">
+            <img
+              src={img} alt="" loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover opacity-60"
+              onError={e => { e.currentTarget.style.display = 'none' }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
+            <div className="relative flex h-full items-center gap-3.5 px-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
                 <Icon size={22} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[15px] font-bold">{title}</div>
-                <div className="mt-0.5 text-[11px] leading-snug text-white/85">{desc}</div>
+                <div className="text-[16px] font-bold drop-shadow">{title}</div>
+                <div className="mt-0.5 text-[11px] leading-snug text-white/85 drop-shadow">{desc}</div>
               </div>
-              <ChevronRight size={18} className="shrink-0 text-white/70" />
+              <ChevronRight size={18} className="shrink-0 text-white/80" />
             </div>
           </button>
         ))}
       </div>
-      <div className="h-6" />
+
+      {/* Funcionalidades */}
+      <h2 className="mb-2.5 mt-6 text-[11px] font-bold uppercase tracking-wider text-ink3">¿Por qué Zestly?</h2>
+      <div className="grid grid-cols-2 gap-2.5">
+        {FEATURES.map(([Icon, t, d]) => (
+          <div key={t} className="card p-3.5">
+            <Icon size={17} className="mb-1.5 text-brand-600" />
+            <div className="text-[12px] font-bold">{t}</div>
+            <div className="mt-0.5 text-[10px] leading-snug text-ink3">{d}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Misión y visión */}
+      <div className="mt-6 flex flex-col gap-2.5">
+        <div className="card border-brand-200 bg-brand-50/50 p-4 dark:border-brand-800 dark:bg-brand-900/20">
+          <div className="mb-1 flex items-center gap-2 text-[12px] font-bold text-brand-700 dark:text-brand-300">
+            <Target size={15} /> Misión
+          </div>
+          <p className="text-[12px] leading-relaxed text-ink2">
+            Hacer que la disciplina sea fácil: registrar lo que comes, entrenar con propósito y ver tu
+            progreso sin fricción, con inteligencia artificial que te acompaña en cada decisión.
+          </p>
+        </div>
+        <div className="card border-accent-400/30 bg-accent-500/5 p-4">
+          <div className="mb-1 flex items-center gap-2 text-[12px] font-bold text-accent-600">
+            <Eye size={15} /> Visión
+          </div>
+          <p className="text-[12px] leading-relaxed text-ink2">
+            Ser el compañero integral de tu estilo de vida fitness: nutrición, entrenamiento y hábitos
+            en una sola app que crece contigo — de la primera rutina al mejor físico de tu vida.
+          </p>
+        </div>
+      </div>
+
+      <p className="py-6 text-center text-[10px] text-ink3">
+        Zestly · Hecho con disciplina en Colombia
+      </p>
     </div>
   )
 }

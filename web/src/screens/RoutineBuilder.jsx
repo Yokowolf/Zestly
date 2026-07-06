@@ -128,13 +128,31 @@ export default function RoutineBuilder({ draft, onClose }) {
       ) : bankMode === 'map' ? (
         <div className="card p-3">
           <BodyMap selected={muscleSel} onSelect={setMuscleSel} />
-          {muscleSel && (
-            <div className="mt-2 flex flex-col gap-1.5">
-              {EXERCISES.filter(e => e.type !== 'warmup' && e.type !== 'stretch' && e.muscle.includes(muscleSel))
-                .sort((a, b) => (a.muscle[0] === muscleSel ? -1 : 1) - (b.muscle[0] === muscleSel ? -1 : 1))
-                .map(ex => <BankRow key={ex.id} ex={ex} onAdd={() => addEx(ex)} onInfo={() => setDetail(ex)} />)}
-            </div>
-          )}
+          {muscleSel && (() => {
+            const pool = EXERCISES.filter(e => e.type !== 'warmup' && e.type !== 'stretch')
+            const primary = pool.filter(e => e.muscle[0] === muscleSel)
+            const secondary = pool.filter(e => e.muscle[0] !== muscleSel && e.muscle.includes(muscleSel))
+            return (
+              <div className="mt-2">
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">
+                  Enfoque principal ({primary.length})
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {primary.map(ex => <BankRow key={ex.id} ex={ex} onAdd={() => addEx(ex)} onInfo={() => setDetail(ex)} />)}
+                </div>
+                {secondary.length > 0 && (
+                  <details className="mt-2.5">
+                    <summary className="cursor-pointer list-none py-1 text-[10px] font-bold uppercase tracking-wider text-ink3">
+                      También lo trabajan indirectamente ({secondary.length}) — toca para ver
+                    </summary>
+                    <div className="mt-1.5 flex flex-col gap-1.5">
+                      {secondary.map(ex => <BankRow key={ex.id} ex={ex} onAdd={() => addEx(ex)} onInfo={() => setDetail(ex)} />)}
+                    </div>
+                  </details>
+                )}
+              </div>
+            )
+          })()}
         </div>
       ) : (
         <div className="flex flex-col gap-2">

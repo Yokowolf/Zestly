@@ -125,6 +125,7 @@ export default function Profile() {
       <div className="divide-y divide-[var(--border)]">
         <Row icon={Download} label="Exportar datos (JSON)" onClick={() => exportJSON(s)} />
         <Row icon={FileSpreadsheet} label="Exportar entrenos (CSV)" onClick={() => exportCSV(s)} />
+        <Row icon={FileSpreadsheet} label="Exportar nutrición (CSV)" onClick={() => exportNutritionCSV(s)} />
         {s.user && <Row icon={LogOut} label="Cerrar sesión" onClick={() => logOut().then(() => s.toast('Sesión cerrada'))} />}
       </div>
       </Section>
@@ -187,6 +188,17 @@ function exportCSV(s) {
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob); a.download = 'zestly_entrenos.csv'; a.click()
   s.toast('CSV descargado', 'ok')
+}
+
+function exportNutritionCSV(s) {
+  const rows = [['fecha', 'kcal', 'proteina_g', 'carbos_g', 'grasas_g', 'agua_vasos']]
+  ;(s.log || []).forEach(l => rows.push([l.date, l.kcal || 0, l.prot || 0, l.carb || 0, l.fat || 0, l.water || 0]))
+  rows.push([new Date().toDateString() + ' (hoy)', s.today.kcal, s.today.prot, s.today.carb, s.today.fat, s.today.water])
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob); a.download = 'zestly_nutricion.csv'; a.click()
+  s.toast('CSV de nutrición descargado', 'ok')
 }
 
 function EditProfileSheet({ open, onClose }) {

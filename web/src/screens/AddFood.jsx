@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Search, Camera, PenLine, Zap, ChevronDown, Sparkles, Trash2,
   MapPin, Beef, Milk, Wheat, Carrot, Apple, Droplets, CupSoda, Soup, Leaf, Ham, Pill, Utensils,
+  ScanBarcode, ChefHat, Plus, Save,
 } from 'lucide-react'
 
 // Ícono por categoría de alimentos (sin emojis)
@@ -20,9 +21,11 @@ import { norm, round1 } from '../lib/calc'
 
 const TABS = [
   { id: 'search', label: 'Buscar', icon: Search },
+  { id: 'scan', label: 'Código', icon: ScanBarcode },
   { id: 'cam', label: 'Foto IA', icon: Camera },
   { id: 'text', label: 'Texto IA', icon: PenLine },
   { id: 'quick', label: 'Rápidos', icon: Zap },
+  { id: 'recipes', label: 'Recetas', icon: ChefHat },
 ]
 const MEAL_NAMES = { breakfast: 'Desayuno', lunch: 'Almuerzo', dinner: 'Cena', snack: 'Snack' }
 
@@ -39,9 +42,11 @@ export default function AddFood({ meal, onClose }) {
         ))}
       </div>
       {tab === 'search' && <SearchTab meal={meal} onDone={close} />}
+      {tab === 'scan' && <BarcodeTab meal={meal} onDone={close} />}
       {tab === 'cam' && <CamTab meal={meal} onDone={close} />}
       {tab === 'text' && <TextTab meal={meal} onDone={close} />}
       {tab === 'quick' && <QuickTab meal={meal} onDone={close} />}
+      {tab === 'recipes' && <RecipesTab meal={meal} onDone={close} />}
     </Sheet>
   )
 }
@@ -166,6 +171,204 @@ function PortionPicker({ food, onAdd, onCancel }) {
         <Button variant="ghost" className="!py-2.5" onClick={onCancel}>Cancelar</Button>
         <Button className="!py-2.5" onClick={() => onAdd(qty, isMl)}>Añadir</Button>
       </div>
+    </div>
+  )
+}
+
+// ── Tab: Código de barras (Open Food Facts) ──────────────
+function BarcodeTab({ meal, onDone }) {
+  const s = useStore()
+  const videoRef = useRef()
+  const controlsRef = useRef(null)
+  const [scanning, setScanning] = useState(false)
+  const [manual, setManual] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [product, setProduct] = useState(null)
+
+  useEffect(() => () => { controlsRef.current?.stop() }, [])
+
+  const lookup = async code => {
+    setBusy(true); setProduct(null)
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,nutriments`)
+      const data = await res.json()
+      if (data.status !== 1) throw new Error('Producto no encontrado — prueba Buscar o Texto IA')
+      const n = data.product.nutriments || {}
+      const kcal = n['energy-kcal_100g']
+      if (kcal == null) throw new Error('El producto no tiene información nutricional')
+      setProduct({
+        name: [data.product.product_name, data.product.brands].filter(Boolean).join(' — ').slice(0, 60),
+        kcal: Math.round(kcal), prot: round1(n.proteins_100g || 0),
+        carb: round1(n.carbohydrates_100g || 0), fat: round1(n.fat_100g || 0), unit: '100g',
+      })
+    } catch (e) {
+      s.toast(e.message.slice(0, 60), 'err')
+    }
+    setBusy(false)
+  }
+
+  const startScan = async () => {
+    setScanning(true)
+    try {
+      const { BrowserMultiFormatReader } = await import('@zxing/browser')
+      const reader = new BrowserMultiFormatReader()
+      controlsRef.current = await reader.decodeFromVideoDevice(undefined, videoRef.current, (result, _err, controls) => {
+        if (result) {
+          controls.stop(); controlsRef.current = null; setScanning(false)
+          lookup(result.getText())
+        }
+      })
+    } catch {
+      setScanning(false)
+      s.toast('No se pudo abrir la cámara — escribe el código manual', 'err')
+    }
+  }
+  const stopScan = () => { controlsRef.current?.stop(); controlsRef.current = null; setScanning(false) }
+
+  return (
+    <div>
+      <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-brand-400/40 bg-brand-500/10 px-3 py-1 text-[11px] font-medium text-brand-700 dark:text-brand-300">
+        <ScanBarcode size={12} /> Base de datos Open Food Facts
+      </span>
+
+      {product ? (
+        <PortionPicker
+          food={product}
+          onAdd={(qty, isMl) => { logFood(meal, foodItem(product, qty, isMl)); s.toast(`${product.name} añadido`, 'ok'); onDone() }}
+          onCancel={() => setProduct(null)}
+        />
+      ) : (
+        <>
+          <video ref={videoRef} className={`w-full rounded-2xl border border-line bg-black ${scanning ? 'block' : 'hidden'}`} style={{ maxHeight: 260 }} />
+          {!scanning ? (
+            <Button onClick={startScan} className="flex items-center justify-center gap-2" disabled={busy}>
+              <ScanBarcode size={16} /> {busy ? 'Consultando…' : 'Escanear código de barras'}
+            </Button>
+          ) : (
+            <Button variant="ghost" className="mt-2" onClick={stopScan}>Detener cámara</Button>
+          )}
+          <div className="my-3 flex items-center gap-3 text-[10px] uppercase tracking-wider text-ink3">
+            <span className="h-px flex-1 bg-line" /> o escribe el código <span className="h-px flex-1 bg-line" />
+          </div>
+          <div className="flex gap-2">
+            <Input placeholder="7702..." inputMode="numeric" value={manual} onChange={e => setManual(e.target.value.replace(/\D/g, ''))} />
+            <button
+              onClick={() => manual.length >= 8 && lookup(manual)}
+              className="shrink-0 rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white disabled:opacity-50"
+              disabled={manual.length < 8 || busy}
+            >
+              Buscar
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Tab: Recetas guardadas ───────────────────────────────
+function RecipesTab({ meal, onDone }) {
+  const s = useStore()
+  const [creating, setCreating] = useState(false)
+  const [name, setName] = useState('')
+  const [ings, setIngs] = useState([]) // { name, qty, kcal, prot, carb, fat } por porción elegida
+  const [q, setQ] = useState('')
+
+  const results = useMemo(() => {
+    if (!q.trim()) return []
+    const qn = norm(q)
+    return FOODS.filter(f => norm(f.name).includes(qn)).slice(0, 6)
+  }, [q])
+
+  const totals = ings.reduce((t, i) => ({
+    kcal: t.kcal + i.kcal, prot: round1(t.prot + i.prot), carb: round1(t.carb + i.carb), fat: round1(t.fat + i.fat),
+  }), { kcal: 0, prot: 0, carb: 0, fat: 0 })
+
+  const addIng = f => {
+    const r = 1 // 100g por defecto; ajustable después desde el plato
+    setIngs([...ings, { name: f.name, qty: 100, kcal: Math.round(f.kcal * r), prot: round1(f.prot * r), carb: round1(f.carb * r), fat: round1(f.fat * r) }])
+    setQ('')
+  }
+
+  const saveRecipe = () => {
+    if (!name.trim()) { s.toast('Ponle nombre a la receta', 'err'); return }
+    if (!ings.length) { s.toast('Agrega al menos un ingrediente', 'err'); return }
+    s.patch({ recipes: [...(s.recipes || []), { name: name.trim(), ings, ...totals, createdAt: Date.now() }] })
+    s.toast(`Receta "${name.trim()}" guardada`, 'ok')
+    setCreating(false); setName(''); setIngs([])
+  }
+
+  const logRecipe = r => {
+    logFood(meal, {
+      name: r.name, qty: 1, unit: 'porción', fromDB: false,
+      baseKcal: r.kcal, baseProt: r.prot, baseCarb: r.carb, baseFat: r.fat,
+      kcal: r.kcal, prot: r.prot, carb: r.carb, fat: r.fat,
+    })
+    s.toast(`${r.name} añadida`, 'ok'); onDone()
+  }
+
+  if (creating) return (
+    <div>
+      <Input placeholder="Nombre — ej. Bowl de pollo y arroz" value={name} onChange={e => setName(e.target.value)} autoFocus />
+      <p className="mb-1.5 mt-3 text-[10px] font-bold uppercase tracking-wider text-ink3">Ingredientes (100g c/u — edita luego desde el plato)</p>
+      <div className="flex flex-col gap-1.5">
+        {ings.map((i, idx) => (
+          <div key={idx} className="flex items-center justify-between rounded-xl border border-line bg-card px-3 py-2 text-xs">
+            <span className="truncate">{i.name} ({i.qty}g)</span>
+            <span className="flex shrink-0 items-center gap-2">
+              <b className="text-brand-600">{i.kcal} kcal</b>
+              <button onClick={() => setIngs(ings.filter((_, j) => j !== idx))} className="p-0.5 text-ink3"><Trash2 size={13} /></button>
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="relative my-2">
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink3" />
+        <Input className="pl-10" placeholder="Buscar ingrediente..." value={q} onChange={e => setQ(e.target.value)} />
+      </div>
+      {results.map((f, i) => (
+        <button key={i} onClick={() => addIng(f)} className="mb-1.5 flex w-full items-center justify-between rounded-xl border border-line bg-card px-3 py-2 text-left text-xs">
+          <span>{f.name}</span><Plus size={14} className="text-brand-600" />
+        </button>
+      ))}
+      {ings.length > 0 && (
+        <p className="my-2 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          Total: {totals.kcal} kcal · P:{totals.prot}g · C:{totals.carb}g · G:{totals.fat}g
+        </p>
+      )}
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <Button variant="ghost" className="!py-2.5" onClick={() => setCreating(false)}>Cancelar</Button>
+        <Button className="flex items-center justify-center gap-1.5 !py-2.5" onClick={saveRecipe}><Save size={14} /> Guardar</Button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div>
+      {(s.recipes || []).length === 0 && (
+        <div className="card mb-3 border-dashed p-5 text-center text-xs leading-relaxed text-ink3">
+          Guarda tus platos frecuentes como recetas y regístralos con un toque.
+        </div>
+      )}
+      <div className="flex flex-col gap-2">
+        {(s.recipes || []).map((r, i) => (
+          <div key={i} className="card flex items-center justify-between px-3.5 py-3">
+            <button onClick={() => logRecipe(r)} className="min-w-0 flex-1 text-left">
+              <div className="truncate text-[13px] font-semibold">{r.name}</div>
+              <div className="text-[11px] text-ink3">{r.ings.length} ingredientes · {r.kcal} kcal · P:{r.prot}g</div>
+            </button>
+            <button
+              onClick={() => { if (confirm(`¿Eliminar la receta "${r.name}"?`)) s.patch({ recipes: s.recipes.filter((_, j) => j !== i) }) }}
+              className="p-1.5 text-ink3"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+      <Button variant="ghost" className="mt-3 flex items-center justify-center gap-2" onClick={() => setCreating(true)}>
+        <ChefHat size={15} /> Nueva receta
+      </Button>
     </div>
   )
 }

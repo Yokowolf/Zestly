@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Dumbbell, Hash, Timer, LineChart, History } from 'lucide-react'
+import { Dumbbell, Hash, Timer, LineChart, History, PlayCircle } from 'lucide-react'
 import { Sheet, ExerciseImg, SectionTitle, Empty } from '../components/ui'
 import { Bars } from '../components/charts'
 import { MUSCLES, EQUIP } from '../data/exercises'
@@ -27,6 +27,15 @@ export default function ExerciseSheet({ exercise, onClose }) {
         <span className="flex items-center gap-1.5"><Timer size={13} className="text-brand-600" /> {exercise.rest}s descanso</span>
         <span className="rounded-full bg-card2 px-2 py-0.5 text-[11px]">{EQUIP[exercise.equipment] || exercise.equipment}</span>
       </div>
+
+      {/* Video corto de la ejecución (o el guardado en el ejercicio) */}
+      <a
+        href={exercise.video || `https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.name + ' técnica ejercicio')}`}
+        target="_blank" rel="noopener noreferrer"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 py-2.5 text-xs font-bold text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400"
+      >
+        <PlayCircle size={15} /> Ver video corto de la técnica
+      </a>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <button onClick={() => setView('info')}

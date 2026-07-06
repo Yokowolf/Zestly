@@ -27,6 +27,7 @@ const DEFAULTS = {
   theme: 'light',     // 'light' | 'dark' — claro es el predeterminado
   waterGoal: 8,       // vasos por día, configurable
   foodFreq: {},       // alimentos más usados: nombre → { count, item } (para Rápidos)
+  recipes: [],        // recetas guardadas por el usuario
 }
 
 function loadLocal() {

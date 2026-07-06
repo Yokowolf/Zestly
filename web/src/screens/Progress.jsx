@@ -7,9 +7,9 @@ import { EX_BY_ID, MUSCLES } from '../data/exercises'
 import { exName } from '../lib/train'
 import { round1 } from '../lib/calc'
 
-export default function Progress() {
+export default function Progress({ initialAction }) {
   const s = useStore()
-  const [anthroOpen, setAnthroOpen] = useState(false)
+  const [anthroOpen, setAnthroOpen] = useState(initialAction === 'anthro')
 
   const trainedDates = useMemo(() => new Set((s.workoutLogs || []).map(l => l.date)), [s.workoutLogs])
   const loggedDates = useMemo(() => new Set((s.log || []).map(l => l.date)), [s.log])
@@ -36,7 +36,7 @@ export default function Progress() {
   const weightData = (s.weightLog || []).slice(-8).map((w, i, arr) => ({ value: w.val, top: w.val, dim: i !== arr.length - 1, color: 'bg-accent-500' }))
 
   return (
-    <div className="px-4 pt-12">
+    <div className="px-4 pt-4">
       <h1 className="font-display text-[22px] font-bold tracking-tight">Mi Progreso</h1>
       <p className="text-[11px] text-ink3">Nutrición, entrenamiento y medidas</p>
 

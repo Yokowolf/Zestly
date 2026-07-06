@@ -11,12 +11,12 @@ import RoutineBuilder from './RoutineBuilder'
 import Workout from './Workout'
 import AiGen from './AiGen'
 
-export default function Train() {
+export default function Train({ initialAction }) {
   const s = useStore()
   const [builderDraft, setBuilderDraft] = useState(null)
   const [workoutOpen, setWorkoutOpen] = useState(!!s.activeWorkout)
   const [aiOpen, setAiOpen] = useState(false)
-  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerOpen, setPickerOpen] = useState(initialAction === 'start' && !useStore.getState().activeWorkout)
   const [level, setLevel] = useState('principiante')
   const routines = s.routines || []
   const todayIdx = todaysRoutineIndex(routines)
@@ -43,7 +43,7 @@ export default function Train() {
   }
 
   return (
-    <div className="px-4 pt-12">
+    <div className="px-4 pt-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-[22px] font-bold tracking-tight">Entrenamiento</h1>

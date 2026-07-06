@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Home, BarChart3, Dumbbell, Bot, User } from 'lucide-react'
+import {
+  Menu, X, Flame, UtensilsCrossed, Dumbbell, Play, BarChart3, Ruler,
+  Bot, User, LayoutGrid,
+} from 'lucide-react'
 import { useStore, rolloverIfNewDay } from './store'
 import { watchAuth } from './lib/firebase'
 import { Toasts } from './components/ui'
@@ -10,21 +13,47 @@ import Train from './screens/Train'
 import Progress from './screens/Progress'
 import Coach from './screens/Coach'
 import Profile from './screens/Profile'
+import Index from './screens/Index'
 
-const TABS = [
-  { id: 'home', label: 'Inicio', icon: Home },
-  { id: 'progress', label: 'Progreso', icon: BarChart3 },
-  { id: 'train', label: 'Entrena', icon: Dumbbell },
-  { id: 'coach', label: 'IA Coach', icon: Bot },
-  { id: 'profile', label: 'Perfil', icon: User },
+// Menú por categorías (drawer lateral)
+const MENU = [
+  { cat: 'Nutrición', items: [
+    { tab: 'home', label: 'Contador de calorías', icon: Flame },
+    { tab: 'coach', action: 'plan', label: 'Plan alimenticio IA', icon: UtensilsCrossed },
+  ]},
+  { cat: 'Entrenamiento', items: [
+    { tab: 'train', action: 'start', label: 'Entrenar hoy', icon: Play },
+    { tab: 'train', label: 'Mis rutinas', icon: Dumbbell },
+  ]},
+  { cat: 'Progreso', items: [
+    { tab: 'progress', label: 'Mi progreso', icon: BarChart3 },
+    { tab: 'progress', action: 'anthro', label: 'Medidas corporales', icon: Ruler },
+  ]},
+  { cat: 'General', items: [
+    { tab: 'coach', label: 'IA Coach', icon: Bot },
+    { tab: 'index', label: 'Índice de la app', icon: LayoutGrid },
+    { tab: 'profile', label: 'Perfil y ajustes', icon: User },
+  ]},
 ]
 
+const TITLES = {
+  home: 'Contador de calorías', train: 'Entrenamiento', progress: 'Mi progreso',
+  coach: 'IA Coach', profile: 'Perfil', index: 'Índice',
+}
+
 export default function App() {
-  const [tab, setTab] = useState('home')
+  // La app SIEMPRE abre en el contador de calorías
+  const [nav, setNav] = useState({ tab: 'home', action: null, ts: 0 })
+  const [drawer, setDrawer] = useState(false)
   const [booting, setBooting] = useState(true)
   const [screen, setScreen] = useState('app') // 'welcome' | 'onboarding' | 'app'
   const onboarded = useStore(s => s.onboarded)
   const theme = useStore(s => s.theme)
+
+  const go = target => {
+    setNav({ tab: target.tab, action: target.action || null, ts: Date.now() })
+    setDrawer(false)
+  }
 
   // Tema: claro predeterminado, .dark activa el modo oscuro
   useEffect(() => {
@@ -55,33 +84,80 @@ export default function App() {
   if (screen === 'welcome') return <><Toasts /><Welcome onStart={() => setScreen('onboarding')} /></>
   if (screen === 'onboarding') return <><Toasts /><Onboarding onDone={() => setScreen('app')} onBack={() => setScreen('welcome')} /></>
 
+  const { tab, action, ts } = nav
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
       <Toasts />
-      <SyncBadge />
-      <main className="flex-1 pb-24">
-        {tab === 'home' && <HomeScreen goTab={setTab} />}
-        {tab === 'progress' && <Progress />}
-        {tab === 'train' && <Train />}
-        {tab === 'coach' && <Coach />}
+
+      {/* Barra superior */}
+      <header className="sticky top-0 z-40 border-b border-line bg-bg2/95 backdrop-blur-lg">
+        <div className="mx-auto flex h-13 max-w-lg items-center gap-3 px-3 py-2.5">
+          <button onClick={() => setDrawer(true)} className="rounded-xl border border-line p-2 text-ink2" aria-label="Abrir menú">
+            <Menu size={19} />
+          </button>
+          <button onClick={() => go({ tab: 'home' })} className="flex items-center gap-2">
+            <Logo size={26} />
+            <span className="font-display text-[17px] font-bold tracking-tight">Ze<span className="text-brand-600">stly</span></span>
+          </button>
+          <span className="ml-auto pr-1 text-[11px] font-medium text-ink3">{TITLES[tab]}</span>
+          <SyncDot />
+        </div>
+      </header>
+
+      <main className="flex-1 pb-10">
+        {tab === 'home' && <HomeScreen goTab={t => go({ tab: t })} />}
+        {tab === 'index' && <Index go={go} />}
+        {tab === 'progress' && <Progress key={ts} initialAction={action} />}
+        {tab === 'train' && <Train key={ts} initialAction={action} />}
+        {tab === 'coach' && <Coach key={ts} initialAction={action} />}
         {tab === 'profile' && <Profile />}
       </main>
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg2/95 backdrop-blur-lg">
-        <div className="mx-auto flex max-w-lg pb-[env(safe-area-inset-bottom)]">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors ${
-                tab === id ? 'text-brand-600 dark:text-brand-400' : 'text-ink3'
-              }`}
-            >
-              <Icon size={21} strokeWidth={tab === id ? 2.4 : 1.8} />
-              {label}
-            </button>
-          ))}
+
+      {/* Drawer de navegación por categorías */}
+      {drawer && (
+        <div className="fixed inset-0 z-50 bg-black/45 backdrop-blur-sm" onClick={e => { if (e.target === e.currentTarget) setDrawer(false) }}>
+          <aside className="flex h-full w-72 flex-col overflow-y-auto border-r border-line bg-bg2 shadow-2xl" style={{ animation: 'drawerIn .22s ease' }}>
+            <div className="flex items-center justify-between border-b border-line px-4 py-3.5">
+              <div className="flex items-center gap-2">
+                <Logo size={28} />
+                <div>
+                  <div className="font-display text-[15px] font-bold leading-tight">Ze<span className="text-brand-600">stly</span></div>
+                  <div className="text-[9px] uppercase tracking-widest text-ink3">Nutrición y Fitness</div>
+                </div>
+              </div>
+              <button onClick={() => setDrawer(false)} className="rounded-full border border-line p-1.5 text-ink3" aria-label="Cerrar menú">
+                <X size={15} />
+              </button>
+            </div>
+            <nav className="flex-1 px-3 py-2">
+              {MENU.map(group => (
+                <div key={group.cat} className="mb-1">
+                  <div className="px-2 pb-1 pt-3 text-[10px] font-bold uppercase tracking-wider text-ink3">{group.cat}</div>
+                  {group.items.map(item => {
+                    const active = tab === item.tab && !item.action
+                    return (
+                      <button
+                        key={item.label}
+                        onClick={() => go(item)}
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] font-medium ${
+                          active ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'text-ink2'
+                        }`}
+                      >
+                        <item.icon size={17} className={active ? 'text-brand-600' : 'text-ink3'} />
+                        {item.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              ))}
+            </nav>
+            <div className="border-t border-line px-4 py-3 text-[10px] text-ink3">
+              Disciplina · Resiliencia · Compromiso
+            </div>
+          </aside>
         </div>
-      </nav>
+      )}
     </div>
   )
 }
@@ -131,7 +207,7 @@ export function Logo({ size = 80 }) {
   )
 }
 
-function SyncBadge() {
+function SyncDot() {
   const syncedAt = useStore(s => s.syncedAt)
   const [show, setShow] = useState(false)
   useEffect(() => {
@@ -141,10 +217,5 @@ function SyncBadge() {
     return () => clearTimeout(t)
   }, [syncedAt])
   if (!show) return null
-  return (
-    <div className="fixed right-3 top-3 z-50 flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-600 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-400">
-      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-      Sincronizado
-    </div>
-  )
+  return <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" title="Sincronizado" />
 }

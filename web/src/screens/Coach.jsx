@@ -13,12 +13,12 @@ const CHIPS = [
   '¿Cómo romper el estancamiento?',
 ]
 
-export default function Coach() {
+export default function Coach({ initialAction }) {
   const s = useStore()
   const [msgs, setMsgs] = useState([{ role: 'bot', text: 'Hola, soy tu coach de nutrición y entrenamiento. Puedo analizar tus comidas, revisar tus sesiones y crear tu plan semanal. ¿En qué te ayudo?' }])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
-  const [planOpen, setPlanOpen] = useState(false)
+  const [planOpen, setPlanOpen] = useState(initialAction === 'plan')
   const chatRef = useRef()
 
   const send = async text => {
@@ -56,7 +56,7 @@ export default function Coach() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-80px)] flex-col px-4 pt-12">
+    <div className="flex h-[calc(100dvh-64px)] flex-col px-4 pt-4">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-600 to-brand-500 text-white">
           <Bot size={20} />

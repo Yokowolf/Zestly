@@ -35,7 +35,7 @@ export default function Home({ goTab }) {
   }))
 
   return (
-    <div className="px-4 pt-12">
+    <div className="px-4 pt-4">
       <p className="text-xs text-ink2">{greet}</p>
       <h1 className="font-display text-[22px] font-bold tracking-tight">{name || 'Mi Dashboard'}</h1>
       <p className="text-[11px] capitalize text-ink3">

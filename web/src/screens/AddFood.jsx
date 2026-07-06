@@ -1,5 +1,17 @@
 import { useMemo, useRef, useState } from 'react'
-import { Search, Camera, PenLine, Zap, ChevronDown, Sparkles, Trash2 } from 'lucide-react'
+import {
+  Search, Camera, PenLine, Zap, ChevronDown, Sparkles, Trash2,
+  MapPin, Beef, Milk, Wheat, Carrot, Apple, Droplets, CupSoda, Soup, Leaf, Ham, Pill, Utensils,
+} from 'lucide-react'
+
+// Ícono por categoría de alimentos (sin emojis)
+const CAT_ICONS = {
+  'Colombianos': MapPin, 'Proteínas animales': Beef, 'Lácteos': Milk,
+  'Cereales y granos': Wheat, 'Verduras': Carrot, 'Frutas': Apple,
+  'Grasas y aceites': Droplets, 'Bebidas': CupSoda, 'Aceites y grasas': Droplets,
+  'Condimentos y salsas': Soup, 'Especias y saborizantes': Leaf,
+  'Embutidos y procesados': Ham, 'Suplementos': Pill,
+}
 import { Sheet, Input, Button, Chip } from '../components/ui'
 import { useStore } from '../store'
 import { FOOD_CATS, FOODS, QUICK } from '../data/foods'
@@ -86,16 +98,19 @@ function SearchTab({ meal, onDone }) {
 
       {!q && !sel && (
         <div className="flex flex-col gap-2">
-          {Object.entries(FOOD_CATS).map(([cat, foods]) => (
+          {Object.entries(FOOD_CATS).map(([cat, foods]) => {
+            const CatIcon = CAT_ICONS[cat] || Utensils
+            return (
             <details key={cat} className="card overflow-hidden">
               <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold text-ink2">
-                {cat} <span className="flex items-center gap-1 font-normal text-ink3">{foods.length} <ChevronDown size={13} /></span>
+                <span className="flex items-center gap-2.5"><CatIcon size={15} className="text-brand-600" /> {cat}</span>
+                <span className="flex items-center gap-1 font-normal text-ink3">{foods.length} <ChevronDown size={13} /></span>
               </summary>
               <div className="flex flex-col gap-1.5 px-3 pb-3">
                 {foods.map((f, i) => <FoodRow key={i} f={f} onClick={() => setSel(f)} />)}
               </div>
             </details>
-          ))}
+          )})}
         </div>
       )}
     </div>

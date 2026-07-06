@@ -47,7 +47,9 @@ export async function cloudSave() {
       setDoc(doc(db, 'users', s.user.uid, 'd', 'profile'), {
         profile: d.profile, nutrition: d.nutrition, streak: d.streak,
         weightLog: d.weightLog, log: d.log,
-        geminiKey: localStorage.getItem('zs_gkey') || '',
+        // Solo se escribe si este dispositivo tiene clave — un dispositivo
+        // nuevo sin configurar NUNCA borra la clave guardada en la nube
+        ...(localStorage.getItem('zs_gkey') ? { geminiKey: localStorage.getItem('zs_gkey') } : {}),
         fastingActive: d.fastingActive, fastingStart: d.fastingStart,
         theme: d.theme, waterGoal: d.waterGoal,
         ts: Date.now(),
@@ -91,9 +93,8 @@ export async function cloudLoad(uid) {
         theme: d.theme || st.theme || 'light',
         waterGoal: d.waterGoal || st.waterGoal || 8,
       })
-      if (d.geminiKey && !localStorage.getItem('zs_gkey')) {
-        localStorage.setItem('zs_gkey', d.geminiKey)
-      }
+      // La clave de la nube llega sola a cualquier dispositivo nuevo
+      if (d.geminiKey) localStorage.setItem('zs_gkey', d.geminiKey)
     }
 
     if (fS.exists()) {

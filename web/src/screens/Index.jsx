@@ -1,4 +1,4 @@
-import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, User, ChevronRight, Sparkles, Cloud, WifiOff, Film, Target, Eye } from 'lucide-react'
+import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, User, Sparkles, Cloud, WifiOff, Film, Target, Eye } from 'lucide-react'
 import { Logo } from '../App'
 import { useStore } from '../store'
 
@@ -72,30 +72,29 @@ export default function Index({ go }) {
         </p>
       </div>
 
-      {/* Tarjetas de categorías */}
+      {/* Tarjetas de categorías — cuadros */}
       <h2 className="mb-2.5 text-[11px] font-bold uppercase tracking-wider text-ink3">¿Qué quieres hacer hoy?</h2>
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
         {CARDS.map(({ icon: Icon, title, desc, img, grad, target }) => (
           <button
             key={title}
             onClick={() => go(target)}
-            className={`relative h-28 overflow-hidden rounded-2xl bg-gradient-to-br ${grad} text-left text-white shadow-md active:scale-[0.99]`}
+            className={`relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br ${grad} text-left text-white shadow-md active:scale-[0.98]`}
           >
             <img
               src={img} alt="" loading="lazy"
               className="absolute inset-0 h-full w-full object-cover opacity-60"
               onError={e => { e.currentTarget.style.display = 'none' }}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
-            <div className="relative flex h-full items-center gap-3.5 px-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                <Icon size={22} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-black/10" />
+            <div className="relative flex h-full flex-col justify-between p-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                <Icon size={18} />
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[16px] font-bold drop-shadow">{title}</div>
-                <div className="mt-0.5 text-[11px] leading-snug text-white/85 drop-shadow">{desc}</div>
+              <div>
+                <div className="text-[14px] font-bold leading-tight drop-shadow">{title}</div>
+                <div className="mt-1 line-clamp-2 text-[10px] leading-snug text-white/85 drop-shadow">{desc}</div>
               </div>
-              <ChevronRight size={18} className="shrink-0 text-white/80" />
             </div>
           </button>
         ))}
@@ -103,7 +102,7 @@ export default function Index({ go }) {
 
       {/* Funcionalidades */}
       <h2 className="mb-2.5 mt-6 text-[11px] font-bold uppercase tracking-wider text-ink3">¿Por qué Zestly?</h2>
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
         {FEATURES.map(([Icon, t, d]) => (
           <div key={t} className="card p-3.5">
             <Icon size={17} className="mb-1.5 text-brand-600" />
@@ -114,7 +113,7 @@ export default function Index({ go }) {
       </div>
 
       {/* Misión y visión */}
-      <div className="mt-6 flex flex-col gap-2.5">
+      <div className="mt-6 flex flex-col gap-2.5 md:grid md:grid-cols-2">
         <div className="card border-brand-200 bg-brand-50/50 p-4 dark:border-brand-800 dark:bg-brand-900/20">
           <div className="mb-1 flex items-center gap-2 text-[12px] font-bold text-brand-700 dark:text-brand-300">
             <Target size={15} /> Misión

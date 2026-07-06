@@ -38,7 +38,7 @@ export default function Profile() {
   const badges = getBadges(s)
 
   return (
-    <div className="px-4 pt-4">
+    <div className="mx-auto w-full max-w-xl px-4 pt-4">
       {/* Hero */}
       <div className="flex flex-col items-center text-center">
         <div className="flex h-18 w-18 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-accent-600 font-display text-2xl font-bold text-white" style={{ width: 72, height: 72 }}>

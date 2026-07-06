@@ -1,7 +1,7 @@
 // ══ BASE DE DATOS DE ALIMENTOS — 120+ items con colombianos priorizados ══
 // Valores por 100g (o 100ml para líquidos) salvo indicación en 'unit'
 export const FOOD_CATS = {
-  '🇨🇴 Colombianos': [
+  'Colombianos': [
     {name:'Arepa de maíz blanco',kcal:178,prot:4,carb:36,fat:1.5,unit:'100g'},
     {name:'Arepa de maíz amarillo',kcal:168,prot:3.5,carb:34,fat:1.2,unit:'100g'},
     {name:'Arepa boyacense (con queso)',kcal:265,prot:8,carb:38,fat:9,unit:'100g'},
@@ -44,7 +44,7 @@ export const FOOD_CATS = {
     {name:'Feijoa',kcal:55,prot:0.7,carb:14,fat:0.4,unit:'100g'},
     {name:'Piña',kcal:50,prot:0.5,carb:13,fat:0.1,unit:'100g'},
   ],
-  '🍗 Proteínas animales': [
+  'Proteínas animales': [
     {name:'Pechuga de pollo',kcal:165,prot:31,carb:0,fat:3.6,unit:'100g'},
     {name:'Pechuga de pollo a la plancha',kcal:155,prot:31,carb:0,fat:2.8,unit:'100g'},
     {name:'Muslo de pollo (sin piel)',kcal:177,prot:25,carb:0,fat:8,unit:'100g'},
@@ -66,7 +66,7 @@ export const FOOD_CATS = {
     {name:'Camarones cocidos',kcal:99,prot:24,carb:0,fat:0.3,unit:'100g'},
     {name:'Proteína whey (en polvo)',kcal:400,prot:80,carb:8,fat:6,unit:'100g'},
   ],
-  '🥛 Lácteos': [
+  'Lácteos': [
     {name:'Leche entera',kcal:61,prot:3.2,carb:4.8,fat:3.3,unit:'100ml'},
     {name:'Leche descremada',kcal:35,prot:3.4,carb:4.9,fat:0.1,unit:'100ml'},
     {name:'Leche deslactosada',kcal:58,prot:3.1,carb:4.5,fat:3.1,unit:'100ml'},
@@ -75,7 +75,7 @@ export const FOOD_CATS = {
     {name:'Kumis',kcal:65,prot:3.5,carb:7,fat:2.5,unit:'100ml'},
     {name:'Mantequilla',kcal:717,prot:0.9,carb:0.1,fat:81,unit:'100g'},
   ],
-  '🌾 Cereales y granos': [
+  'Cereales y granos': [
     {name:'Arroz blanco cocido',kcal:130,prot:2.7,carb:28,fat:0.3,unit:'100g'},
     {name:'Arroz integral cocido',kcal:111,prot:2.6,carb:23,fat:0.9,unit:'100g'},
     {name:'Avena en hojuelas',kcal:389,prot:17,carb:66,fat:7,unit:'100g'},
@@ -88,7 +88,7 @@ export const FOOD_CATS = {
     {name:'Granola',kcal:450,prot:10,carb:64,fat:18,unit:'100g'},
     {name:'Galleta de arroz',kcal:387,prot:8,carb:81,fat:3,unit:'100g'},
   ],
-  '🥦 Verduras': [
+  'Verduras': [
     {name:'Brócoli',kcal:34,prot:2.8,carb:7,fat:0.4,unit:'100g'},
     {name:'Espinaca',kcal:23,prot:2.9,carb:3.6,fat:0.4,unit:'100g'},
     {name:'Lechuga',kcal:15,prot:1.4,carb:2.9,fat:0.2,unit:'100g'},
@@ -106,7 +106,7 @@ export const FOOD_CATS = {
     {name:'Berenjena',kcal:25,prot:1,carb:6,fat:0.2,unit:'100g'},
     {name:'Zucchini / calabacín',kcal:17,prot:1.2,carb:3.1,fat:0.3,unit:'100g'},
   ],
-  '🍎 Frutas': [
+  'Frutas': [
     {name:'Banano / plátano',kcal:89,prot:1.1,carb:23,fat:0.3,unit:'100g'},
     {name:'Naranja',kcal:47,prot:0.9,carb:12,fat:0.1,unit:'100g'},
     {name:'Manzana',kcal:52,prot:0.3,carb:14,fat:0.2,unit:'100g'},
@@ -123,7 +123,7 @@ export const FOOD_CATS = {
     {name:'Curuba',kcal:38,prot:0.7,carb:9,fat:0.1,unit:'100g'},
     {name:'Uva espina / uchuva',kcal:53,prot:1.9,carb:11,fat:0.7,unit:'100g'},
   ],
-  '🫒 Grasas y aceites': [
+  'Grasas y aceites': [
     {name:'Aceite de oliva',kcal:884,prot:0,carb:0,fat:100,unit:'100ml'},
     {name:'Aceite vegetal / girasol',kcal:884,prot:0,carb:0,fat:100,unit:'100ml'},
     {name:'Almendras',kcal:579,prot:21,carb:22,fat:50,unit:'100g'},
@@ -132,7 +132,7 @@ export const FOOD_CATS = {
     {name:'Semillas de chía',kcal:486,prot:17,carb:42,fat:31,unit:'100g'},
     {name:'Crema de maní',kcal:588,prot:25,carb:20,fat:50,unit:'100g'},
   ],
-  '🥤 Bebidas': [
+  'Bebidas': [
     {name:'Leche entera',kcal:61,prot:3.2,carb:4.8,fat:3.3,unit:'100ml'},
     {name:'Leche descremada',kcal:35,prot:3.4,carb:4.9,fat:0.1,unit:'100ml'},
     {name:'Leche de almendra',kcal:17,prot:0.6,carb:0.6,fat:1.5,unit:'100ml'},
@@ -155,7 +155,7 @@ export const FOOD_CATS = {
     {name:'Kumis',kcal:65,prot:3.5,carb:7,fat:2.5,unit:'100ml'},
   ],
 
-  '🫒 Aceites y grasas': [
+  'Aceites y grasas': [
     {name:'Aceite de oliva',kcal:884,prot:0,carb:0,fat:100,unit:'100ml'},
     {name:'Aceite vegetal / girasol',kcal:884,prot:0,carb:0,fat:100,unit:'100ml'},
     {name:'Aceite de coco',kcal:862,prot:0,carb:0,fat:100,unit:'100ml'},
@@ -177,7 +177,7 @@ export const FOOD_CATS = {
     {name:'Coco rallado',kcal:354,prot:3.3,carb:15,fat:33,unit:'100g'},
   ],
 
-  '🧂 Condimentos y salsas': [
+  'Condimentos y salsas': [
     {name:'Hogao (sofrito colombiano)',kcal:80,prot:1.5,carb:8,fat:4.5,unit:'100g'},
     {name:'Guacamole',kcal:160,prot:2,carb:9,fat:14,unit:'100g'},
     {name:'Ketchup / salsa de tomate',kcal:112,prot:1.3,carb:27,fat:0.1,unit:'100g'},
@@ -195,7 +195,7 @@ export const FOOD_CATS = {
     {name:'Sal comun',kcal:0,prot:0,carb:0,fat:0,unit:'100g'},
   ],
 
-  '🌿 Especias y saborizantes': [
+  'Especias y saborizantes': [
     {name:'Ajo fresco',kcal:149,prot:6.4,carb:33,fat:0.5,unit:'100g'},
     {name:'Jengibre fresco',kcal:80,prot:1.8,carb:18,fat:0.8,unit:'100g'},
     {name:'Canela en polvo',kcal:247,prot:4,carb:81,fat:1.2,unit:'100g'},
@@ -208,7 +208,7 @@ export const FOOD_CATS = {
     {name:'Caldo de pollo en cubo',kcal:250,prot:12,carb:38,fat:6,unit:'100g'},
   ],
 
-  '🥩 Embutidos y procesados': [
+  'Embutidos y procesados': [
     {name:'Jamon de cerdo',kcal:145,prot:19,carb:2,fat:7,unit:'100g'},
     {name:'Salchichon',kcal:300,prot:15,carb:3,fat:26,unit:'100g'},
     {name:'Salchicha de res',kcal:290,prot:12,carb:4,fat:26,unit:'100g'},
@@ -224,7 +224,7 @@ export const FOOD_CATS = {
     {name:'Chocolate con leche',kcal:535,prot:7.7,carb:60,fat:30,unit:'100g'},
   ],
 
-  '💊 Suplementos': [
+  'Suplementos': [
     {name:'Proteina whey concentrada',kcal:400,prot:80,carb:8,fat:6,unit:'100g'},
     {name:'Proteina whey isolada',kcal:370,prot:90,carb:2,fat:1,unit:'100g'},
     {name:'Caseina en polvo',kcal:380,prot:82,carb:8,fat:3,unit:'100g'},

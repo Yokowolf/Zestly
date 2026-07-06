@@ -42,6 +42,8 @@ export default function Home({ goTab }) {
         {new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
       </p>
 
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-4">
+      <div>
       {/* Anillo calórico + macros al lado */}
       <div className="card mt-4 flex items-center gap-4 p-4">
         <Ring pct={pct} size={148} stroke={12}>
@@ -71,6 +73,8 @@ export default function Home({ goTab }) {
         <FastingCard />
       </div>
 
+      </div>
+      <div>
       <SectionTitle>Comidas de hoy</SectionTitle>
       <div className="flex flex-col gap-2.5">
         {MEALS.map(({ key, name: mName, icon: Icon }) => {
@@ -112,6 +116,9 @@ export default function Home({ goTab }) {
             </div>
           )
         })}
+      </div>
+
+      </div>
       </div>
 
       <AddFood meal={foodMeal} onClose={() => setFoodMeal(null)} />

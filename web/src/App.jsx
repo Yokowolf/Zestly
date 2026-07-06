@@ -59,12 +59,12 @@ export default function App() {
   const { tab, action, ts } = nav
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
+    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col md:max-w-5xl">
       <Toasts />
 
       {/* Barra superior: en secciones muestra volver al menú */}
       <header className="sticky top-0 z-40 border-b border-line bg-bg2/95 backdrop-blur-lg">
-        <div className="mx-auto flex max-w-lg items-center gap-3 px-3 py-2.5">
+        <div className="mx-auto flex w-full max-w-lg items-center gap-3 px-3 py-2.5 md:max-w-5xl">
           {tab !== 'index' ? (
             <button onClick={() => go({ tab: 'index' })} className="flex items-center gap-1.5 rounded-xl border border-line py-2 pl-2 pr-3 text-[12px] font-semibold text-ink2" aria-label="Volver al menú">
               <ArrowLeft size={16} /> Menú

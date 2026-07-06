@@ -48,7 +48,7 @@ export function Sheet({ open, onClose, title, subtitle, children, locked = false
       className="fixed inset-0 z-50 flex flex-col justify-end bg-black/45 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget && !locked) onClose?.() }}
     >
-      <div className="max-h-[92dvh] overflow-y-auto rounded-t-3xl border-t border-line bg-bg2 p-5 pb-10 fade-up">
+      <div className="mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl border-t border-line bg-bg2 p-5 pb-10 fade-up md:border-x">
         <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-line" />
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>

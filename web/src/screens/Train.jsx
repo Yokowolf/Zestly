@@ -104,7 +104,7 @@ export default function Train({ initialAction }) {
       }>Mis rutinas</SectionTitle>
 
       {routines.length === 0 && <Empty icon={LibraryBig}>Aún no tienes rutinas.<br />Crea una, usa la IA o parte de una plantilla.</Empty>}
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-2.5 md:grid md:grid-cols-2">
         {routines.map((r, i) => (
           <div key={i} className="card p-4">
             <div className="flex items-center justify-between gap-3">
@@ -155,7 +155,7 @@ export default function Train({ initialAction }) {
 
       <SectionTitle>Historial reciente</SectionTitle>
       {(s.workoutLogs || []).length === 0 && <Empty icon={Dumbbell}>Tus sesiones aparecerán aquí</Empty>}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 md:grid md:grid-cols-2">
         {(s.workoutLogs || []).slice(-6).reverse().map((l, i) => {
           const prs = l.exercises.filter(e => e.pr).length
           return (

@@ -49,9 +49,11 @@ export default function Progress({ initialAction }) {
       </div>
 
       {/* Calendario del mes */}
+      <div className="md:grid md:grid-cols-2 md:items-start md:gap-4">
       <div className="card mt-3 p-4">
         <MonthCalendar trainedDates={trainedDates} loggedDates={loggedDates} />
       </div>
+      <div>
 
       <SectionTitle>Nutrición</SectionTitle>
       <div className="card p-4">
@@ -64,8 +66,10 @@ export default function Progress({ initialAction }) {
           <p className="py-3 text-center text-xs text-ink3">Registra tu peso en Antropometría para ver la gráfica</p>}
       </div>
 
+      </div>
+      </div>
       <SectionTitle>Entrenamiento</SectionTitle>
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
         <Stat icon={Dumbbell} color="text-brand-600" label="Sesiones — 7 días" value={week.length} />
         <Stat icon={Flame} color="text-emerald-600" label="Volumen — 7 días" value={`${volWeek ? fromKg(volWeek) : 0} ${unitLbl()}`} />
       </div>

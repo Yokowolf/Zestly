@@ -49,14 +49,14 @@ export default function Coach({ initialAction }) {
       const reply = await callAI(system, msg)
       setMsgs(m => [...m, { role: 'bot', text: reply }])
     } catch (e) {
-      setMsgs(m => [...m, { role: 'bot', text: `⚠ ${e.message}` }])
+      setMsgs(m => [...m, { role: 'bot', text: e.message }])
     }
     setBusy(false)
     setTimeout(() => chatRef.current?.scrollTo(0, 1e6), 50)
   }
 
   return (
-    <div className="flex h-[calc(100dvh-64px)] flex-col px-4 pt-4">
+    <div className="mx-auto flex h-[calc(100dvh-64px)] w-full max-w-2xl flex-col px-4 pt-4">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-600 to-brand-500 text-white">
           <Bot size={20} />

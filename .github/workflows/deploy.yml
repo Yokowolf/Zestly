@@ -40,5 +40,17 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Pages a veces responde "Deployment failed, try again later" (error
+      # transitorio del servicio) — se reintenta hasta 2 veces antes de fallar
       - id: deployment
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - id: retry1
+        if: steps.deployment.outcome == 'failure'
+        name: Reintento 1 (fallo transitorio de Pages)
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+      - id: retry2
+        if: steps.deployment.outcome == 'failure' && steps.retry1.outcome == 'failure'
+        name: Reintento 2 (fallo transitorio de Pages)
         uses: actions/deploy-pages@v4

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, User, Sparkles, Cloud, WifiOff, Film, Target, Eye, GlassWater, Play, LogIn, Quote, Camera, Trash2 } from 'lucide-react'
+import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, Sparkles, Cloud, WifiOff, Film, Target, Eye, GlassWater, Play, LogIn, Quote, Camera, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
 import { Ring } from '../components/charts'
 import { todaysRoutineIndex } from '../lib/train'
@@ -43,11 +43,6 @@ const CARDS = [
     icon: Bot, title: 'IA Coach', target: { tab: 'coach' },
     desc: 'Chat que conoce tus comidas y entrenos',
     img: U('1485827404703-89b55fcc595e'), grad: 'from-indigo-700 to-blue-600',
-  },
-  {
-    icon: User, title: 'Perfil y ajustes', target: { tab: 'profile' },
-    desc: 'Metas, modo oscuro, logros y respaldos',
-    img: U('1507003211169-0a1dd7228f2d'), grad: 'from-slate-700 to-slate-600',
   },
 ]
 

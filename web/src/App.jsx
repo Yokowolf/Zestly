@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Settings } from 'lucide-react'
 import { useStore, rolloverIfNewDay } from './store'
 import { watchAuth } from './lib/firebase'
 import { Toasts } from './components/ui'
@@ -75,8 +75,15 @@ export default function App() {
               <span className="font-display text-[16px] font-bold tracking-tight">Ze<span className="text-brand-600">stly</span></span>
             </span>
           )}
-          <span className="ml-auto pr-1 text-[11px] font-medium text-ink3">{TITLES[tab]}</span>
+          <span className="ml-auto text-[11px] font-medium text-ink3">{TITLES[tab]}</span>
           <SyncDot />
+          <button
+            onClick={() => go({ tab: 'profile' })}
+            className={`rounded-xl border p-2 transition-colors ${tab === 'profile' ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/30' : 'border-line text-ink2'}`}
+            aria-label="Perfil y configuración"
+          >
+            <Settings size={18} />
+          </button>
         </div>
       </header>
 

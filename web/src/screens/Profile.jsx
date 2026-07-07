@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Moon, Sun, GlassWater, KeyRound, Download, FileSpreadsheet, LogOut, LogIn,
-  Pencil, Trash2,
+  Pencil, Trash2, Scale, Timer, Upload, Info,
 } from 'lucide-react'
 import { getBadges } from '../lib/badges'
 import { ChevronDown } from 'lucide-react'
@@ -85,6 +85,22 @@ export default function Profile() {
             <button className="h-7 w-7 rounded-full bg-brand-600 text-white" onClick={() => s.patch({ waterGoal: Math.min(20, (s.waterGoal || 8) + 1) })}>+</button>
           </div>
         </Row>
+        <Row icon={Scale} label="Unidad de peso">
+          <div className="flex overflow-hidden rounded-lg border border-line text-[11px] font-bold">
+            <button onClick={() => s.patch({ unit: 'kg' })} className={`px-2.5 py-1.5 ${s.unit !== 'lb' ? 'bg-brand-600 text-white' : 'text-ink3'}`}>KG</button>
+            <button onClick={() => s.patch({ unit: 'lb' })} className={`px-2.5 py-1.5 ${s.unit === 'lb' ? 'bg-brand-600 text-white' : 'text-ink3'}`}>LB</button>
+          </div>
+        </Row>
+        <Row icon={Timer} label="Protocolo de ayuno">
+          <div className="flex gap-1.5">
+            {[16, 18, 20].map(h => (
+              <button key={h} onClick={() => s.patch({ fastingHours: h })}
+                className={`rounded-lg border px-2 py-1.5 text-[10px] font-bold ${
+                  (s.fastingHours || 16) === h ? 'border-accent-500 bg-accent-500/10 text-accent-600' : 'border-line text-ink3'
+                }`}>{h}:{24 - h}</button>
+            ))}
+          </div>
+        </Row>
         <Row icon={KeyRound} label="Clave IA (Groq)" onClick={() => setKeyOpen(true)}>
           <span className={`text-xs font-semibold ${getKey() ? 'text-emerald-600' : 'text-orange-500'}`}>
             {getKey() ? 'Activa' : 'Sin configurar'}
@@ -126,6 +142,10 @@ export default function Profile() {
         <Row icon={Download} label="Exportar datos (JSON)" onClick={() => exportJSON(s)} />
         <Row icon={FileSpreadsheet} label="Exportar entrenos (CSV)" onClick={() => exportCSV(s)} />
         <Row icon={FileSpreadsheet} label="Exportar nutrición (CSV)" onClick={() => exportNutritionCSV(s)} />
+        <ImportRow />
+        <Row icon={Info} label="Versión">
+          <span className="text-xs text-ink3">Zestly 2.0 · React</span>
+        </Row>
         {s.user && <Row icon={LogOut} label="Cerrar sesión" onClick={() => logOut().then(() => s.toast('Sesión cerrada'))} />}
       </div>
       </Section>
@@ -141,6 +161,36 @@ export default function Profile() {
       <EditProfileSheet open={editOpen} onClose={() => setEditOpen(false)} />
       <KeySheet open={keyOpen} onClose={() => setKeyOpen(false)} />
     </div>
+  )
+}
+
+// Importar un respaldo JSON exportado desde la app
+function ImportRow() {
+  const s = useStore()
+  const onFile = e => {
+    const file = e.target.files[0]; if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result)
+        if (!data.profile || !data.nutrition) throw new Error()
+        if (!confirm('¿Restaurar este respaldo? Reemplazará tus datos actuales.')) return
+        const { user, syncedAt, toasts, ...clean } = data
+        s.patch(clean)
+        s.toast('Respaldo restaurado', 'ok')
+      } catch {
+        s.toast('El archivo no es un respaldo válido de Zestly', 'err')
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
+  }
+  return (
+    <label className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left">
+      <Upload size={17} className="shrink-0 text-ink2" />
+      <span className="flex-1 text-[13px] font-medium">Importar respaldo (JSON)</span>
+      <input type="file" accept="application/json,.json" className="hidden" onChange={onFile} />
+    </label>
   )
 }
 

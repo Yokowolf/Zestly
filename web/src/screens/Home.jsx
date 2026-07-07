@@ -257,13 +257,13 @@ function FastingCard() {
   return (
     <div className="card p-3.5">
       <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-ink2"><Timer size={14} className="text-accent-500" /> Ayuno 16:8</span>
+        <span className="flex items-center gap-1.5 text-xs font-semibold text-ink2"><Timer size={14} className="text-accent-500" /> Ayuno {s.fastingHours || 16}:{24 - (s.fastingHours || 16)}</span>
         {active && <Flame size={13} className="text-orange-500" />}
       </div>
       {active ? (
         <>
           <div className="font-display text-xl font-bold text-brand-600">{h}h {String(m).padStart(2, '0')}m</div>
-          <Bar pct={(elapsed / (16 * 3600000)) * 100} className="bg-accent-500" />
+          <Bar pct={(elapsed / ((s.fastingHours || 16) * 3600000)) * 100} className="bg-accent-500" />
         </>
       ) : (
         <div className="text-[11px] leading-relaxed text-ink3">Activa el temporizador de ayuno intermitente</div>

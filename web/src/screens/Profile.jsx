@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
   Moon, Sun, GlassWater, KeyRound, Download, FileSpreadsheet, LogOut, LogIn,
-  Trophy, Flame, Dumbbell, CalendarCheck, Ruler, ClipboardList, Sprout, Zap, Medal,
   Pencil, Trash2,
 } from 'lucide-react'
+import { getBadges } from '../lib/badges'
 import { ChevronDown } from 'lucide-react'
 import { useStore, serializable } from '../store'
 import { signIn, logOut } from '../lib/firebase'
@@ -153,21 +153,6 @@ function Row({ icon: Icon, label, children, onClick }) {
       {children}
     </Tag>
   )
-}
-
-function getBadges(s) {
-  const wl = s.workoutLogs || []
-  return [
-    { icon: Sprout, label: 'Primer día', on: (s.log || []).length >= 1 || s.today.kcal > 0 },
-    { icon: Flame, label: 'Racha 7 días', on: s.streak >= 7 },
-    { icon: CalendarCheck, label: '30 días registro', on: (s.log || []).length >= 30 },
-    { icon: Dumbbell, label: 'Primer entreno', on: wl.length >= 1 },
-    { icon: Medal, label: '10 entrenos', on: wl.length >= 10 },
-    { icon: Zap, label: '25 entrenos', on: wl.length >= 25 },
-    { icon: Trophy, label: 'Primer PR', on: wl.some(l => l.exercises.some(e => e.pr)) },
-    { icon: ClipboardList, label: 'Primera rutina', on: (s.routines || []).length >= 1 },
-    { icon: Ruler, label: 'Medidas al día', on: (s.anthro || []).length >= 1 },
-  ]
 }
 
 function exportJSON(s) {

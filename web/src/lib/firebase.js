@@ -53,6 +53,8 @@ export async function cloudSave() {
         fastingActive: d.fastingActive, fastingStart: d.fastingStart,
         theme: d.theme, waterGoal: d.waterGoal, foodFreq: d.foodFreq || {},
         recipes: d.recipes || [],
+        badgeUnlocks: d.badgeUnlocks || {},
+        progressPhoto: d.progressPhoto ?? null,
         ts: Date.now(),
       }, { merge: true }),
       setDoc(doc(db, 'users', s.user.uid, 'd', 'today'), {
@@ -95,6 +97,8 @@ export async function cloudLoad(uid) {
         waterGoal: d.waterGoal || st.waterGoal || 8,
         foodFreq: d.foodFreq || st.foodFreq || {},
         recipes: d.recipes || st.recipes || [],
+        badgeUnlocks: d.badgeUnlocks || st.badgeUnlocks || {},
+        progressPhoto: d.progressPhoto ?? st.progressPhoto ?? null,
       })
       // La clave de la nube llega sola a cualquier dispositivo nuevo
       if (d.geminiKey) localStorage.setItem('zs_gkey', d.geminiKey)

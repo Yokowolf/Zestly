@@ -28,6 +28,9 @@ const DEFAULTS = {
   waterGoal: 8,       // vasos por día, configurable
   foodFreq: {},       // alimentos más usados: nombre → { count, item } (para Rápidos)
   recipes: [],        // recetas guardadas por el usuario
+  badgeUnlocks: {},   // logro → timestamp de desbloqueo (para destacarlo)
+  aiTip: null,        // recomendación del día cacheada { date, text, source }
+  progressPhoto: null // foto de progreso { ts, data (jpeg base64 pequeño) }
 }
 
 function loadLocal() {

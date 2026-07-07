@@ -1,6 +1,7 @@
-import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, User, Sparkles, Cloud, WifiOff, Film, Target, Eye } from 'lucide-react'
-import { Logo } from '../App'
+import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, User, Sparkles, Cloud, WifiOff, Film, Target, Eye, GlassWater, Play, LogIn } from 'lucide-react'
 import { useStore } from '../store'
+import { Ring } from '../components/charts'
+import { todaysRoutineIndex } from '../lib/train'
 
 // ── Inicio: menú interactivo + presentación de la app ────
 // Tarjetas de categoría con foto (estilo referencia) y bloques
@@ -54,31 +55,42 @@ const FEATURES = [
 ]
 
 export default function Index({ go }) {
-  const name = useStore(s => s.profile.name || s.user?.displayName?.split(' ')[0] || '')
-  const user = useStore(s => s.user)
-  const hour = new Date().getHours()
-  const greet = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
+  const s = useStore()
+  const user = s.user
+  const rem = Math.max(0, s.nutrition.kcal - s.today.kcal)
+  const pct = Math.min(1, s.today.kcal / s.nutrition.kcal)
+  const todayIdx = todaysRoutineIndex(s.routines)
+  const routineName = todayIdx >= 0 ? s.routines[todayIdx].name : null
+  const trainedToday = (s.workoutLogs || []).some(l => l.date === new Date().toDateString())
 
   return (
     <div className="px-4 pt-4">
-      {/* Hero compacto */}
-      <div className="mb-4 flex items-center gap-3">
-        <Logo size={40} />
+      {/* Resumen del día — tocable, lleva a cada módulo */}
+      <div className="card mb-4 flex items-center gap-4 p-4">
+        <button onClick={() => go({ tab: 'home' })}>
+          <Ring pct={pct} size={78} stroke={8}>
+            <span className="font-display text-lg font-bold leading-none">{rem}</span>
+            <span className="text-[8px] uppercase tracking-wide text-ink3">kcal rest.</span>
+          </Ring>
+        </button>
         <div className="min-w-0 flex-1">
-          <h1 className="font-display text-xl font-bold leading-tight tracking-tight">
-            Ze<span className="text-brand-600">stly</span>
-            <span className="ml-2 text-[10px] font-bold uppercase tracking-[0.15em] text-accent-600">Estilo de vida Zen</span>
-          </h1>
-          <p className="truncate text-[11px] text-ink2">
-            {greet}{name ? `, ${name}` : ''} · Actividad física y entrenamiento
-          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px] font-medium text-ink2">
+            <span className="flex items-center gap-1"><Flame size={13} className="text-orange-500" /> {s.streak} días de racha</span>
+            <span className="flex items-center gap-1"><GlassWater size={13} className="text-sky-500" /> {s.today.water}/{s.waterGoal || 8} agua</span>
+          </div>
+          {trainedToday ? (
+            <p className="mt-2 text-[12px] font-semibold text-emerald-600 dark:text-emerald-400">Ya entrenaste hoy — bien hecho</p>
+          ) : (
+            <button onClick={() => go({ tab: 'train', action: 'start' })}
+              className="mt-2 flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-2 text-[11px] font-bold text-white">
+              <Play size={12} /> {routineName ? `Hoy: ${routineName.split('—')[0].trim()}` : 'Entrenar hoy'}
+            </button>
+          )}
         </div>
         {!user && (
-          <button
-            onClick={() => go({ tab: 'profile' })}
-            className="shrink-0 rounded-xl border border-brand-300 bg-brand-50 px-3 py-2 text-[11px] font-bold text-brand-700 dark:border-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
-          >
-            Iniciar sesión
+          <button onClick={() => go({ tab: 'profile' })} aria-label="Iniciar sesión"
+            className="shrink-0 rounded-xl border border-brand-300 bg-brand-50 p-2.5 text-brand-700 dark:border-brand-800 dark:bg-brand-900/30 dark:text-brand-300">
+            <LogIn size={16} />
           </button>
         )}
       </div>

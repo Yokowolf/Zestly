@@ -176,12 +176,15 @@ function EditPortionSheet({ target, onClose }) {
             onChange={e => setQty(Math.max(0, parseFloat(e.target.value) || 0))}
             className="w-24 bg-transparent text-center font-display text-3xl font-bold text-brand-600 outline-none"
           />
-          <span className="text-xs text-ink3">{grams ? item.unit : qty === 1 ? 'porción' : 'porciones'}</span>
+          <span className="text-xs text-ink3">
+            {grams ? item.unit : qty === 1 ? 'porción' : 'porciones'}
+            {!grams && item.portionGrams ? ` · ≈ ${Math.round(item.portionGrams * qty)}g` : ''}
+          </span>
         </div>
         <button className="h-10 w-10 rounded-full bg-brand-600 text-xl text-white" onClick={() => setQty(round1(qty + step))}>+</button>
       </div>
       <div className="mb-3 flex flex-wrap justify-center gap-1.5">
-        {presets.map(v => <Chip key={v} on={qty === v} onClick={() => setQty(v)}>{v}{grams ? item.unit : 'x'}</Chip>)}
+        {presets.map(v => <Chip key={v} on={qty === v} onClick={() => setQty(v)}>{v}{grams ? item.unit : 'x'}{!grams && item.portionGrams ? ` (${Math.round(item.portionGrams * v)}g)` : ''}</Chip>)}
       </div>
       <p className="mb-4 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
         = {Math.round(per('Kcal') * ratio)} kcal · P:{calc('Prot')}g · C:{calc('Carb')}g · G:{calc('Fat')}g

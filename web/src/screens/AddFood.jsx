@@ -84,13 +84,23 @@ function foodItem(food, qty, isMl) {
 
 // ── Tab: Buscar ──────────────────────────────────────────
 function SearchTab({ meal, onDone }) {
+  const s = useStore()
   const [q, setQ] = useState('')
   const [sel, setSel] = useState(null)
+  const [creating, setCreating] = useState(false)
+  const customFoods = s.customFoods || []
+
   const results = useMemo(() => {
     if (!q.trim()) return []
     const qn = norm(q)
-    return FOODS.filter(f => norm(f.name).includes(qn)).slice(0, 10)
-  }, [q])
+    // Los alimentos propios aparecen primero
+    return [
+      ...customFoods.filter(f => norm(f.name).includes(qn)),
+      ...FOODS.filter(f => norm(f.name).includes(qn)),
+    ].slice(0, 10)
+  }, [q, customFoods])
+
+  if (creating) return <CustomFoodForm initialName={q} onDone={() => { setCreating(false); setQ('') }} onCancel={() => setCreating(false)} />
 
   return (
     <div>
@@ -103,13 +113,32 @@ function SearchTab({ meal, onDone }) {
 
       {q && !sel && (
         <div className="flex flex-col gap-1.5">
-          {results.length === 0 && <p className="py-5 text-center text-xs text-ink3">Sin resultados para "{q}" — prueba Texto IA</p>}
+          {results.length === 0 && <p className="py-4 text-center text-xs text-ink3">Sin resultados para "{q}" — créalo abajo o usa Texto IA</p>}
           {results.map((f, i) => <FoodRow key={i} f={f} onClick={() => setSel(f)} />)}
+          <button onClick={() => setCreating(true)} className="mt-1 flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-brand-300 py-2.5 text-xs font-bold text-brand-600 dark:border-brand-800">
+            <Plus size={13} /> Crear alimento "{q}"
+          </button>
         </div>
       )}
 
       {!q && !sel && (
         <div className="flex flex-col gap-2">
+          {customFoods.length > 0 && (
+            <details className="card overflow-hidden" open>
+              <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-xs font-bold text-ink2">
+                <span className="flex items-center gap-2.5"><Utensils size={15} className="text-brand-600" /> Mis alimentos</span>
+                <span className="flex items-center gap-1 font-normal text-ink3">{customFoods.length} <ChevronDown size={13} /></span>
+              </summary>
+              <div className="flex flex-col gap-1.5 px-3 pb-3">
+                {customFoods.map((f, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <div className="min-w-0 flex-1"><FoodRow f={f} onClick={() => setSel(f)} /></div>
+                    <button onClick={() => { if (confirm(`¿Eliminar "${f.name}"?`)) s.patch({ customFoods: customFoods.filter((_, j) => j !== i) }) }} className="p-1.5 text-ink3"><Trash2 size={14} /></button>
+                  </div>
+                ))}
+              </div>
+            </details>
+          )}
           {Object.entries(FOOD_CATS).map(([cat, foods]) => {
             const CatIcon = CAT_ICONS[cat] || Utensils
             return (
@@ -123,8 +152,57 @@ function SearchTab({ meal, onDone }) {
               </div>
             </details>
           )})}
+          <button onClick={() => setCreating(true)} className="flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-brand-300 py-2.5 text-xs font-bold text-brand-600 dark:border-brand-800">
+            <Plus size={13} /> Crear alimento propio
+          </button>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Crear alimento propio (por 100g o 100ml) ─────────────
+function CustomFoodForm({ initialName = '', onDone, onCancel }) {
+  const s = useStore()
+  const [f, setF] = useState({ name: initialName, kcal: '', prot: '', carb: '', fat: '', unit: '100g' })
+  const upd = (k, v) => setF(prev => ({ ...prev, [k]: v }))
+
+  const save = () => {
+    if (!f.name.trim()) { s.toast('Ponle nombre al alimento', 'err'); return }
+    const kcal = parseFloat(f.kcal)
+    if (isNaN(kcal) || kcal <= 0) { s.toast('Ingresa las calorías por 100g', 'err'); return }
+    const food = {
+      name: f.name.trim(), unit: f.unit, custom: true,
+      kcal: Math.round(kcal), prot: round1(parseFloat(f.prot) || 0),
+      carb: round1(parseFloat(f.carb) || 0), fat: round1(parseFloat(f.fat) || 0),
+    }
+    s.patch({ customFoods: [...(s.customFoods || []), food] })
+    s.toast(`"${food.name}" guardado en Mis alimentos`, 'ok')
+    onDone()
+  }
+
+  return (
+    <div className="fade-up">
+      <p className="mb-3 text-xs text-ink2">Datos de la etiqueta nutricional <b>por {f.unit}</b> — quedará en "Mis alimentos" para siempre.</p>
+      <div className="flex flex-col gap-2.5">
+        <Input placeholder="Nombre — ej. Proteína Ronnie Coleman" value={f.name} onChange={e => upd('name', e.target.value)} autoFocus />
+        <div className="grid grid-cols-2 gap-2">
+          <Chip on={f.unit === '100g'} onClick={() => upd('unit', '100g')} className="!py-2.5">Sólido (100g)</Chip>
+          <Chip on={f.unit === '100ml'} onClick={() => upd('unit', '100ml')} className="!py-2.5">Líquido (100ml)</Chip>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[['kcal', 'Calorías (kcal)'], ['prot', 'Proteína (g)'], ['carb', 'Carbohidratos (g)'], ['fat', 'Grasas (g)']].map(([k, label]) => (
+            <label key={k} className="flex flex-col gap-1 text-[9px] font-bold uppercase tracking-wide text-ink3">
+              {label}
+              <Input type="number" inputMode="decimal" step="0.1" placeholder="0" value={f[k]} onChange={e => upd(k, e.target.value)} className="text-center font-semibold" />
+            </label>
+          ))}
+        </div>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Button variant="ghost" className="!py-2.5" onClick={onCancel}>Cancelar</Button>
+        <Button className="flex items-center justify-center gap-1.5 !py-2.5" onClick={save}><Save size={14} /> Guardar</Button>
+      </div>
     </div>
   )
 }
@@ -405,7 +483,7 @@ function CamTab({ meal, onDone }) {
   const analyze = async () => {
     setBusy(true)
     try {
-      const prompt = 'Eres nutricionista experto en comida colombiana y latinoamericana. Analiza CUIDADOSAMENTE esta imagen. Identifica cada alimento visible con porciones realistas. Devuelve SOLO este JSON sin texto ni backticks: {"items":[{"name":"nombre en español","kcal":numero,"prot":numero,"carb":numero,"fat":numero}]}. Los kcal deben representar la PORCION VISIBLE, no 100g.'
+      const prompt = 'Eres nutricionista experto en comida colombiana y latinoamericana. Analiza CUIDADOSAMENTE esta imagen. Identifica cada alimento visible con porciones realistas. Devuelve SOLO este JSON sin texto ni backticks: {"items":[{"name":"nombre en español","kcal":numero,"prot":numero,"carb":numero,"fat":numero,"grams":numero}]}. Los kcal y grams deben representar la PORCION VISIBLE, no 100g.'
       const parsed = parseAIJson(await callAIWithImage(prompt, img))
       if (!parsed.items?.length) throw new Error('No se detectaron alimentos')
       setItems(parsed.items)
@@ -417,7 +495,7 @@ function CamTab({ meal, onDone }) {
 
   const confirm = () => {
     items.forEach(it => logFood(meal, {
-      name: it.name, qty: 1, unit: 'porción', fromDB: false,
+      name: it.name, qty: 1, unit: 'porción', fromDB: false, portionGrams: it.grams || null,
       baseKcal: it.kcal || 0, baseProt: it.prot || 0, baseCarb: it.carb || 0, baseFat: it.fat || 0,
       kcal: Math.round(it.kcal || 0), prot: round1(it.prot || 0), carb: round1(it.carb || 0), fat: round1(it.fat || 0),
     }))
@@ -478,7 +556,7 @@ function TextTab({ meal, onDone }) {
       const parsed = parseAIJson(await callAI('Eres nutricionista. Analiza los alimentos y devuelve SOLO el JSON pedido.', prompt))
       if (!parsed.items?.length) throw new Error('No se encontraron alimentos')
       parsed.items.forEach(it => logFood(meal, {
-        name: it.name, qty: 1, unit: 'porción', fromDB: false,
+        name: it.name, qty: 1, unit: 'porción', fromDB: false, portionGrams: it.grams || null,
         baseKcal: it.kcal || 0, baseProt: it.prot || 0, baseCarb: it.carb || 0, baseFat: it.fat || 0,
         kcal: Math.round(it.kcal || 0), prot: round1(it.prot || 0), carb: round1(it.carb || 0), fat: round1(it.fat || 0),
       }))

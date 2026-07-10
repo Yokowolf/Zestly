@@ -42,13 +42,22 @@ export function Sheet({ open, onClose, title, subtitle, children, locked = false
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [open])
+
+  // Teclado móvil: al enfocar un campo, súbelo a la vista para que los
+  // resultados no queden ocultos debajo del teclado
+  const onFocusField = e => {
+    const el = e.target
+    if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return
+    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)
+  }
+
   if (!open) return null
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col justify-end bg-black/45 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget && !locked) onClose?.() }}
     >
-      <div className="mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl border-t border-line bg-bg2 p-5 pb-10 fade-up md:border-x">
+      <div onFocus={onFocusField} className="mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl border-t border-line bg-bg2 p-5 pb-10 fade-up md:border-x">
         <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-line" />
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>

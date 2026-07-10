@@ -29,6 +29,7 @@ const DEFAULTS = {
   fastingHours: 16,   // protocolo de ayuno: 16 (16:8), 18 (18:6) o 20 (20:4)
   foodFreq: {},       // alimentos más usados: nombre → { count, item } (para Rápidos)
   recipes: [],        // recetas guardadas por el usuario
+  customFoods: [],    // alimentos creados por el usuario (por 100g/100ml)
   badgeUnlocks: {},   // logro → timestamp de desbloqueo (para destacarlo)
   aiTip: null,        // recomendación del día cacheada { date, text, source }
   progressPhoto: null // foto de progreso { ts, data (jpeg base64 pequeño) }

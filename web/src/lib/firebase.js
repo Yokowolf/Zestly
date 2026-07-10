@@ -53,6 +53,7 @@ export async function cloudSave() {
         fastingActive: d.fastingActive, fastingStart: d.fastingStart,
         theme: d.theme, waterGoal: d.waterGoal, fastingHours: d.fastingHours || 16, foodFreq: d.foodFreq || {},
         recipes: d.recipes || [],
+        customFoods: d.customFoods || [],
         badgeUnlocks: d.badgeUnlocks || {},
         progressPhoto: d.progressPhoto ?? null,
         ts: Date.now(),
@@ -98,6 +99,7 @@ export async function cloudLoad(uid) {
         fastingHours: d.fastingHours || st.fastingHours || 16,
         foodFreq: d.foodFreq || st.foodFreq || {},
         recipes: d.recipes || st.recipes || [],
+        customFoods: d.customFoods || st.customFoods || [],
         badgeUnlocks: d.badgeUnlocks || st.badgeUnlocks || {},
         progressPhoto: d.progressPhoto ?? st.progressPhoto ?? null,
       })

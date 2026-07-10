@@ -3,6 +3,7 @@ import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, Sparkles, Clou
 import { useStore } from '../store'
 import { Ring } from '../components/charts'
 import { todaysRoutineIndex } from '../lib/train'
+import { EXERCISES } from '../data/exercises'
 import { quoteOfTheDay } from '../data/quotes'
 import { trackAndGetRecentBadge } from '../lib/badges'
 import { getDailyTip } from '../lib/tips'
@@ -21,7 +22,7 @@ const CARDS = [
   },
   {
     icon: Dumbbell, title: 'Rutinas y entrenamiento', target: { tab: 'train' },
-    desc: '107 ejercicios con GIF, sesiones con timer y récords',
+    desc: `${EXERCISES.length} ejercicios con GIF, sesiones con timer y récords`,
     img: U('1534438327276-14e5300c3a48'), grad: 'from-violet-700 to-purple-600',
   },
   {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Plus, Minus, Search, Trash2, Timer, Flag, Flame, Trophy, Hash, Repeat2, Clock } from 'lucide-react'
+import { Check, Plus, Minus, Search, Trash2, Timer, Flag, Flame, Trophy, Hash, Repeat2, Clock, ChevronDown, LayoutGrid, List } from 'lucide-react'
 import { Sheet, Input, Button, Chip, SectionTitle, ExerciseImg, Empty } from '../components/ui'
 import { Bar } from '../components/ui'
 import { useStore, fromKg, toKg, unitLbl } from '../store'
@@ -21,6 +21,7 @@ export default function Workout({ open, onClose }) {
   const [q, setQ] = useState('')
   const [detail, setDetail] = useState(null)
   const [summary, setSummary] = useState(null)
+  const [viewMode, setViewMode] = useState('list') // 'list' | 'grid' (enfoque en la imagen)
   const [, tick] = useState(0)
 
   useEffect(() => {
@@ -112,14 +113,21 @@ export default function Workout({ open, onClose }) {
   return (
     <Sheet open={open} onClose={() => onClose()} title={w.name} locked
       subtitle={`${doneSets}/${totalSets} sets completados`}>
-      {/* Cabecera fija: tiempo + descanso */}
+      {/* Cabecera fija: minimizar + vista + tiempo + descanso */}
       <div className="sticky -top-5 z-10 -mx-1 mb-3 rounded-2xl border border-line bg-bg2/95 p-3 backdrop-blur">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-ink2">
-            <Clock size={14} /> Tiempo total
-          </span>
-          <span className="font-display text-xl font-bold text-brand-600">
-            {String(Math.floor(elapsed / 60)).padStart(2, '0')}:{String(elapsed % 60).padStart(2, '0')}
+        <div className="flex items-center justify-between gap-2">
+          <button onClick={onClose} className="flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-[11px] font-semibold text-ink2" aria-label="Minimizar sesión">
+            <ChevronDown size={14} /> Minimizar
+          </button>
+          <div className="flex overflow-hidden rounded-lg border border-line text-[10px] font-bold">
+            <button onClick={() => setViewMode('list')} className={`flex items-center gap-1 px-2 py-1.5 ${viewMode === 'list' ? 'bg-brand-600 text-white' : 'text-ink3'}`} aria-label="Vista lista"><List size={12} /></button>
+            <button onClick={() => setViewMode('grid')} className={`flex items-center gap-1 px-2 py-1.5 ${viewMode === 'grid' ? 'bg-brand-600 text-white' : 'text-ink3'}`} aria-label="Vista cuadrícula"><LayoutGrid size={12} /></button>
+          </div>
+          <span className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-ink2">
+            <Clock size={14} />
+            <span className="font-display text-xl font-bold text-brand-600">
+              {String(Math.floor(elapsed / 60)).padStart(2, '0')}:{String(elapsed % 60).padStart(2, '0')}
+            </span>
           </span>
         </div>
         {rest && (
@@ -143,6 +151,57 @@ export default function Workout({ open, onClose }) {
             {block.list.map(({ e, ei }) => {
               const ex = EX_BY_ID[e.exerciseId] || {}
               const best = bestWeight(e.exerciseId)
+
+              // ── Vista cuadrícula: el GIF protagonista + celdas de sets ──
+              if (viewMode === 'grid') {
+                return (
+                  <div key={ei} className="card overflow-hidden">
+                    <button onClick={() => setDetail(ex)} className="block w-full bg-white">
+                      {ex.img
+                        ? <img src={ex.img} alt={ex.name} loading="lazy" className="mx-auto h-44 object-contain" />
+                        : <div className="flex h-44 items-center justify-center text-ink3"><ExerciseImg exercise={ex} size="h-20 w-20" /></div>}
+                    </button>
+                    <div className="p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="truncate text-[13px] font-semibold">{ex.name || e.exerciseId}</div>
+                          <div className="text-[10px] text-ink3">
+                            Objetivo {e.reps} · descanso {e.rest}s{best > 0 && <> · <Trophy size={9} className="inline text-amber-500" /> {fromKg(best)} {unitLbl()}</>}
+                          </div>
+                        </div>
+                        <button onClick={() => removeEx(ei)} className="shrink-0 p-1.5 text-ink3"><Trash2 size={15} /></button>
+                      </div>
+                      <div className="mt-2.5 grid grid-cols-4 gap-1.5">
+                        {e.sets.map((st, si) => (
+                          <div key={si} className={`rounded-xl border p-1.5 text-center ${st.done ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'border-line bg-card2'}`}>
+                            <input
+                              type="number" inputMode="decimal" placeholder={ex.weight === false ? '—' : unitLbl()}
+                              disabled={ex.weight === false}
+                              value={st.w != null ? fromKg(st.w) : ''}
+                              onChange={ev => setField(ei, si, 'w', ev.target.value)}
+                              className="w-full bg-transparent text-center font-display text-[13px] font-bold outline-none disabled:opacity-40"
+                            />
+                            <input
+                              type="number" inputMode="numeric" placeholder="reps"
+                              value={st.r ?? ''}
+                              onChange={ev => setField(ei, si, 'r', ev.target.value)}
+                              className="w-full border-t border-dashed border-line bg-transparent text-center text-[11px] outline-none"
+                            />
+                            <button onClick={() => toggleSet(ei, si)} aria-label="Completar set"
+                              className={`mt-1 flex h-6 w-full items-center justify-center rounded-lg ${st.done ? 'bg-emerald-500 text-white' : 'bg-line text-ink3'}`}>
+                              <Check size={13} />
+                            </button>
+                          </div>
+                        ))}
+                        <button onClick={() => addSet(ei)} className="flex min-h-16 items-center justify-center rounded-xl border border-dashed border-line text-ink3" aria-label="Agregar set">
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
               return (
                 <div key={ei} className="card p-3.5">
                   <div className="flex items-center gap-3">

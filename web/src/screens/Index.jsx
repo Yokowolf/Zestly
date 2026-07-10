@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, Sparkles, Cloud, WifiOff, Film, Target, Eye, GlassWater, Play, LogIn, Quote, Camera, Trash2 } from 'lucide-react'
+import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, Sparkles, Cloud, WifiOff, Film, GlassWater, Play, LogIn, Quote, Camera, Trash2 } from 'lucide-react'
 import { useStore } from '../store'
 import { Ring } from '../components/charts'
 import { todaysRoutineIndex } from '../lib/train'
@@ -204,28 +204,6 @@ export default function Index({ go }) {
         ))}
       </div>
 
-      {/* Misión y visión */}
-      <div className="mt-6 flex flex-col gap-2.5 md:grid md:grid-cols-2">
-        <div className="card border-brand-200 bg-brand-50/50 p-4 dark:border-brand-800 dark:bg-brand-900/20">
-          <div className="mb-1 flex items-center gap-2 text-[12px] font-bold text-brand-700 dark:text-brand-300">
-            <Target size={15} /> Misión
-          </div>
-          <p className="text-[12px] leading-relaxed text-ink2">
-            Hacer que la disciplina sea fácil: registrar lo que comes, entrenar con propósito y ver tu
-            progreso sin fricción, con inteligencia artificial que te acompaña en cada decisión.
-          </p>
-        </div>
-        <div className="card border-accent-400/30 bg-accent-500/5 p-4">
-          <div className="mb-1 flex items-center gap-2 text-[12px] font-bold text-accent-600">
-            <Eye size={15} /> Visión
-          </div>
-          <p className="text-[12px] leading-relaxed text-ink2">
-            Ser el compañero integral de tu estilo de vida fitness: nutrición, entrenamiento y hábitos
-            en una sola app que crece contigo — de la primera rutina al mejor físico de tu vida.
-          </p>
-        </div>
-      </div>
-
       <p className="py-6 text-center text-[10px] text-ink3">
         Zestly · Hecho con disciplina en Colombia
       </p>
@@ -265,7 +243,7 @@ function ProgressPhoto() {
 
   return (
     <div className="card overflow-hidden">
-      <input ref={inputRef} type="file" accept="image/*" capture="user" className="hidden" onChange={onFile} />
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
       {photo ? (
         <div className="relative">
           <img src={photo.data} alt="Foto de progreso" className="max-h-80 w-full object-cover" />

@@ -15,6 +15,7 @@ export default function RoutineBuilder({ draft, onClose }) {
   const [detail, setDetail] = useState(null)
   const [bankMode, setBankMode] = useState('map') // 'map' | 'list'
   const [muscleSel, setMuscleSel] = useState(null)
+  const [globalRest, setGlobalRest] = useState(90) // descanso para aplicar a toda la rutina
 
   // Inicializa el borrador cuando se abre / limpia al cerrar
   useEffect(() => {
@@ -80,6 +81,19 @@ export default function RoutineBuilder({ draft, onClose }) {
       </div>
 
       <SectionTitle>Ejercicios de la rutina ({r.exercises.length})</SectionTitle>
+      {r.exercises.length > 1 && (
+        <div className="card mb-2.5 flex items-end gap-2.5 p-3">
+          <div className="w-36">
+            <StepField label="Descanso global (s)" value={globalRest} min={0} max={600} step={15} onCommit={setGlobalRest} />
+          </div>
+          <button
+            onClick={() => { upd({ exercises: r.exercises.map(x => ({ ...x, rest: globalRest })) }); s.toast(`Descanso de ${globalRest}s aplicado a todos`, 'ok') }}
+            className="h-9 flex-1 rounded-lg border border-brand-300 bg-brand-50 text-xs font-bold text-brand-700 dark:border-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
+          >
+            Aplicar a todos ({Math.floor(globalRest / 60)}:{String(globalRest % 60).padStart(2, '0')} min)
+          </button>
+        </div>
+      )}
       {r.exercises.length === 0 && <Empty icon={Search}>Busca abajo o explora por grupo muscular</Empty>}
       <div className="flex flex-col gap-2">
         {r.exercises.map((e, i) => {
@@ -192,6 +206,8 @@ function MiniField({ label, value, onChange }) {
 // solo valida/limita al confirmar (blur o Enter) — evita el "1 pegado".
 function StepField({ label, value, onCommit, min = 0, max = 999, step = 1 }) {
   const [draft, setDraft] = useState(null) // null = sin edición activa
+  // Si el valor cambia desde afuera (ej. "Aplicar a todos"), descarta el borrador
+  useEffect(() => { setDraft(null) }, [value])
   const shown = draft !== null ? draft : String(value)
   const commit = raw => {
     const n = parseInt(raw, 10)

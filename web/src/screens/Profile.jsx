@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Moon, Sun, GlassWater, KeyRound, Download, FileSpreadsheet, LogOut, LogIn,
-  Pencil, Trash2, Scale, Timer, Upload, Info,
+  Pencil, Trash2, Scale, Timer, Upload, Info, Target, Eye, Lock,
 } from 'lucide-react'
 import { getBadges } from '../lib/badges'
 import { ChevronDown } from 'lucide-react'
@@ -39,13 +39,16 @@ export default function Profile() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-4 pt-4">
-      {/* Hero */}
+      {/* Hero con arco de logros sobre el avatar */}
       <div className="flex flex-col items-center text-center">
-        <div className="flex h-18 w-18 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-accent-600 font-display text-2xl font-bold text-white" style={{ width: 72, height: 72 }}>
-          {s.user?.photoURL ? <img src={s.user.photoURL} alt="" className="h-full w-full object-cover" /> : name[0].toUpperCase()}
-        </div>
-        <h1 className="font-display mt-2.5 text-xl font-bold">{name}</h1>
+        <BadgeArc badges={badges} unlocks={s.badgeUnlocks || {}} onTap={b => s.toast(b.on ? `${b.label} — desbloqueado` : `${b.label} — aún bloqueado`)} >
+          <div className="flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-accent-600 font-display text-2xl font-bold text-white" style={{ width: 72, height: 72 }}>
+            {s.user?.photoURL ? <img src={s.user.photoURL} alt="" className="h-full w-full object-cover" /> : name[0].toUpperCase()}
+          </div>
+        </BadgeArc>
+        <h1 className="font-display mt-1 text-xl font-bold">{name}</h1>
         <p className="text-xs text-ink2">{GOALS[s.profile.goal]} · {s.nutrition.kcal} kcal/día</p>
+        <p className="mt-1 text-[10px] font-semibold text-amber-500">Logros {badges.filter(b => b.on).length}/{badges.length}</p>
       </div>
 
       {/* Cuenta */}
@@ -109,18 +112,6 @@ export default function Profile() {
       </div>
       </Section>
 
-      {/* Logros */}
-      <Section title="Logros" right={<span className="text-[11px] font-semibold text-amber-500">{badges.filter(b => b.on).length}/{badges.length}</span>}>
-      <div className="grid grid-cols-3 gap-2">
-        {badges.map(b => (
-          <div key={b.label} className={`card flex flex-col items-center gap-1.5 p-3 text-center ${b.on ? 'border-amber-300 bg-amber-50/60 dark:border-amber-800 dark:bg-amber-950/30' : 'opacity-40'}`}>
-            <b.icon size={20} className={b.on ? 'text-amber-500' : 'text-ink3'} />
-            <span className="text-[9px] font-semibold leading-tight text-ink2">{b.label}</span>
-          </div>
-        ))}
-      </div>
-      </Section>
-
       {/* Mis datos */}
       <Section title="Mis datos" right={
         <span onClick={e => { e.stopPropagation(); setEditOpen(true) }} className="flex items-center gap-1 text-xs font-semibold text-brand-600"><Pencil size={12} /> Editar</span>
@@ -150,6 +141,34 @@ export default function Profile() {
       </div>
       </Section>
 
+      {/* Sobre Zestly */}
+      <Section title="Sobre Zestly">
+        <div className="flex flex-col gap-2.5 pt-1">
+          <div className="card border-brand-200 bg-brand-50/50 p-3.5 dark:border-brand-800 dark:bg-brand-900/20">
+            <div className="mb-1 flex items-center gap-2 text-[12px] font-bold text-brand-700 dark:text-brand-300">
+              <Target size={14} /> Misión
+            </div>
+            <p className="text-[12px] leading-relaxed text-ink2">
+              Hacer que la disciplina sea fácil: registrar lo que comes, entrenar con propósito y ver tu
+              progreso sin fricción, con inteligencia artificial que te acompaña en cada decisión.
+            </p>
+          </div>
+          <div className="card border-accent-400/30 bg-accent-500/5 p-3.5">
+            <div className="mb-1 flex items-center gap-2 text-[12px] font-bold text-accent-600">
+              <Eye size={14} /> Visión
+            </div>
+            <p className="text-[12px] leading-relaxed text-ink2">
+              Ser el compañero integral de tu estilo de vida fitness: nutrición, entrenamiento y hábitos
+              en una sola app que crece contigo — de la primera rutina al mejor físico de tu vida.
+            </p>
+          </div>
+          {/* TODO: agregar aquí más datos del creador (bio, contacto, redes) */}
+          <p className="px-1 text-center text-[10px] italic text-ink3">
+            Próximamente: más sobre el creador de Zestly.
+          </p>
+        </div>
+      </Section>
+
       <button
         onClick={() => { if (confirm('¿Seguro? Se borrarán todos tus datos locales.')) { localStorage.clear(); location.reload() } }}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-red-300 py-3 text-sm font-semibold text-red-500 dark:border-red-900"
@@ -160,6 +179,44 @@ export default function Profile() {
 
       <EditProfileSheet open={editOpen} onClose={() => setEditOpen(false)} />
       <KeySheet open={keyOpen} onClose={() => setKeyOpen(false)} />
+    </div>
+  )
+}
+
+// ── Arco de logros sobre el avatar ───────────────────────
+// 9 sockets en semicírculo; las medallas se incrustan desde el centro
+// hacia afuera en el orden en que se desbloquean.
+const ARC_ANGLES = [90, 112, 68, 134, 46, 156, 24, 178, 2] // centro → afuera
+function BadgeArc({ badges, unlocks, onTap, children }) {
+  const unlocked = badges.filter(b => b.on).sort((a, b) => (unlocks[a.label] || 0) - (unlocks[b.label] || 0))
+  const locked = badges.filter(b => !b.on)
+  const ordered = [...unlocked, ...locked] // ordered[i] ocupa el socket ARC_ANGLES[i]
+  const R = 92
+
+  return (
+    <div className="relative mx-auto" style={{ width: 300, height: 178 }}>
+      {ordered.map((b, i) => {
+        const rad = (ARC_ANGLES[i] * Math.PI) / 180
+        const x = 150 + R * Math.cos(rad)
+        const y = 118 - R * Math.sin(rad)
+        return (
+          <button
+            key={b.label}
+            onClick={() => onTap(b)}
+            title={b.label}
+            aria-label={b.label}
+            className={`absolute flex h-9 w-9 items-center justify-center rounded-full transition-transform active:scale-90 ${
+              b.on
+                ? 'border-2 border-amber-300 bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-md'
+                : 'border-2 border-dashed border-line bg-card2 text-ink3/50'
+            }`}
+            style={{ left: x - 18, top: y - 18 }}
+          >
+            {b.on ? <b.icon size={16} /> : <Lock size={12} />}
+          </button>
+        )
+      })}
+      <div className="absolute left-1/2 top-[118px] -translate-x-1/2 -translate-y-1/4">{children}</div>
     </div>
   )
 }

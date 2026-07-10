@@ -95,7 +95,37 @@ export default function App() {
         {tab === 'coach' && <Coach key={ts} initialAction={action} />}
         {tab === 'profile' && <Profile />}
       </main>
+
+      <SessionPill onResume={() => go({ tab: 'train' })} />
     </div>
+  )
+}
+
+// Sesión minimizada: píldora flotante para reanudar desde cualquier pantalla
+function SessionPill({ onResume }) {
+  const w = useStore(s => s.activeWorkout)
+  const [, tick] = useState(0)
+  useEffect(() => {
+    if (!w) return
+    const t = setInterval(() => tick(x => x + 1), 1000)
+    return () => clearInterval(t)
+  }, [!!w]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!w) return null
+  const s = Math.floor((Date.now() - w.startTs) / 1000)
+  return (
+    <button
+      onClick={onResume}
+      className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-brand-600 py-2.5 pl-3.5 pr-4 text-white shadow-xl active:scale-95"
+    >
+      <span className="relative flex h-2.5 w-2.5">
+        <span className="absolute h-full w-full animate-ping rounded-full bg-white/60" />
+        <span className="h-2.5 w-2.5 rounded-full bg-white" />
+      </span>
+      <span className="max-w-40 truncate text-xs font-bold">{w.name}</span>
+      <span className="font-display text-sm font-bold">
+        {String(Math.floor(s / 60)).padStart(2, '0')}:{String(s % 60).padStart(2, '0')}
+      </span>
+    </button>
   )
 }
 

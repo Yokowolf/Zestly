@@ -25,21 +25,35 @@ export function Ring({ pct, size = 180, stroke = 13, children }) {
   )
 }
 
-// Barras verticales con etiqueta
+// Barras verticales con etiqueta — tocar una barra muestra su valor
+import { useState } from 'react'
 export function Bars({ data, height = 88, color = 'bg-brand-500', valueColor = 'text-ink2' }) {
+  const [sel, setSel] = useState(null)
   const max = Math.max(...data.map(d => d.value), 1)
   return (
     <div className="flex items-end gap-1.5" style={{ height }}>
-      {data.map((d, i) => (
-        <div key={i} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
-          {d.top != null && <div className={`text-[9px] font-bold ${d.highlight ? 'text-amber-500' : valueColor}`}>{d.top}</div>}
-          <div
-            className={`w-full rounded-t ${d.color || color} ${d.dim ? 'opacity-45' : ''}`}
-            style={{ height: `${Math.max(4, (d.value / max) * (height - 26))}px`, transition: 'height 0.5s ease' }}
-          />
-          {d.label != null && <div className="text-[9px] text-ink3">{d.label}</div>}
-        </div>
-      ))}
+      {data.map((d, i) => {
+        const showValue = d.top != null || sel === i
+        return (
+          <button
+            key={i}
+            onClick={() => setSel(sel === i ? null : i)}
+            className="flex h-full flex-1 flex-col items-center justify-end gap-1"
+            aria-label={`${d.label ?? ''}: ${d.value}`}
+          >
+            {showValue && (
+              <div className={`rounded px-1 text-[9px] font-bold ${sel === i ? 'bg-brand-600 text-white' : d.highlight ? 'text-amber-500' : valueColor}`}>
+                {d.top ?? Math.round(d.value)}
+              </div>
+            )}
+            <div
+              className={`w-full rounded-t ${d.color || color} ${d.dim && sel !== i ? 'opacity-45' : ''} ${sel === i ? 'ring-2 ring-brand-400' : ''}`}
+              style={{ height: `${Math.max(4, (d.value / max) * (height - 26))}px`, transition: 'height 0.5s ease' }}
+            />
+            {d.label != null && <div className={`text-[9px] ${sel === i ? 'font-bold text-brand-600' : 'text-ink3'}`}>{d.label}</div>}
+          </button>
+        )
+      })}
     </div>
   )
 }

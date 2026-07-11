@@ -176,7 +176,7 @@ function SearchTab({ meal, onDone }) {
 }
 
 // ── Crear alimento propio (por 100g o 100ml) ─────────────
-function CustomFoodForm({ initialName = '', onDone, onCancel }) {
+function CustomFoodForm({ initialName = '', barcode = null, onDone, onCancel }) {
   const s = useStore()
   const [f, setF] = useState({ name: initialName, kcal: '', prot: '', carb: '', fat: '', unit: '100g' })
   const upd = (k, v) => setF(prev => ({ ...prev, [k]: v }))
@@ -186,7 +186,7 @@ function CustomFoodForm({ initialName = '', onDone, onCancel }) {
     const kcal = parseFloat(f.kcal)
     if (isNaN(kcal) || kcal <= 0) { s.toast('Ingresa las calorías por 100g', 'err'); return }
     const food = {
-      name: f.name.trim(), unit: f.unit, custom: true,
+      name: f.name.trim(), unit: f.unit, custom: true, ...(barcode ? { barcode } : {}),
       kcal: Math.round(kcal), prot: round1(parseFloat(f.prot) || 0),
       carb: round1(parseFloat(f.carb) || 0), fat: round1(parseFloat(f.fat) || 0),
     }
@@ -279,22 +279,28 @@ function BarcodeTab({ meal, onDone }) {
 
   useEffect(() => () => { controlsRef.current?.stop() }, [])
 
+  const [notFoundCode, setNotFoundCode] = useState(null)
+  const [creatingBarcode, setCreatingBarcode] = useState(false)
   const lookup = async code => {
-    setBusy(true); setProduct(null)
+    setBusy(true); setProduct(null); setNotFoundCode(null)
+    // 1) Mis alimentos: si ya creaste este producto, se encuentra al instante
+    const mine = (s.customFoods || []).find(f => f.barcode === code)
+    if (mine) { setProduct(mine); setBusy(false); return }
     try {
       const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,brands,nutriments`)
       const data = await res.json()
-      if (data.status !== 1) throw new Error('Producto no encontrado — prueba Buscar o Texto IA')
+      if (data.status !== 1) throw new Error('No está en Open Food Facts — créalo una vez y quedará guardado')
       const n = data.product.nutriments || {}
       const kcal = n['energy-kcal_100g']
-      if (kcal == null) throw new Error('El producto no tiene información nutricional')
+      if (kcal == null) throw new Error('El producto no tiene información nutricional — créalo con su etiqueta')
       setProduct({
         name: [data.product.product_name, data.product.brands].filter(Boolean).join(' — ').slice(0, 60),
         kcal: Math.round(kcal), prot: round1(n.proteins_100g || 0),
         carb: round1(n.carbohydrates_100g || 0), fat: round1(n.fat_100g || 0), unit: '100g',
       })
     } catch (e) {
-      s.toast(e.message.slice(0, 60), 'err')
+      setNotFoundCode(code)
+      s.toast(e.message.slice(0, 70), 'err')
     }
     setBusy(false)
   }
@@ -352,6 +358,14 @@ function BarcodeTab({ meal, onDone }) {
               Buscar
             </button>
           </div>
+          {notFoundCode && (
+            creatingBarcode
+              ? <div className="mt-3"><CustomFoodForm barcode={notFoundCode} onDone={() => { setCreatingBarcode(false); lookup(notFoundCode) }} onCancel={() => setCreatingBarcode(false)} /></div>
+              : <button onClick={() => setCreatingBarcode(true)}
+                  className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-brand-300 py-2.5 text-xs font-bold text-brand-600 dark:border-brand-800">
+                  <Plus size={13} /> Crear este producto con su etiqueta (código {notFoundCode})
+                </button>
+          )}
         </>
       )}
     </div>

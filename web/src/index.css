@@ -89,3 +89,8 @@ input[type="number"] { -moz-appearance: textfield; }
 @keyframes drawerIn { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 
 input, textarea { scroll-margin-top: 72px; }
+
+/* Mapa muscular: contorno sutil que define la morfología de cada músculo */
+.bodymap svg polygon { stroke: rgba(100, 116, 139, 0.4); stroke-width: 0.6; stroke-linejoin: round; transition: fill 0.15s ease; }
+.bodymap svg polygon:hover { filter: brightness(0.92); cursor: pointer; }
+.dark .bodymap svg polygon { stroke: rgba(148, 163, 184, 0.35); }

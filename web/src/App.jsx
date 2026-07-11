@@ -11,10 +11,11 @@ import Progress from './screens/Progress'
 import Coach from './screens/Coach'
 import Profile from './screens/Profile'
 import Index from './screens/Index'
+import Plan from './screens/Plan'
 
 const TITLES = {
   home: 'Contador de calorías', train: 'Entrenamiento', progress: 'Mi progreso',
-  coach: 'IA Coach', profile: 'Perfil', index: 'Inicio',
+  coach: 'IA Coach', profile: 'Perfil', index: 'Inicio', plan: 'Plan alimenticio',
 }
 
 export default function App() {
@@ -92,7 +93,8 @@ export default function App() {
         {tab === 'index' && <Index go={go} />}
         {tab === 'progress' && <Progress key={ts} initialAction={action} />}
         {tab === 'train' && <Train key={ts} initialAction={action} />}
-        {tab === 'coach' && <Coach key={ts} initialAction={action} />}
+        {tab === 'coach' && <Coach key={ts} initialAction={action} go={go} />}
+        {tab === 'plan' && <Plan />}
         {tab === 'profile' && <Profile />}
       </main>
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { useStore } from '../store'
 
@@ -38,13 +38,40 @@ export function Chip({ on, children, className = '', ...props }) {
 
 // ── Sheet (modal deslizante inferior) ────────────────────
 export function Sheet({ open, onClose, title, subtitle, children, locked = false }) {
+  const panelRef = useRef(null)
+
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [open])
 
-  // Teclado móvil: al enfocar un campo, súbelo a la vista para que los
-  // resultados no queden ocultos debajo del teclado
+  // Teclado móvil (fix definitivo): cuando el teclado reduce el viewport
+  // visible, el sheet se encoge y se ancla ARRIBA del teclado para que los
+  // resultados de búsqueda queden siempre visibles.
+  useEffect(() => {
+    if (!open) return
+    const vv = window.visualViewport
+    if (!vv) return
+    const adjust = () => {
+      const panel = panelRef.current
+      if (!panel) return
+      const kbOpen = window.innerHeight - vv.height > 120
+      if (kbOpen) {
+        panel.style.maxHeight = `${vv.height - 12}px`
+        panel.parentElement.style.justifyContent = 'flex-start'
+        panel.parentElement.style.transform = `translateY(${vv.offsetTop}px)`
+      } else {
+        panel.style.maxHeight = ''
+        panel.parentElement.style.justifyContent = ''
+        panel.parentElement.style.transform = ''
+      }
+    }
+    vv.addEventListener('resize', adjust)
+    vv.addEventListener('scroll', adjust)
+    return () => { vv.removeEventListener('resize', adjust); vv.removeEventListener('scroll', adjust) }
+  }, [open])
+
+  // Además, al enfocar un campo se sube a la vista dentro del sheet
   const onFocusField = e => {
     const el = e.target
     if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return
@@ -57,7 +84,7 @@ export function Sheet({ open, onClose, title, subtitle, children, locked = false
       className="fixed inset-0 z-50 flex flex-col justify-end bg-black/45 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget && !locked) onClose?.() }}
     >
-      <div onFocus={onFocusField} className="mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl border-t border-line bg-bg2 p-5 pb-10 fade-up md:border-x">
+      <div ref={panelRef} onFocus={onFocusField} className="mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl border-t border-line bg-bg2 p-5 pb-10 fade-up md:border-x">
         <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-line" />
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>

@@ -284,6 +284,9 @@ export const ROUTINE_TEMPLATES = [
   { name: 'Full Body — Cuerpo completo', level: 'principiante', days: ['lun', 'mie', 'vie'], ex: ['goblet_squat', 'db_bench', 'lat_pulldown', 'db_shoulder_press', 'leg_curl', 'plank'] },
   { name: 'Máquinas — Primer mes de gym', level: 'principiante', days: ['lun', 'mie', 'vie'], ex: ['leg_press', 'pec_deck', 'lat_pulldown', 'leg_extension', 'leg_curl', 'crunch'] },
   { name: 'Calistenia — Base sin equipo', level: 'principiante', days: ['lun', 'mie', 'vie'], ex: ['pushups', 'inverted_row', 'bw_squat', 'glute_bridge', 'plank', 'mountain_climbers'] },
+  { name: 'Mancuernas en casa — Cuerpo completo', level: 'principiante', days: ['lun', 'mie', 'vie'], ex: ['db_squat', 'db_bench', 'db_row', 'db_shoulder_press', 'db_curl', 'overhead_ext'] },
+  { name: 'Core y estabilidad', level: 'principiante', days: ['mar', 'jue'], ex: ['plank', 'dead_bug', 'glute_bridge', 'superman', 'side_plank', 'crunch'] },
+  { name: 'Cardio suave — Primeras semanas', level: 'principiante', days: ['mar', 'jue', 'sab'], ex: ['walking_cardio', 'stationary_bike', 'jumping_jacks', 'bw_squat', 'plank'] },
   // Intermedio
   { name: 'Push A — Pecho, Hombro, Tríceps', level: 'intermedio', days: ['lun', 'jue'], ex: ['bench_press', 'incline_bench', 'db_shoulder_press', 'lateral_raise', 'tricep_pushdown', 'french_press'] },
   { name: 'Pull A — Espalda y Bíceps', level: 'intermedio', days: ['mar', 'vie'], ex: ['deadlift', 'pullups', 'barbell_row', 'lat_pulldown', 'face_pull', 'barbell_curl', 'hammer_curl'] },
@@ -291,11 +294,15 @@ export const ROUTINE_TEMPLATES = [
   { name: 'Pierna B — Femoral y glúteo', level: 'intermedio', days: ['sab'], ex: ['romanian_dl', 'hip_thrust', 'seated_leg_curl_m', 'glute_kickback_machine', 'hip_abduction_machine', 'standing_calf'] },
   { name: 'Upper — Torso completo', level: 'intermedio', days: ['lun', 'jue'], ex: ['bench_press', 'barbell_row', 'ohp', 'lat_pulldown', 'db_fly', 'barbell_curl', 'tricep_pushdown'] },
   { name: 'Lower — Pierna y core', level: 'intermedio', days: ['mar', 'vie'], ex: ['squat', 'romanian_dl', 'bulgarian_squat', 'leg_extension', 'standing_calf', 'plank', 'ab_wheel'] },
+  { name: 'Brazos — Bíceps y tríceps', level: 'intermedio', days: ['sab'], ex: ['barbell_curl', 'incline_db_curl', 'hammer_curl', 'rope_pushdown', 'french_press', 'overhead_rope_ext'] },
   { name: 'HIIT — Quema y resistencia', level: 'intermedio', days: ['mar', 'sab'], ex: ['jump_rope', 'burpees', 'box_jumps', 'kb_swing', 'mountain_climbers', 'sprint'] },
   // Avanzado
   { name: 'Calistenia — Habilidades', level: 'avanzado', days: ['lun', 'mie', 'vie', 'sab'], ex: ['muscle_up', 'pullups', 'chest_dips', 'pike_pushups', 'pistol_squat', 'l_sit', 'burpees'] },
   { name: 'Pierna brutal — Volumen alto', level: 'avanzado', days: ['mar', 'vie'], ex: ['squat', 'leg_press', 'bulgarian_squat', 'romanian_dl', 'leg_extension', 'leg_curl', 'hip_thrust', 'standing_calf'] },
   { name: 'Espalda y hombro — Densidad', level: 'avanzado', days: ['lun', 'jue'], ex: ['deadlift', 'pullups', 'barbell_row', 'cable_row', 'ohp', 'lateral_raise', 'face_pull', 'shrugs'] },
+  { name: 'Push B — Fuerza pesada', level: 'avanzado', days: ['lun', 'jue'], ex: ['bench_press', 'ohp', 'close_grip_bench', 'incline_bench', 'lateral_raise', 'overhead_rope_ext'] },
+  { name: 'Pull B — Espalda densa', level: 'avanzado', days: ['mar', 'vie'], ex: ['deadlift', 'tbar_row', 'chinups', 'cable_pullover', 'rear_delt_fly', 'barbell_shrug', 'rev_ez_curl'] },
+  { name: 'Potencia — Cuerpo completo', level: 'avanzado', days: ['mie', 'sab'], ex: ['trap_bar_dl', 'front_squat', 'db_push_press', 'pullups', 'kb_swing', 'box_jumps'] },
 ]
 
 // Bloques de calentamiento / estiramiento por zona

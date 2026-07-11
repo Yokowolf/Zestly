@@ -51,7 +51,7 @@ export default function BodyMap({ selected, onSelect }) {
   }
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="bodymap flex flex-col items-center">
       <div className="flex w-full items-start justify-center gap-3">
         <div className="flex flex-col items-center">
           <Model type="anterior" {...modelProps} style={{ width: '100%', maxWidth: 165 }} />

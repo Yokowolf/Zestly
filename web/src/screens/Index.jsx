@@ -26,7 +26,7 @@ const CARDS = [
     img: U('1534438327276-14e5300c3a48'), grad: 'from-violet-700 to-purple-600',
   },
   {
-    icon: UtensilsCrossed, title: 'Plan alimenticio', target: { tab: 'coach', action: 'plan' },
+    icon: UtensilsCrossed, title: 'Plan alimenticio', target: { tab: 'plan' },
     desc: 'Plan semanal con IA, exportable a PDF o WhatsApp',
     img: U('1512621776951-a57141f2eefd'), grad: 'from-emerald-700 to-teal-600',
   },

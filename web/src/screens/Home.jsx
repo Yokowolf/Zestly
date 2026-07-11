@@ -81,14 +81,26 @@ export default function Home({ goTab }) {
         {MEALS.map(({ key, name: mName, icon: Icon }) => {
           const items = s.meals[key] || []
           const kcal = items.reduce((sum, i) => sum + i.kcal, 0)
+          // Presupuesto por comida según la distribución configurada
+          const pctSplit = (s.mealSplit || {})[key] ?? { breakfast: 25, lunch: 35, dinner: 25, snack: 15 }[key]
+          const budget = Math.round(n.kcal * pctSplit / 100)
+          const left = budget - kcal
           return (
             <div key={key} className="card overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-card2 text-ink2"><Icon size={17} /></div>
-                  <div>
-                    <div className="text-[13px] font-semibold">{mName}</div>
-                    <div className="text-[11px] text-ink3">{kcal} kcal</div>
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-card2 text-ink2"><Icon size={17} /></div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2 pr-2">
+                      <span className="text-[13px] font-semibold">{mName}</span>
+                      <span className={`text-[10px] font-semibold ${left < 0 ? 'text-orange-500' : 'text-ink3'}`}>
+                        {left >= 0 ? `quedan ${left}` : `${-left} de más`}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-2 pr-2">
+                      <div className="flex-1"><Bar pct={(kcal / (budget || 1)) * 100} className={kcal > budget ? 'bg-orange-400' : 'bg-brand-500'} /></div>
+                      <span className="shrink-0 text-[10px] text-ink3">{kcal}/{budget}</span>
+                    </div>
                   </div>
                 </div>
                 <button

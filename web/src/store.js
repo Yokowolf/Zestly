@@ -30,6 +30,7 @@ const DEFAULTS = {
   foodFreq: {},       // alimentos más usados: nombre → { count, item } (para Rápidos)
   recipes: [],        // recetas guardadas por el usuario
   customFoods: [],    // alimentos creados por el usuario (por 100g/100ml)
+  mealSplit: { breakfast: 25, lunch: 35, dinner: 25, snack: 15 }, // % de kcal por comida
   badgeUnlocks: {},   // logro → timestamp de desbloqueo (para destacarlo)
   aiTip: null,        // recomendación del día cacheada { date, text, source }
   progressPhoto: null // foto de progreso { ts, data (jpeg base64 pequeño) }

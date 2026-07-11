@@ -109,6 +109,7 @@ export default function Profile() {
             {getKey() ? 'Activa' : 'Sin configurar'}
           </span>
         </Row>
+        <MealSplitEditor />
       </div>
       </Section>
 
@@ -179,6 +180,41 @@ export default function Profile() {
 
       <EditProfileSheet open={editOpen} onClose={() => setEditOpen(false)} />
       <KeySheet open={keyOpen} onClose={() => setKeyOpen(false)} />
+    </div>
+  )
+}
+
+// ── Distribución de calorías por comida ──────────────────
+const SPLIT_MEALS = [['breakfast', 'Desayuno'], ['lunch', 'Almuerzo'], ['dinner', 'Cena'], ['snack', 'Snack']]
+function MealSplitEditor() {
+  const s = useStore()
+  const split = { breakfast: 25, lunch: 35, dinner: 25, snack: 15, ...(s.mealSplit || {}) }
+  const total = SPLIT_MEALS.reduce((t, [k]) => t + split[k], 0)
+  const nudge = (k, d) => {
+    const v = Math.max(0, Math.min(70, split[k] + d))
+    s.patch({ mealSplit: { ...split, [k]: v } })
+  }
+  return (
+    <div className="px-4 py-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[13px] font-medium">Distribución de calorías</span>
+        <span className={`text-[11px] font-bold ${total === 100 ? 'text-emerald-600' : 'text-orange-500'}`}>
+          {total}%{total !== 100 ? ' — ajusta a 100%' : ''}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {SPLIT_MEALS.map(([k, label]) => (
+          <div key={k} className="flex items-center gap-2 text-[12px]">
+            <span className="w-20 shrink-0 text-ink2">{label}</span>
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
+              <div className="h-full rounded-full bg-brand-500" style={{ width: `${split[k]}%` }} />
+            </div>
+            <button onClick={() => nudge(k, -5)} className="h-6 w-6 shrink-0 rounded-full border border-line text-ink2">−</button>
+            <span className="w-14 shrink-0 text-center font-semibold">{split[k]}% <span className="font-normal text-ink3">· {Math.round(s.nutrition.kcal * split[k] / 100)}</span></span>
+            <button onClick={() => nudge(k, 5)} className="h-6 w-6 shrink-0 rounded-full bg-brand-600 text-white">+</button>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

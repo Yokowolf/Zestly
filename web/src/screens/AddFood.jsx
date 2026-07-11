@@ -30,10 +30,24 @@ const TABS = [
 const MEAL_NAMES = { breakfast: 'Desayuno', lunch: 'Almuerzo', dinner: 'Cena', snack: 'Snack' }
 
 export default function AddFood({ meal, onClose }) {
+  const s = useStore()
   const [tab, setTab] = useState('search')
   const close = () => { setTab('search'); onClose() }
+
+  // Presupuesto restante de esta comida según la distribución
+  let subtitle = 'Busca, describe o escanea tu comida'
+  if (meal) {
+    const pct = (s.mealSplit || {})[meal] ?? { breakfast: 25, lunch: 35, dinner: 25, snack: 15 }[meal]
+    const budget = Math.round(s.nutrition.kcal * pct / 100)
+    const eaten = (s.meals[meal] || []).reduce((sum, i) => sum + i.kcal, 0)
+    const left = budget - eaten
+    subtitle = left >= 0
+      ? `Te quedan ${left} kcal para ${MEAL_NAMES[meal].toLowerCase()} (meta ${budget})`
+      : `Llevas ${-left} kcal por encima de la meta de ${MEAL_NAMES[meal].toLowerCase()} (${budget})`
+  }
+
   return (
-    <Sheet open={!!meal} onClose={close} title={meal ? 'Añadir a ' + MEAL_NAMES[meal] : ''} subtitle="Busca, describe o escanea tu comida">
+    <Sheet open={!!meal} onClose={close} title={meal ? 'Añadir a ' + MEAL_NAMES[meal] : ''} subtitle={subtitle}>
       <div className="mb-4 flex gap-1.5 overflow-x-auto no-scrollbar">
         {TABS.map(({ id, label, icon: Icon }) => (
           <Chip key={id} on={tab === id} onClick={() => setTab(id)} className="flex shrink-0 items-center gap-1.5">

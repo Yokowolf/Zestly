@@ -29,12 +29,26 @@ MODEL_TO_APP['adductor'] = 'cuadriceps'
 MODEL_TO_APP['abductors'] = 'gluteos'
 MODEL_TO_APP['neck'] = 'trapecio'
 
+// Color propio por grupo — estilo lámina anatómica multicolor
+const GROUP_COLOR = {
+  pecho: '#f472b6', espalda: '#60a5fa', hombros: '#fb923c', trapecio: '#a78bfa',
+  biceps: '#facc15', triceps: '#34d399', antebrazos: '#a3e635', core: '#22d3ee',
+  cuadriceps: '#4ade80', isquios: '#e879f9', gluteos: '#fb7185',
+  pantorrillas: '#818cf8', lumbares: '#2dd4bf',
+}
+const GROUPS = Object.keys(GROUP_COLOR)
+
 export default function BodyMap({ selected, onSelect }) {
   const theme = useStore(s => s.theme)
   const bodyColor = theme === 'dark' ? '#3b4a63' : '#dbe3ee'
-  const data = selected
-    ? [{ name: 'sel', muscles: APP_TO_MODEL[selected] || [], frequency: 1 }]
-    : []
+  const dimColor = theme === 'dark' ? '#2c3a52' : '#e7edf5'
+
+  // Sin selección: todos los grupos pintados con su color (lámina completa).
+  // Con selección: el elegido en rojo y el resto atenuado.
+  const data = GROUPS.map((g, i) => ({ name: g, muscles: APP_TO_MODEL[g], frequency: i + 1 }))
+  const highlightedColors = GROUPS.map(g =>
+    !selected ? GROUP_COLOR[g] : g === selected ? '#ef4444' : dimColor
+  )
 
   const handleClick = ({ muscle }) => {
     const app = MODEL_TO_APP[muscle]
@@ -42,13 +56,7 @@ export default function BodyMap({ selected, onSelect }) {
     onSelect(selected === app ? null : app)
   }
 
-  const modelProps = {
-    data,
-    bodyColor,
-    highlightedColors: ['#ef4444'], // rojo — músculo a trabajar
-    onClick: handleClick,
-    style: { width: '46%', maxWidth: 170 },
-  }
+  const modelProps = { data, bodyColor, highlightedColors, onClick: handleClick }
 
   return (
     <div className="bodymap flex flex-col items-center">
@@ -63,24 +71,35 @@ export default function BodyMap({ selected, onSelect }) {
         </div>
       </div>
 
-      <div className="mt-2 flex h-6 items-center gap-2">
-        {selected ? (
-          <>
-            <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-            <span className="text-xs font-bold text-red-500">{MUSCLES[selected]}</span>
-          </>
-        ) : (
-          <span className="text-[11px] text-ink3">Toca el músculo que quieres trabajar</span>
-        )}
+      {/* Leyenda tocable — como las etiquetas de una lámina anatómica */}
+      <div className="mt-2.5 flex flex-wrap justify-center gap-1.5">
+        {GROUPS.map(g => {
+          const active = selected === g
+          return (
+            <button key={g} onClick={() => onSelect(active ? null : g)}
+              className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-bold transition-colors ${
+                active ? 'border-red-400 bg-red-500/10 text-red-500' : 'border-line text-ink2'
+              }`}>
+              <span className="h-2 w-2 rounded-full" style={{ background: active ? '#ef4444' : GROUP_COLOR[g] }} />
+              {MUSCLES[g]}
+            </button>
+          )
+        })}
         <button
           onClick={() => onSelect(selected === 'cardio' ? null : 'cardio')}
-          className={`ml-2 rounded-full border px-2.5 py-1 text-[10px] font-bold ${
-            selected === 'cardio' ? 'border-red-400 bg-red-500/10 text-red-500' : 'border-line text-ink3'
-          }`}
-        >
+          className={`flex items-center gap-1.5 rounded-full border px-2 py-1 text-[10px] font-bold transition-colors ${
+            selected === 'cardio' ? 'border-red-400 bg-red-500/10 text-red-500' : 'border-line text-ink2'
+          }`}>
+          <span className="h-2 w-2 rounded-full bg-orange-400" />
           Cardio
         </button>
       </div>
+
+      <p className="mt-1.5 h-4 text-[11px] font-semibold">
+        {selected
+          ? <span className="text-red-500">{MUSCLES[selected]}</span>
+          : <span className="font-normal text-ink3">Toca un músculo del cuerpo o su etiqueta</span>}
+      </p>
     </div>
   )
 }

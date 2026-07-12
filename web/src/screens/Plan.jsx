@@ -11,8 +11,48 @@ import { Sheet, Button, Empty } from '../components/ui'
 export default function Plan() {
   const s = useStore()
   const [busy, setBusy] = useState(false)
+  const [recProgress, setRecProgress] = useState(null) // { done, total } mientras Groq llena recetas
   const [detail, setDetail] = useState(null) // { di, mi } → receta del plato
   const mp = s.mealPlan
+
+  // Disparador: tras crear el plan, Groq rellena las recetas de cada plato
+  // (una llamada por día — 5 recetas por llamada). Guarda progresivamente,
+  // así los platos van mostrando el gorrito ✓ a medida que llegan.
+  const fillRecipes = async planTs => {
+    const st = useStore.getState()
+    const days = st.mealPlan?.days || []
+    const pending = days.map((d, di) => di).filter(di => (days[di].meals || []).some(m => !m.recipe))
+    if (!pending.length) return
+    setRecProgress({ done: 0, total: pending.length })
+    let fails = 0
+    for (let i = 0; i < pending.length; i++) {
+      const di = pending[i]
+      try {
+        const cur = useStore.getState().mealPlan
+        if (!cur || cur.ts !== planTs) break // el usuario regeneró el plan — abortar
+        const day = cur.days[di]
+        const list = day.meals.map((m, mi) => `${mi}. "${m.name}" (${m.kcal} kcal)`).join('\n')
+        const prompt = `Recetas caseras colombianas (1 porción) para estos ${day.meals.length} platos:\n${list}\nResponde SOLO este JSON, en el MISMO orden:\n{"recipes":[{"ingredients":[{"item":"nombre","qty":"cantidad exacta ej. 150 g / 1 taza / 2 unidades"}],"steps":["paso 1 corto","paso 2..."],"time_min":numero}]}\nMáximo 6 ingredientes y 5 pasos cortos por plato.`
+        const parsed = parseAIJson(await callAI('Eres chef y nutricionista colombiano. Respondes únicamente JSON válido y completo.', prompt, 3000))
+        const recs = parsed.recipes || []
+        const fresh = useStore.getState().mealPlan
+        if (!fresh || fresh.ts !== planTs) break
+        const newDays = fresh.days.map((d, dj) => dj !== di ? d : {
+          ...d,
+          meals: d.meals.map((m, mi) => {
+            const r = recs[mi]
+            return (m.recipe || !r?.ingredients?.length || !r?.steps?.length) ? m : { ...m, recipe: r }
+          }),
+        })
+        useStore.getState().patch({ mealPlan: { ...fresh, days: newDays } })
+      } catch { fails++ }
+      setRecProgress({ done: i + 1, total: pending.length })
+    }
+    setRecProgress(null)
+    const left = (useStore.getState().mealPlan?.days || []).flatMap(d => d.meals || []).filter(m => !m.recipe).length
+    if (left) useStore.getState().toast(`Recetas listas — ${left} quedaron pendientes, toca el plato para completarla`, fails ? 'err' : 'ok')
+    else useStore.getState().toast('Todas las recetas quedaron listas 🎉', 'ok')
+  }
 
   const generate = async () => {
     if (!hasKey()) { s.toast('Configura tu clave IA en Perfil primero', 'err'); return }
@@ -26,8 +66,12 @@ Responde SOLO este JSON, comidas con nombre corto:
 Incluye los 7 días. La lista shopping con máx 15 items.`
       const parsed = parseAIJson(await callAI('Eres nutricionista deportivo colombiano. Respondes únicamente JSON válido y completo.', prompt, 3500))
       if (!parsed.days?.length) throw new Error('Plan incompleto — intenta de nuevo')
-      s.patch({ mealPlan: { ts: Date.now(), days: parsed.days, shopping: parsed.shopping || [] } })
-      s.toast('Plan semanal listo — toca un plato para ver su receta', 'ok')
+      const ts = Date.now()
+      s.patch({ mealPlan: { ts, days: parsed.days, shopping: parsed.shopping || [] } })
+      s.toast('Plan listo — creando las recetas de cada plato…', 'ok')
+      setBusy(false)
+      fillRecipes(ts) // disparador: Groq rellena las recetas en segundo plano
+      return
     } catch (e) {
       s.toast(e.message.slice(0, 60), 'err')
     }
@@ -50,6 +94,17 @@ Incluye los 7 días. La lista shopping con máx 15 items.`
 
       {mp && (
         <>
+          {recProgress && (
+            <div className="card mt-3 flex items-center gap-2.5 p-3">
+              <ChefHat size={16} className="shrink-0 animate-pulse text-emerald-500" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold">Creando recetas con IA… día {Math.min(recProgress.done + 1, recProgress.total)} de {recProgress.total}</p>
+                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line">
+                  <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${(recProgress.done / recProgress.total) * 100}%` }} />
+                </div>
+              </div>
+            </div>
+          )}
           <div className="mt-3 grid grid-cols-2 gap-2">
             <Button variant="ghost" className="flex items-center justify-center gap-2 !py-2.5" onClick={() => sharePlan(mp, s.nutrition, s.toast)}>
               <Share2 size={14} /> Compartir
@@ -86,6 +141,11 @@ Incluye los 7 días. La lista shopping con máx 15 items.`
                 <div className="mb-1.5 flex items-center gap-1.5 text-[13px] font-bold"><ShoppingCart size={14} /> Lista de compras</div>
                 <p className="text-xs leading-relaxed text-ink2">{mp.shopping.join(' · ')}</p>
               </div>
+            )}
+            {!recProgress && mp.days.some(d => (d.meals || []).some(m => !m.recipe)) && (
+              <Button variant="ghost" className="flex items-center justify-center gap-2 !py-2.5" onClick={() => fillRecipes(mp.ts)}>
+                <ChefHat size={14} /> Completar recetas faltantes
+              </Button>
             )}
             <p className="text-center text-[10px] text-ink3">
               Generado {new Date(mp.ts).toLocaleDateString('es')} · Los platos con <ChefHat size={10} className="inline text-emerald-500" /> ya tienen receta

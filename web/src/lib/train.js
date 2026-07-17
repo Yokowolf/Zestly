@@ -95,13 +95,33 @@ export function finishSession() {
     totalSets: doneEx.reduce((n, e) => n + e.sets.length, 0),
     totalReps: doneEx.reduce((n, e) => n + e.sets.reduce((r, st) => r + (st.r || 0), 0), 0),
   }
+  // Si la sesión venía de una rutina y se agregaron/quitaron ejercicios o
+  // sets, la rutina se actualiza — los cambios no se pierden para la próxima
+  let routineUpdated = false
+  let routines = s.routines || []
+  if (w.routineName) {
+    const ri = routines.findIndex(r => r.name === w.routineName)
+    if (ri >= 0) {
+      const newEx = w.exercises.map(e => ({
+        exerciseId: e.exerciseId, sets: e.sets.length, reps: e.reps, rest: e.rest, block: e.block,
+      }))
+      const sig = list => (list || []).map(e => `${e.exerciseId}|${e.block || 'main'}|${e.sets}`).join(',')
+      if (sig(newEx) !== sig(routines[ri].exercises)) {
+        routines = routines.map((r, i) => i === ri ? { ...r, exercises: newEx } : r)
+        routineUpdated = true
+      }
+    }
+  }
+
   s.patch({
     workoutLogs: [...(s.workoutLogs || []), log].slice(-60),
     activeWorkout: null,
+    ...(routineUpdated ? { routines } : {}),
   })
+  if (routineUpdated) s.toast(`Rutina "${w.routineName}" actualizada con los cambios de la sesión`, 'ok')
   // Subida inmediata a la nube — sin esperar el debounce, que iOS puede congelar
   import('./firebase').then(m => m.cloudSave()).catch(() => {})
-  return { log, prCount }
+  return { log, prCount, routineUpdated }
 }
 
 export function discardSession() {

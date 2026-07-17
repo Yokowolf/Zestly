@@ -33,7 +33,8 @@ const DEFAULTS = {
   mealSplit: { breakfast: 25, lunch: 35, dinner: 25, snack: 15 }, // % de kcal por comida
   badgeUnlocks: {},   // logro → timestamp de desbloqueo (para destacarlo)
   aiTip: null,        // recomendación del día cacheada { date, text, source }
-  progressPhoto: null // foto de progreso { ts, data (jpeg base64 pequeño) }
+  progressPhoto: null, // legado — migrada a progressPhotos al iniciar
+  progressPhotos: []  // galería de progreso [{ ts, data (jpeg base64 pequeño) }] máx 8
 }
 
 function loadLocal() {
@@ -80,6 +81,14 @@ function persist(state) {
 export function serializable(s) {
   const { user, syncedAt, toasts, patch, setUser, toast, ...data } = s
   return data
+}
+
+// Migración: la foto única de progreso pasa a la galería
+{
+  const st0 = useStore.getState()
+  if (st0.progressPhoto?.data && !(st0.progressPhotos || []).length) {
+    useStore.getState().patch({ progressPhotos: [st0.progressPhoto], progressPhoto: null })
+  }
 }
 
 // ── Cambio de día: archivar ayer y resetear hoy ──────────

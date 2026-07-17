@@ -56,7 +56,7 @@ export async function cloudSave() {
         customFoods: d.customFoods || [],
         mealSplit: d.mealSplit || { breakfast: 25, lunch: 35, dinner: 25, snack: 15 },
         badgeUnlocks: d.badgeUnlocks || {},
-        progressPhoto: d.progressPhoto ?? null,
+        progressPhotos: (d.progressPhotos || []).slice(-8),
         ts: Date.now(),
       }, { merge: true }),
       setDoc(doc(db, 'users', s.user.uid, 'd', 'today'), {
@@ -117,7 +117,11 @@ export async function cloudLoad(uid) {
         customFoods: mergeByKey(st.customFoods, d.customFoods, f => f.name),
         mealSplit: d.mealSplit || st.mealSplit || { breakfast: 25, lunch: 35, dinner: 25, snack: 15 },
         badgeUnlocks: d.badgeUnlocks || st.badgeUnlocks || {},
-        progressPhoto: d.progressPhoto ?? st.progressPhoto ?? null,
+        progressPhotos: mergeByKey(
+          st.progressPhotos,
+          d.progressPhotos || (d.progressPhoto?.data ? [d.progressPhoto] : []), // legado: foto única
+          p => p.ts, 8,
+        ).sort((a, b) => (a.ts || 0) - (b.ts || 0)),
       })
       // La clave de la nube llega sola a cualquier dispositivo nuevo
       if (d.geminiKey) localStorage.setItem('zs_gkey', d.geminiKey)

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, Sparkles, Cloud, WifiOff, Film, GlassWater, Play, LogIn, Quote, Camera, Trash2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Flame, Dumbbell, UtensilsCrossed, Ruler, BarChart3, Bot, Sparkles, Cloud, WifiOff, Film, GlassWater, Play, LogIn, Quote, Camera } from 'lucide-react'
 import { useStore } from '../store'
 import { Ring } from '../components/charts'
 import { todaysRoutineIndex } from '../lib/train'
@@ -189,9 +189,23 @@ export default function Index({ go }) {
         ))}
       </div>
 
-      {/* Foto de progreso del mes */}
+      {/* Acceso al progreso visual — las fotos viven en Mi progreso */}
       <h2 className="mb-2.5 mt-6 text-[11px] font-bold uppercase tracking-wider text-ink3">Tu progreso visual</h2>
-      <ProgressPhoto />
+      <button onClick={() => go({ tab: 'progress' })}
+        className="card flex w-full items-center gap-3.5 p-4 text-left active:scale-[0.99]">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-600/10 text-brand-600">
+          <Camera size={20} strokeWidth={1.8} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-semibold">Galería de progreso</div>
+          <div className="text-[11px] leading-snug text-ink3">
+            {(s.progressPhotos || []).length
+              ? `${s.progressPhotos.length} foto${s.progressPhotos.length === 1 ? '' : 's'} guardada${s.progressPhotos.length === 1 ? '' : 's'} — compara tu evolución`
+              : 'Guarda una foto al mes y compara tu evolución — solo la ves tú'}
+          </div>
+        </div>
+        <Play size={15} className="shrink-0 text-ink3" />
+      </button>
 
       {/* Funcionalidades */}
       <h2 className="mb-2.5 mt-6 text-[11px] font-bold uppercase tracking-wider text-ink3">¿Por qué Zestly?</h2>
@@ -208,66 +222,6 @@ export default function Index({ go }) {
       <p className="py-6 text-center text-[10px] text-ink3">
         Zestly · Hecho con disciplina en Colombia
       </p>
-    </div>
-  )
-}
-
-// ── Foto de progreso — motivación visual propia ──────────
-function ProgressPhoto() {
-  const s = useStore()
-  const inputRef = useRef()
-  const photo = s.progressPhoto
-
-  const onFile = e => {
-    const file = e.target.files[0]; if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => {
-      const img = new Image()
-      img.onload = () => {
-        // Se reduce para que quepa sin problema en la sincronización
-        const MAX = 480
-        let { width: w, height: h } = img
-        if (w > MAX || h > MAX) { if (w > h) { h = Math.round(h * MAX / w); w = MAX } else { w = Math.round(w * MAX / h); h = MAX } }
-        const canvas = document.createElement('canvas')
-        canvas.width = w; canvas.height = h
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-        s.patch({ progressPhoto: { ts: Date.now(), data: canvas.toDataURL('image/jpeg', 0.72) } })
-        s.toast('Foto de progreso guardada', 'ok')
-      }
-      img.src = ev.target.result
-    }
-    reader.readAsDataURL(file)
-    e.target.value = ''
-  }
-
-  const age = photo ? Math.floor((Date.now() - photo.ts) / 86400000) : 0
-
-  return (
-    <div className="card overflow-hidden">
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
-      {photo ? (
-        <div className="relative">
-          <img src={photo.data} alt="Foto de progreso" className="max-h-80 w-full object-cover" />
-          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between bg-gradient-to-t from-black/70 to-transparent p-3.5">
-            <div className="text-white">
-              <div className="text-[11px] font-bold">{new Date(photo.ts).toLocaleDateString('es', { day: 'numeric', month: 'long' })}</div>
-              <div className="text-[10px] text-white/80">{age === 0 ? 'Hoy' : `hace ${age} día${age === 1 ? '' : 's'}`}{age >= 25 && ' — hora de una nueva foto'}</div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => inputRef.current.click()} aria-label="Cambiar foto"
-                className="rounded-xl bg-white/20 p-2 text-white backdrop-blur-sm"><Camera size={15} /></button>
-              <button onClick={() => { if (confirm('¿Eliminar la foto de progreso?')) s.patch({ progressPhoto: null }) }} aria-label="Eliminar foto"
-                className="rounded-xl bg-white/20 p-2 text-white backdrop-blur-sm"><Trash2 size={15} /></button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <button onClick={() => inputRef.current.click()} className="flex w-full flex-col items-center gap-2 border-dashed py-7 text-ink3">
-          <Camera size={24} strokeWidth={1.5} />
-          <span className="text-xs font-medium">Guarda tu foto de progreso del mes</span>
-          <span className="px-6 text-[10px] leading-relaxed">Compárala cada mes — el espejo miente, la foto no. Solo la ves tú.</span>
-        </button>
-      )}
     </div>
   )
 }

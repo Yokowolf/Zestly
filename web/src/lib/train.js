@@ -99,6 +99,8 @@ export function finishSession() {
     workoutLogs: [...(s.workoutLogs || []), log].slice(-60),
     activeWorkout: null,
   })
+  // Subida inmediata a la nube — sin esperar el debounce, que iOS puede congelar
+  import('./firebase').then(m => m.cloudSave()).catch(() => {})
   return { log, prCount }
 }
 

@@ -75,6 +75,18 @@ export async function cloudSave() {
   }
 }
 
+// Fusión defensiva local+nube: NUNCA perder registros locales que aún no
+// alcanzaron a subir (p. ej. iOS congeló la app antes del sync). En conflicto
+// de clave gana lo local (es lo más reciente en este dispositivo).
+function mergeByKey(local = [], cloud = [], keyFn, max = 60) {
+  const map = new Map()
+  cloud.forEach(x => map.set(keyFn(x), x))
+  local.forEach(x => map.set(keyFn(x), x))
+  return [...map.values()].slice(-max)
+}
+const byStart = l => l.startTs || `${l.date}|${l.name}`
+const byDate = l => l.date
+
 export async function cloudLoad(uid) {
   const st = useStore.getState()
   try {
@@ -90,17 +102,19 @@ export async function cloudLoad(uid) {
       Object.assign(patch, {
         profile: d.profile || st.profile,
         nutrition: d.nutrition || st.nutrition,
-        streak: d.streak || 1,
-        weightLog: d.weightLog || [],
-        log: d.log || [],
+        streak: Math.max(d.streak || 1, st.streak || 1),
+        weightLog: mergeByKey(st.weightLog, d.weightLog, byDate, 30)
+          .sort((a, b) => new Date(a.date) - new Date(b.date)),
+        log: mergeByKey(st.log, d.log, byDate)
+          .sort((a, b) => new Date(a.date) - new Date(b.date)),
         fastingActive: d.fastingActive || false,
         fastingStart: d.fastingStart || null,
         theme: d.theme || st.theme || 'light',
         waterGoal: d.waterGoal || st.waterGoal || 8,
         fastingHours: d.fastingHours || st.fastingHours || 16,
         foodFreq: d.foodFreq || st.foodFreq || {},
-        recipes: d.recipes || st.recipes || [],
-        customFoods: d.customFoods || st.customFoods || [],
+        recipes: mergeByKey(st.recipes, d.recipes, r => r.createdAt || r.name),
+        customFoods: mergeByKey(st.customFoods, d.customFoods, f => f.name),
         mealSplit: d.mealSplit || st.mealSplit || { breakfast: 25, lunch: 35, dinner: 25, snack: 15 },
         badgeUnlocks: d.badgeUnlocks || st.badgeUnlocks || {},
         progressPhoto: d.progressPhoto ?? st.progressPhoto ?? null,
@@ -113,11 +127,13 @@ export async function cloudLoad(uid) {
       const f = fS.data()
       Object.assign(patch, {
         unit: f.unit || 'kg',
-        routines: f.routines || [],
-        workoutLogs: f.workoutLogs || [],
-        activeWorkout: f.activeWorkout || null,
-        anthro: f.anthro || [],
-        mealPlan: f.mealPlan || null,
+        routines: f.routines?.length ? f.routines : st.routines || [],
+        workoutLogs: mergeByKey(st.workoutLogs, f.workoutLogs, byStart)
+          .sort((a, b) => (a.startTs || 0) - (b.startTs || 0)),
+        activeWorkout: st.activeWorkout || f.activeWorkout || null,
+        anthro: mergeByKey(st.anthro, f.anthro, byDate)
+          .sort((a, b) => new Date(a.date) - new Date(b.date)),
+        mealPlan: f.mealPlan || st.mealPlan || null,
       })
     }
 
@@ -151,4 +167,14 @@ export async function cloudLoad(uid) {
   } catch (e) {
     console.warn('Cloud load error:', e)
   }
+}
+
+// Sync inmediato al pasar la app a segundo plano: iOS congela los timers,
+// y el debounce de 800 ms dejaba sin subir los últimos cambios (p. ej. el
+// entrenamiento recién terminado se perdía al reabrir en otro momento).
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') cloudSave()
+  })
+  window.addEventListener('pagehide', () => { cloudSave() })
 }

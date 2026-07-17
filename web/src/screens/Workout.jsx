@@ -4,7 +4,7 @@ import { Sheet, Input, Button, Chip, SectionTitle, ExerciseImg, Empty } from '..
 import { Bar } from '../components/ui'
 import { useStore, fromKg, toKg, unitLbl } from '../store'
 import { EXERCISES, EX_BY_ID, MUSCLES, WARMUP_BLOCKS } from '../data/exercises'
-import { bestWeight, buildSessionExercises, finishSession, discardSession, sessionVolume } from '../lib/train'
+import { bestWeight, exerciseHistory, buildSessionExercises, finishSession, discardSession, sessionVolume } from '../lib/train'
 import { norm } from '../lib/calc'
 import ExerciseSheet from './ExerciseSheet'
 
@@ -57,9 +57,18 @@ export default function Workout({ open, onClose }) {
     }))
   }
 
+  // Un set solo se puede marcar con datos completos: peso (si el ejercicio
+  // usa peso) y reps. Evita chulos por error sin ningún registro.
+  const setReady = (ex, st) => (ex.weight === false || st.w != null) && st.r != null
+
   const toggleSet = (ei, si) => {
     const e = w.exercises[ei]
     const st = e.sets[si]
+    const ex = EX_BY_ID[e.exerciseId] || {}
+    if (!st.done && !setReady(ex, st)) {
+      s.toast(ex.weight === false ? 'Registra las reps antes de marcar el set' : 'Registra peso y reps antes de marcar el set', 'err')
+      return
+    }
     const nowDone = !st.done
     patchWorkout(w.exercises.map((ex, i) => i !== ei ? ex : {
       ...ex,
@@ -151,6 +160,17 @@ export default function Workout({ open, onClose }) {
             {block.list.map(({ e, ei }) => {
               const ex = EX_BY_ID[e.exerciseId] || {}
               const best = bestWeight(e.exerciseId)
+              // Última sesión de este ejercicio → texto fantasma en cada casilla
+              const last = exerciseHistory(e.exerciseId).at(-1)
+              const ghostW = si => {
+                if (ex.weight === false) return '—'
+                const prev = last?.sets?.[si]?.w ?? last?.maxW
+                return prev ? String(fromKg(prev)) : unitLbl()
+              }
+              const ghostR = si => {
+                const prev = last?.sets?.[si]?.r
+                return prev ? String(prev) : 'reps'
+              }
 
               // ── Vista cuadrícula: el GIF protagonista + celdas de sets ──
               if (viewMode === 'grid') {
@@ -171,29 +191,31 @@ export default function Workout({ open, onClose }) {
                         </div>
                         <button onClick={() => removeEx(ei)} className="shrink-0 p-1.5 text-ink3"><Trash2 size={15} /></button>
                       </div>
-                      <div className="mt-2.5 grid grid-cols-4 gap-1.5">
+                      <div className="mt-2.5 grid grid-cols-3 gap-1.5">
                         {e.sets.map((st, si) => (
                           <div key={si} className={`rounded-xl border p-1.5 text-center ${st.done ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'border-line bg-card2'}`}>
                             <input
-                              type="number" inputMode="decimal" placeholder={ex.weight === false ? '—' : unitLbl()}
+                              type="number" inputMode="decimal" placeholder={ghostW(si)}
                               disabled={ex.weight === false}
                               value={st.w != null ? fromKg(st.w) : ''}
                               onChange={ev => setField(ei, si, 'w', ev.target.value)}
-                              className="w-full bg-transparent text-center font-display text-[13px] font-bold outline-none disabled:opacity-40"
+                              className="w-full scroll-mt-28 bg-transparent py-1 text-center font-display text-[14px] font-bold outline-none placeholder:font-normal placeholder:text-ink3/60 disabled:opacity-40"
                             />
                             <input
-                              type="number" inputMode="numeric" placeholder="reps"
+                              type="number" inputMode="numeric" placeholder={ghostR(si)}
                               value={st.r ?? ''}
                               onChange={ev => setField(ei, si, 'r', ev.target.value)}
-                              className="w-full border-t border-dashed border-line bg-transparent text-center text-[11px] outline-none"
+                              className="w-full scroll-mt-28 border-t border-dashed border-line bg-transparent py-1.5 text-center text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-ink3/60"
                             />
                             <button onClick={() => toggleSet(ei, si)} aria-label="Completar set"
-                              className={`mt-1 flex h-6 w-full items-center justify-center rounded-lg ${st.done ? 'bg-emerald-500 text-white' : 'bg-line text-ink3'}`}>
-                              <Check size={13} />
+                              className={`mt-1 flex h-8 w-full items-center justify-center rounded-lg transition-colors ${
+                                st.done ? 'bg-emerald-500 text-white' : setReady(ex, st) ? 'bg-brand-600/15 text-brand-600' : 'bg-line text-ink3/40'
+                              }`}>
+                              <Check size={14} />
                             </button>
                           </div>
                         ))}
-                        <button onClick={() => addSet(ei)} className="flex min-h-16 items-center justify-center rounded-xl border border-dashed border-line text-ink3" aria-label="Agregar set">
+                        <button onClick={() => addSet(ei)} className="flex min-h-20 items-center justify-center rounded-xl border border-dashed border-line text-ink3" aria-label="Agregar set">
                           <Plus size={16} />
                         </button>
                       </div>
@@ -220,23 +242,24 @@ export default function Workout({ open, onClose }) {
                       <div key={si} className={`flex items-center gap-2 ${st.done ? 'opacity-60' : ''}`}>
                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-card2 text-[10px] font-bold text-ink3">{si + 1}</span>
                         <input
-                          type="number" inputMode="decimal" placeholder={ex.weight === false ? '—' : unitLbl()}
+                          type="number" inputMode="decimal" placeholder={ghostW(si)}
                           disabled={ex.weight === false}
                           value={st.w != null ? fromKg(st.w) : ''}
                           onChange={ev => setField(ei, si, 'w', ev.target.value)}
-                          className="w-0 flex-1 rounded-lg border border-line bg-card2 py-2 text-center font-display text-sm font-bold outline-none focus:border-brand-500 disabled:opacity-40"
+                          className="w-0 flex-1 scroll-mt-28 rounded-lg border border-line bg-card2 py-2 text-center font-display text-sm font-bold outline-none placeholder:font-sans placeholder:font-normal placeholder:text-ink3/60 focus:border-brand-500 disabled:opacity-40"
                         />
                         <span className="text-[10px] text-ink3">×</span>
                         <input
-                          type="number" inputMode="numeric" placeholder="reps"
+                          type="number" inputMode="numeric" placeholder={ghostR(si)}
                           value={st.r ?? ''}
                           onChange={ev => setField(ei, si, 'r', ev.target.value)}
-                          className="w-0 flex-1 rounded-lg border border-line bg-card2 py-2 text-center font-display text-sm font-bold outline-none focus:border-brand-500"
+                          className="w-0 flex-1 scroll-mt-28 rounded-lg border border-line bg-card2 py-2 text-center font-display text-sm font-bold outline-none placeholder:font-sans placeholder:font-normal placeholder:text-ink3/60 focus:border-brand-500"
                         />
                         <button
                           onClick={() => toggleSet(ei, si)}
                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors ${
-                            st.done ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-line bg-card2 text-ink3'
+                            st.done ? 'border-emerald-500 bg-emerald-500 text-white'
+                              : setReady(ex, st) ? 'border-brand-400 bg-brand-600/10 text-brand-600' : 'border-line bg-card2 text-ink3/40'
                           }`}
                           aria-label="Completar set"
                         >

@@ -82,10 +82,24 @@ export default function Profile() {
             <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${s.theme === 'dark' ? 'left-[22px]' : 'left-0.5'}`} />
           </button>
         </Row>
-        <Row icon={GlassWater} label={`Meta de agua: ${s.waterGoal || 8} vasos`}>
+        <Row icon={GlassWater} label={`Meta de agua: ${s.waterGoal || 8} porciones`}>
           <div className="flex items-center gap-2">
             <button className="h-7 w-7 rounded-full border border-line text-ink2" onClick={() => s.patch({ waterGoal: Math.max(1, (s.waterGoal || 8) - 1) })}>−</button>
             <button className="h-7 w-7 rounded-full bg-brand-600 text-white" onClick={() => s.patch({ waterGoal: Math.min(20, (s.waterGoal || 8) + 1) })}>+</button>
+          </div>
+        </Row>
+        <Row icon={GlassWater} label={`Porción de agua: ${(s.waterGlassMl || 250) >= 1000 ? `${(s.waterGlassMl || 250) / 1000}L` : `${s.waterGlassMl || 250}ml`}`}>
+          <div className="flex gap-1.5">
+            {[250, 500, 750, 1000].map(ml => (
+              <button key={ml} onClick={() => {
+                const oldMl = s.waterGlassMl || 250
+                const totalMl = (s.waterGoal || 8) * oldMl
+                s.patch({ waterGlassMl: ml, waterGoal: Math.max(1, Math.round(totalMl / ml)) })
+              }}
+                className={`rounded-lg border px-2 py-1.5 text-[10px] font-bold ${
+                  (s.waterGlassMl || 250) === ml ? 'border-brand-500 bg-brand-500/10 text-brand-600' : 'border-line text-ink3'
+                }`}>{ml >= 1000 ? `${ml / 1000}L` : `${ml}ml`}</button>
+            ))}
           </div>
         </Row>
         <Row icon={Scale} label="Unidad de peso">

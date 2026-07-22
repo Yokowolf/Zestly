@@ -25,7 +25,8 @@ const DEFAULTS = {
   mealPlan: null,
   // Nuevos (rediseño React)
   theme: 'light',     // 'light' | 'dark' — claro es el predeterminado
-  waterGoal: 8,       // vasos por día, configurable
+  waterGoal: 8,       // porciones por día, configurable
+  waterGlassMl: 250,  // ml por porción de agua (250, 500, 750, 1000)
   fastingHours: 16,   // protocolo de ayuno: 16 (16:8), 18 (18:6) o 20 (20:4)
   foodFreq: {},       // alimentos más usados: nombre → { count, item } (para Rápidos)
   recipes: [],        // recetas guardadas por el usuario

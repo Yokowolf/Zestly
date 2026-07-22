@@ -250,20 +250,23 @@ function removeFood(meal, idx) {
 function WaterCard() {
   const s = useStore()
   const goal = s.waterGoal || 8
+  const glassMl = s.waterGlassMl || 250
   const water = s.today.water || 0
   const setWater = w => s.patch({ today: { ...s.today, water: Math.max(0, Math.min(goal, w)) } })
+  const fmtMl = ml => ml >= 1000 ? `${(ml / 1000).toFixed(ml % 1000 ? 1 : 0)}L` : `${ml}ml`
   return (
     <div className="card p-3.5">
       <div className="mb-2 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-xs font-semibold text-ink2"><GlassWater size={14} className="text-brand-500" /> Agua</span>
-        <span className="text-xs font-bold text-brand-600">{water}/{goal}</span>
+        <span className="text-xs font-bold text-brand-600">{fmtMl(water * glassMl)}/{fmtMl(goal * glassMl)}</span>
       </div>
       <Bar pct={(water / goal) * 100} />
-      <div className="mt-3 flex gap-2">
-        <button onClick={() => setWater(water - 1)} className="flex h-9 flex-1 items-center justify-center rounded-lg border border-line text-ink2" aria-label="Quitar vaso">
+      <div className="mt-1 text-center text-[10px] text-ink3">+{fmtMl(glassMl)} por toque</div>
+      <div className="mt-1.5 flex gap-2">
+        <button onClick={() => setWater(water - 1)} className="flex h-9 flex-1 items-center justify-center rounded-lg border border-line text-ink2" aria-label="Quitar porción">
           <Minus size={15} />
         </button>
-        <button onClick={() => setWater(water + 1)} className="flex h-9 flex-1 items-center justify-center rounded-lg bg-brand-600 text-white" aria-label="Agregar vaso">
+        <button onClick={() => setWater(water + 1)} className="flex h-9 flex-1 items-center justify-center rounded-lg bg-brand-600 text-white" aria-label="Agregar porción">
           <Plus size={15} />
         </button>
       </div>

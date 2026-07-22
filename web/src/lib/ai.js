@@ -24,28 +24,37 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 800) {
   return data.choices[0].message.content
 }
 
+const VISION_MODELS = [
+  'qwen/qwen3.6-27b',
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+]
+
 export async function callAIWithImage(prompt, imageBase64) {
   const key = getKey()
   if (!key) throw new Error('Sin API key — configúrala en Perfil')
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    body: JSON.stringify({
-      // Modelo de visión vigente en Groq (llama-3.2-11b-vision fue dado de baja)
-      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
-        ],
-      }],
-      max_tokens: 600,
-    }),
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(friendlyError(res.status, data))
-  return data.choices[0].message.content
+  const body = {
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
+      ],
+    }],
+    max_tokens: 600,
+  }
+  for (const model of VISION_MODELS) {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model, ...body }),
+    })
+    const data = await res.json()
+    if (res.ok) return data.choices[0].message.content
+    const code = data.error?.code || ''
+    if (code === 'model_decommissioned' || code === 'model_not_found') continue
+    throw new Error(friendlyError(res.status, data))
+  }
+  throw new Error('Ningún modelo de visión disponible — revisa actualizaciones de la app')
 }
 
 // Traduce errores comunes de la API a mensajes accionables

@@ -22,7 +22,21 @@ export default function Workout({ open, onClose }) {
   const [detail, setDetail] = useState(null)
   const [summary, setSummary] = useState(null)
   const [viewMode, setViewMode] = useState('list') // 'list' | 'grid' (enfoque en la imagen)
+  const [exTimer, setExTimer] = useState(null) // { ei, si, target, startTs }
   const [, tick] = useState(0)
+
+  const patchWorkout = exercises => w && s.patch({ activeWorkout: { ...w, exercises } })
+
+  const setField = (ei, si, field, val) => {
+    if (!w) return
+    const num = val === '' ? null : parseFloat(val)
+    patchWorkout(w.exercises.map((e, i) => i !== ei ? e : {
+      ...e,
+      sets: e.sets.map((st, j) => j !== si ? st : { ...st, [field]: field === 'w' && num != null ? toKg(num) : num }),
+    }))
+  }
+
+  const setReady = (ex, st) => (ex.weight === false || st.w != null) && st.r != null
 
   useEffect(() => {
     if (!open) return
@@ -39,6 +53,28 @@ export default function Workout({ open, onClose }) {
     }
   }, [restLeft]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Mini-cronómetro para ejercicios por tiempo (reps como '30-60s')
+  const parseTimedReps = reps => {
+    const m = String(reps).match(/(\d+)(?:-(\d+))?s$/)
+    return m ? { min: parseInt(m[1]), max: parseInt(m[2] || m[1]) } : null
+  }
+  const timerElapsed = exTimer ? Math.floor((Date.now() - exTimer.startTs) / 1000) : 0
+  const timerLeft = exTimer ? Math.max(0, exTimer.target - timerElapsed) : 0
+  useEffect(() => {
+    if (exTimer && timerLeft === 0) {
+      setField(exTimer.ei, exTimer.si, 'r', String(exTimer.target))
+      setExTimer(null)
+      s.toast('¡Tiempo cumplido!', 'ok')
+      try { navigator.vibrate?.(200) } catch {}
+    }
+  }, [timerLeft]) // eslint-disable-line react-hooks/exhaustive-deps
+  const startTimer = (ei, si, secs) => setExTimer({ ei, si, target: secs, startTs: Date.now() })
+  const stopTimer = () => {
+    if (!exTimer) return
+    setField(exTimer.ei, exTimer.si, 'r', String(Math.min(timerElapsed, exTimer.target)))
+    setExTimer(null)
+  }
+
   const results = useMemo(() => {
     if (!q.trim()) return []
     const qn = norm(q)
@@ -46,20 +82,6 @@ export default function Workout({ open, onClose }) {
   }, [q])
 
   if (!w && !summary) return null
-
-  const patchWorkout = exercises => s.patch({ activeWorkout: { ...w, exercises } })
-
-  const setField = (ei, si, field, val) => {
-    const num = val === '' ? null : parseFloat(val)
-    patchWorkout(w.exercises.map((e, i) => i !== ei ? e : {
-      ...e,
-      sets: e.sets.map((st, j) => j !== si ? st : { ...st, [field]: field === 'w' && num != null ? toKg(num) : num }),
-    }))
-  }
-
-  // Un set solo se puede marcar con datos completos: peso (si el ejercicio
-  // usa peso) y reps. Evita chulos por error sin ningún registro.
-  const setReady = (ex, st) => (ex.weight === false || st.w != null) && st.r != null
 
   const toggleSet = (ei, si) => {
     const e = w.exercises[ei]
@@ -98,12 +120,17 @@ export default function Workout({ open, onClose }) {
   }
 
   const finish = () => {
+    const hasDone = w.exercises.some(e => e.sets.some(st => st.done))
+    if (hasDone) {
+      if (!confirm('¿Estás seguro de que deseas terminar el entrenamiento?')) return
+    }
     const res = finishSession()
     if (!res) {
-      if (confirm('No registraste ningún set. ¿Descartar la sesión?')) { discardSession(); onClose() }
+      if (confirm('No registraste ningún set. ¿Descartar la sesión?')) { discardSession(); setRest(null); onClose() }
       return
     }
     setRest(null)
+    setExTimer(null)
     setSummary(res)
   }
 
@@ -171,6 +198,7 @@ export default function Workout({ open, onClose }) {
                 const prev = last?.sets?.[si]?.r
                 return prev ? String(prev) : 'reps'
               }
+              const timed = parseTimedReps(e.reps)
 
               // ── Vista cuadrícula: el GIF protagonista + celdas de sets ──
               if (viewMode === 'grid') {
@@ -202,11 +230,22 @@ export default function Workout({ open, onClose }) {
                               className="w-full scroll-mt-28 bg-transparent py-1 text-center font-display text-[14px] font-bold outline-none placeholder:font-normal placeholder:text-ink3/60 disabled:opacity-40"
                             />
                             <input
-                              type="number" inputMode="numeric" placeholder={ghostR(si)}
+                              type="number" inputMode="numeric" placeholder={timed ? `${timed.max}s` : ghostR(si)}
                               value={st.r ?? ''}
                               onChange={ev => setField(ei, si, 'r', ev.target.value)}
                               className="w-full scroll-mt-28 border-t border-dashed border-line bg-transparent py-1.5 text-center text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-ink3/60"
                             />
+                            {timed && (
+                              exTimer?.ei === ei && exTimer?.si === si ? (
+                                <button onClick={stopTimer} className="mt-1 flex h-8 w-full items-center justify-center gap-1 rounded-lg bg-red-500/15 font-display text-xs font-bold text-red-500">
+                                  {timerLeft}s ■
+                                </button>
+                              ) : (
+                                <button onClick={() => startTimer(ei, si, timed.max)} className="mt-1 flex h-8 w-full items-center justify-center gap-1 rounded-lg border border-accent-400/50 text-[11px] font-semibold text-accent-500">
+                                  <Timer size={11} /> {timed.max}s
+                                </button>
+                              )
+                            )}
                             <button onClick={() => toggleSet(ei, si)} aria-label="Completar set"
                               className={`mt-1 flex h-8 w-full items-center justify-center rounded-lg transition-colors ${
                                 st.done ? 'bg-emerald-500 text-white' : setReady(ex, st) ? 'bg-brand-600/15 text-brand-600' : 'bg-line text-ink3/40'
@@ -248,13 +287,24 @@ export default function Workout({ open, onClose }) {
                           onChange={ev => setField(ei, si, 'w', ev.target.value)}
                           className="w-0 flex-1 scroll-mt-28 rounded-lg border border-line bg-card2 py-2 text-center font-display text-sm font-bold outline-none placeholder:font-sans placeholder:font-normal placeholder:text-ink3/60 focus:border-brand-500 disabled:opacity-40"
                         />
-                        <span className="text-[10px] text-ink3">×</span>
+                        <span className="text-[10px] text-ink3">{timed ? '' : '×'}</span>
                         <input
-                          type="number" inputMode="numeric" placeholder={ghostR(si)}
+                          type="number" inputMode="numeric" placeholder={timed ? `${timed.max}s` : ghostR(si)}
                           value={st.r ?? ''}
                           onChange={ev => setField(ei, si, 'r', ev.target.value)}
                           className="w-0 flex-1 scroll-mt-28 rounded-lg border border-line bg-card2 py-2 text-center font-display text-sm font-bold outline-none placeholder:font-sans placeholder:font-normal placeholder:text-ink3/60 focus:border-brand-500"
                         />
+                        {timed && (
+                          exTimer?.ei === ei && exTimer?.si === si ? (
+                            <button onClick={stopTimer} className="flex h-9 w-14 shrink-0 items-center justify-center gap-1 rounded-lg bg-red-500/15 font-display text-sm font-bold text-red-500">
+                              {timerLeft}s
+                            </button>
+                          ) : (
+                            <button onClick={() => startTimer(ei, si, timed.max)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent-400 text-accent-500" aria-label="Iniciar cronómetro">
+                              <Timer size={15} />
+                            </button>
+                          )
+                        )}
                         <button
                           onClick={() => toggleSet(ei, si)}
                           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border transition-colors ${

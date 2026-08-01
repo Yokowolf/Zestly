@@ -17,6 +17,7 @@ const GOAL_TXT = { hipertrofia: 'hipertrofia muscular', fuerza: 'fuerza máxima'
 export default function AiGen({ open, onClose, onGenerated }) {
   const toast = useStore(s => s.toast)
   const [prefs, setPrefs] = useState({ goal: 'hipertrofia', days: 4, equip: 'gym', level: 'intermedio' })
+  const [notes, setNotes] = useState('') // condiciones especiales, dolores o limitaciones de movilidad
   const [busy, setBusy] = useState(false)
 
   const bank = () => {
@@ -32,13 +33,17 @@ export default function AiGen({ open, onClose, onGenerated }) {
     setBusy(true)
     try {
       const list = bank().map(e => `${e.id}=${e.name}`).join(', ')
+      const condTxt = notes.trim()
+        ? `\nIMPORTANTE — condición del usuario: "${notes.trim()}". Evita por completo los ejercicios de la lista que puedan agravar esto y reemplázalos por alternativas más seguras de la MISMA lista (nunca inventes ids fuera de ella).`
+        : ''
       const prompt = `Crea UNA rutina de UN día de entrenamiento (la mejor sesión tipo para este perfil) para ${GOAL_TXT[prefs.goal]}, nivel ${prefs.level}, que entrena ${prefs.days} días/semana.
 Elige 5-8 ejercicios SOLO de esta lista usando el id exacto:
 ${list}
 Responde SOLO este JSON sin texto extra:
 {"name":"nombre corto de la rutina","days":["lun","mie"],"exercises":[{"id":"id_exacto","sets":4,"reps":"8-12","rest":90}]}
-Los days deben ser ${prefs.days} valores entre: lun,mar,mie,jue,vie,sab,dom.`
-      const parsed = parseAIJson(await callAI(`Eres entrenador personal experto en ${GOAL_TXT[prefs.goal]}. Respondes únicamente JSON válido.`, prompt, 1200))
+Los days deben ser ${prefs.days} valores entre: lun,mar,mie,jue,vie,sab,dom.${condTxt}`
+      const sys = `Eres entrenador personal experto en ${GOAL_TXT[prefs.goal]}${notes.trim() ? ', y en adaptar rutinas de forma segura ante lesiones o limitaciones de movilidad' : ''}. Respondes únicamente JSON válido.`
+      const parsed = parseAIJson(await callAI(sys, prompt, 1200))
       const valid = (parsed.exercises || []).filter(e => EX_BY_ID[e.id])
       if (!valid.length) throw new Error('La IA no eligió ejercicios válidos — intenta de nuevo')
       const dayIds = DAYS.map(d => d[0])
@@ -71,6 +76,15 @@ Los days deben ser ${prefs.days} valores entre: lun,mar,mie,jue,vie,sab,dom.`
           </div>
         </div>
       ))}
+
+      <SectionTitle>Condiciones especiales (opcional)</SectionTitle>
+      <textarea
+        value={notes} onChange={e => setNotes(e.target.value)} rows={2} maxLength={200}
+        placeholder="Ej: dolor de hombro derecho, rodilla delicada, movilidad limitada de cadera…"
+        className="w-full rounded-xl border border-line bg-card px-3.5 py-3 text-sm text-ink outline-none placeholder:text-ink3 focus:border-brand-500"
+      />
+      <p className="mt-1 text-[10px] text-ink3">La IA evita o adapta ejercicios que puedan agravar lo que cuentes aquí.</p>
+
       <Button variant="accent" className="mt-5 flex items-center justify-center gap-2" onClick={generate} disabled={busy}>
         <Sparkles size={16} /> {busy ? 'Generando…' : 'Generar rutina'}
       </Button>

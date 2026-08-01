@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Settings, Home as HomeIcon, Dumbbell, UtensilsCrossed, BarChart3, Bot } from 'lucide-react'
+import { Settings, Home as HomeIcon, Flame, Dumbbell, UtensilsCrossed, BarChart3, Bot } from 'lucide-react'
 import { useStore, rolloverIfNewDay } from './store'
 import { watchAuth } from './lib/firebase'
 import { Toasts } from './components/ui'
 import Welcome from './screens/Welcome'
 import Onboarding from './screens/Onboarding'
 import HomeScreen from './screens/Home'
+import Calories from './screens/Calories'
 import Train from './screens/Train'
 import Progress from './screens/Progress'
 import Coach from './screens/Coach'
@@ -14,13 +15,14 @@ import Plan from './screens/Plan'
 
 const TABS = [
   { id: 'home', label: 'Inicio', icon: HomeIcon },
+  { id: 'calories', label: 'Calorías', icon: Flame },
   { id: 'train', label: 'Entrena', icon: Dumbbell },
   { id: 'plan', label: 'Plan', icon: UtensilsCrossed },
   { id: 'progress', label: 'Progreso', icon: BarChart3 },
   { id: 'coach', label: 'Coach', icon: Bot },
 ]
 const TITLES = {
-  home: 'Contador de calorías', train: 'Entrenamiento', plan: 'Plan alimenticio',
+  home: 'Inicio', calories: 'Contador de calorías', train: 'Entrenamiento', plan: 'Plan alimenticio',
   progress: 'Mi progreso', coach: 'IA Coach', profile: 'Perfil',
 }
 
@@ -91,6 +93,7 @@ export default function App() {
 
       <main className="flex-1 pb-24">
         {tab === 'home' && <HomeScreen go={go} />}
+        {tab === 'calories' && <Calories />}
         {tab === 'progress' && <Progress key={ts} initialAction={action} />}
         {tab === 'train' && <Train key={ts} initialAction={action} />}
         {tab === 'coach' && <Coach key={ts} initialAction={action} go={go} />}

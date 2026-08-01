@@ -1,43 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
-  Plus, Minus, GlassWater, Timer, Flame, TrendingUp, Trash2,
-  Sunrise, Sun, Moon, Apple, Play, LogIn, Quote, Sparkles,
+  Flame, Play, LogIn, Quote, Sparkles, Clock, Trophy,
+  ChevronDown, ChevronRight, Camera, UtensilsCrossed, Dumbbell, BarChart3, Bot, Scale,
 } from 'lucide-react'
-import { useStore } from '../store'
-import { Ring, Bars } from '../components/charts'
-import { Bar, SectionTitle, Sheet, Button, Chip } from '../components/ui'
-import AddFood, { baseName } from './AddFood'
-import { round1 } from '../lib/calc'
+import { useStore, fromKg, unitLbl } from '../store'
+import { Ring } from '../components/charts'
+import { Bar } from '../components/ui'
 import { todaysRoutineIndex } from '../lib/train'
 import { quoteOfTheDay } from '../data/quotes'
 import { trackAndGetRecentBadge } from '../lib/badges'
 import { getDailyTip } from '../lib/tips'
+import { round1 } from '../lib/calc'
 
-const MEALS = [
-  { key: 'breakfast', name: 'Desayuno', icon: Sunrise },
-  { key: 'lunch', name: 'Almuerzo', icon: Sun },
-  { key: 'dinner', name: 'Cena', icon: Moon },
-  { key: 'snack', name: 'Snack', icon: Apple },
+const GUIDE_STEPS = [
+  { icon: Camera, title: 'Registra tu comida', text: 'Escanea el plato con foto, busca en el buscador o usa un atajo rápido — la IA calcula calorías y macros por ti.' },
+  { icon: Dumbbell, title: 'Arma tu rutina', text: 'En Entrena elige una plantilla por categoría (tren superior, inferior, cardio...) o crea la tuya. Zestly recuerda tus pesos.' },
+  { icon: UtensilsCrossed, title: 'Genera tu plan semanal', text: 'En Plan la IA arma un menú de 7 días con lista de compras y recetas paso a paso.' },
+  { icon: BarChart3, title: 'Revisa tu progreso', text: 'En Progreso ves tu calendario, PRs, volumen por músculo, fotos y medidas corporales.' },
+  { icon: Bot, title: 'Pregunta a tu Coach', text: 'Resuelve dudas de nutrición o entrenamiento y pídele que analice tu día o tu última sesión.' },
 ]
 
 export default function Home({ go }) {
   const s = useStore()
-  const [foodMeal, setFoodMeal] = useState(null)
-  const [editing, setEditing] = useState(null) // { meal, idx } → editar porción
-  const n = s.nutrition, t = s.today
-  const rem = Math.max(0, n.kcal - t.kcal)
-  const pct = Math.min(1, t.kcal / n.kcal)
   const hour = new Date().getHours()
   const greet = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
   const name = s.profile.name || s.user?.displayName?.split(' ')[0] || ''
-
-  // Mini gráfica de la semana (kcal por día vs meta)
-  const weekData = [...(s.log || []).slice(-6), { kcal: t.kcal }].map((l, i, arr) => ({
-    value: l.kcal || 0,
-    label: i === arr.length - 1 ? 'Hoy' : new Date(l.date || Date.now()).toLocaleDateString('es', { weekday: 'narrow' }),
-    dim: i !== arr.length - 1,
-    color: (l.kcal || 0) > n.kcal * 1.05 ? 'bg-orange-400' : 'bg-brand-500',
-  }))
 
   return (
     <div className="px-4 pt-4">
@@ -47,110 +34,116 @@ export default function Home({ go }) {
         {new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
       </p>
 
+      <HowToGuide />
       <DaySummary go={go} />
-
-      <div className="md:grid md:grid-cols-2 md:items-start md:gap-4">
-      <div>
-      {/* Anillo calórico + macros al lado */}
-      <div className="card mt-4 flex items-center gap-4 p-4">
-        <Ring pct={pct} size={148} stroke={12}>
-          <span className="text-[11px] font-semibold text-brand-600">{t.kcal} kcal</span>
-          <span className="font-display text-3xl font-bold leading-tight">{rem}</span>
-          <span className="text-[10px] text-ink3">restantes</span>
-        </Ring>
-        <div className="flex flex-1 flex-col gap-3">
-          <Macro label="Proteína" val={t.prot} goal={n.prot} color="bg-brand-500" text="text-brand-600" />
-          <Macro label="Carbos" val={t.carb} goal={n.carb} color="bg-accent-500" text="text-accent-600" />
-          <Macro label="Grasas" val={t.fat} goal={n.fat} color="bg-orange-400" text="text-orange-500" />
-        </div>
-      </div>
-
-      {/* Semana en barras */}
-      <div className="card mt-3 p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-ink2"><TrendingUp size={14} /> Calorías esta semana</span>
-          <span className="text-[10px] text-ink3">meta {n.kcal}</span>
-        </div>
-        <Bars data={weekData} height={64} />
-      </div>
-
-      {/* Agua + Ayuno */}
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <WaterCard />
-        <FastingCard />
-      </div>
-
-      </div>
-      <div>
-      <SectionTitle>Comidas de hoy</SectionTitle>
-      <div className="flex flex-col gap-2.5">
-        {MEALS.map(({ key, name: mName, icon: Icon }) => {
-          const items = s.meals[key] || []
-          const kcal = items.reduce((sum, i) => sum + i.kcal, 0)
-          // Presupuesto por comida según la distribución configurada
-          const pctSplit = (s.mealSplit || {})[key] ?? { breakfast: 25, lunch: 35, dinner: 25, snack: 15 }[key]
-          const budget = Math.round(n.kcal * pctSplit / 100)
-          const left = budget - kcal
-          return (
-            <div key={key} className="card overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-card2 text-ink2"><Icon size={17} /></div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2 pr-2">
-                      <span className="text-[13px] font-semibold">{mName}</span>
-                      <span className={`text-[10px] font-semibold ${left < 0 ? 'text-orange-500' : 'text-ink3'}`}>
-                        {left >= 0 ? `quedan ${left}` : `${-left} de más`}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex items-center gap-2 pr-2">
-                      <div className="flex-1"><Bar pct={(kcal / (budget || 1)) * 100} className={kcal > budget ? 'bg-orange-400' : 'bg-brand-500'} /></div>
-                      <span className="shrink-0 text-[10px] text-ink3">{kcal}/{budget}</span>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setFoodMeal(key)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-brand-300 bg-brand-50 text-brand-600 dark:border-brand-800 dark:bg-brand-900/30"
-                  aria-label={'Añadir a ' + mName}
-                >
-                  <Plus size={16} />
-                </button>
-              </div>
-              {items.length > 0 && (
-                <div className="flex flex-col gap-1.5 px-4 pb-3">
-                  {items.map((it, idx) => (
-                    <div key={idx} className="flex items-center justify-between gap-2 text-xs">
-                      <button onClick={() => setEditing({ meal: key, idx })} className="min-w-0 flex-1 truncate text-left text-ink2 underline decoration-dotted decoration-[var(--border)] underline-offset-2">
-                        {it.name}
-                      </button>
-                      <span className="flex shrink-0 items-center gap-2">
-                        <b className="text-brand-600">{it.kcal} kcal</b>
-                        <button onClick={() => removeFood(key, idx)} className="p-1 text-ink3" aria-label="Eliminar">
-                          <Trash2 size={13} />
-                        </button>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      </div>
-      </div>
-
-      <AddFood meal={foodMeal} onClose={() => setFoodMeal(null)} />
-      <EditPortionSheet target={editing} onClose={() => setEditing(null)} />
+      <MiniProgress go={go} />
+      <CaloriesPreview go={go} />
+      <TrainPreview go={go} />
+      <PlanPreview go={go} />
     </div>
   )
 }
 
+// ── Vistas previas de cada módulo — datos reales del módulo (no un
+// botón de acceso plano, eso ya está en la barra inferior) + link ──
+function CaloriesPreview({ go }) {
+  const s = useStore()
+  const n = s.nutrition, t = s.today
+  const rem = Math.max(0, n.kcal - t.kcal)
+  const pct = Math.min(1, t.kcal / n.kcal)
+  return (
+    <button onClick={() => go({ tab: 'calories' })} className="card mt-3 flex w-full items-center gap-4 p-4 text-left active:scale-[0.99]">
+      <Ring pct={pct} size={88} stroke={9}>
+        <span className="text-[9px] font-semibold text-brand-600">{t.kcal} kcal</span>
+        <span className="font-display text-xl font-bold leading-tight">{rem}</span>
+        <span className="text-[8px] text-ink3">restantes</span>
+      </Ring>
+      <div className="flex flex-1 flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[12px] font-bold">Calorías</span>
+          <ChevronRight size={14} className="text-ink3" />
+        </div>
+        <MacroRow label="Proteína" val={t.prot} goal={n.prot} color="bg-brand-500" />
+        <MacroRow label="Carbos" val={t.carb} goal={n.carb} color="bg-accent-500" />
+        <MacroRow label="Grasas" val={t.fat} goal={n.fat} color="bg-orange-400" />
+      </div>
+    </button>
+  )
+}
+function MacroRow({ label, val, goal, color }) {
+  return (
+    <div>
+      <div className="mb-0.5 flex justify-between text-[9px] text-ink3">
+        <span>{label}</span><span>{round1(val)}/{goal}g</span>
+      </div>
+      <Bar pct={(val / goal) * 100} className={color} />
+    </div>
+  )
+}
+
+function TrainPreview({ go }) {
+  const s = useStore()
+  const week = useMemo(() => {
+    const cut = Date.now() - 7 * 86400000
+    return (s.workoutLogs || []).filter(l => { const t = new Date(l.date).getTime(); return !isNaN(t) && t >= cut })
+  }, [s.workoutLogs])
+  const volWeek = week.reduce((v, l) => v + (l.volume || 0), 0)
+  const minWeek = week.reduce((m, l) => m + (l.duration_min || 0), 0)
+  const timeWeek = minWeek >= 60 ? `${Math.floor(minWeek / 60)}h ${minWeek % 60}m` : `${minWeek}m`
+  const prWeek = week.reduce((n, l) => n + l.exercises.filter(e => e.pr).length, 0)
+
+  return (
+    <button onClick={() => go({ tab: 'train' })} className="card mt-3 w-full p-4 text-left active:scale-[0.99]">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-[12px] font-bold">Entrena — últimos 7 días</span>
+        <ChevronRight size={14} className="text-ink3" />
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        <TrainStat icon={Dumbbell} color="text-brand-600" label="Sesiones" value={week.length} />
+        <TrainStat icon={Flame} color="text-emerald-600" label="Volumen" value={`${volWeek ? fromKg(volWeek) : 0}${unitLbl()}`} />
+        <TrainStat icon={Clock} color="text-sky-500" label="Tiempo" value={week.length ? timeWeek : '—'} />
+        <TrainStat icon={Trophy} color="text-amber-500" label="PRs" value={prWeek} />
+      </div>
+    </button>
+  )
+}
+function TrainStat({ icon: Icon, color, label, value }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5 rounded-xl bg-card2 py-2.5">
+      <Icon size={14} className={color} />
+      <span className="text-[12px] font-bold leading-none">{value}</span>
+      <span className="text-[8px] text-ink3">{label}</span>
+    </div>
+  )
+}
+
+function PlanPreview({ go }) {
+  const s = useStore()
+  const dayIdx = (new Date().getDay() + 6) % 7 // lunes = 0, igual que el plan
+  const planDay = s.mealPlan?.days?.[dayIdx]
+  return (
+    <button onClick={() => go({ tab: 'plan' })} className="card mt-3 flex w-full items-center gap-3 p-3.5 text-left active:scale-[0.99]">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-600 dark:bg-accent-900/30">
+        <UtensilsCrossed size={16} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[12px] font-bold">Plan de hoy</div>
+        {planDay ? (
+          <div className="truncate text-[10px] text-ink3">
+            {planDay.meals.map(m => m.name).join(' · ')} — {planDay.kcal} kcal
+          </div>
+        ) : (
+          <div className="text-[10px] text-ink3">Genera tu plan semanal con IA</div>
+        )}
+      </div>
+      <ChevronRight size={14} className="shrink-0 text-ink3" />
+    </button>
+  )
+}
+
 // ── Resumen del día: racha, semana, logro reciente, consejo, frase ──
-// (antes vivía en la pantalla Índice — ahora Inicio ES el contador de
-// calorías, así que este contenido motivacional se muestra aquí arriba)
+// (antes vivía en la pantalla Índice — ahora es parte de Inicio, la
+// pantalla de entrada; el contador de calorías pasó a su propia pestaña)
 function DaySummary({ go }) {
   const s = useStore()
   const user = s.user
@@ -232,171 +225,65 @@ function DaySummary({ go }) {
   )
 }
 
-// ── Editar la porción de un alimento ya registrado ───────
-function EditPortionSheet({ target, onClose }) {
-  const s = useStore()
-  const item = target ? s.meals[target.meal]?.[target.idx] : null
-  const [qty, setQty] = useState(null)
-  const [pgInput, setPgInput] = useState('')
-  useEffect(() => { setQty(item ? item.qty || (item.fromDB ? 100 : 1) : null); setPgInput('') }, [target]) // eslint-disable-line react-hooks/exhaustive-deps
-  if (!item || qty == null) return null
-
-  const grams = item.unit === 'g' || item.unit === 'ml'
-  // Gramos de 1 porción: los trae la IA, o el usuario los define aquí una vez
-  const pGrams = item.portionGrams || parseFloat(pgInput) || null
-  const step = grams ? 25 : 0.5
-  // Valores base: por 100g si viene de la BD, por porción si viene de IA/rápidos
-  const per = k => item['base' + k] ?? (item[k.toLowerCase()] / ((item.qty || 1) / (item.fromDB ? 100 : 1)) || 0)
-  const ratio = grams ? qty / 100 : qty
-  const calc = k => round1(per(k) * ratio)
-  const presets = grams ? [50, 75, 100, 150, 200, 250] : [0.5, 1, 1.5, 2]
-
-  const save = () => {
-    const updated = {
-      ...item, qty,
-      name: grams ? `${baseName(item.name)} (${qty}${item.unit})` : item.name,
-      kcal: Math.round(per('Kcal') * ratio), prot: calc('Prot'), carb: calc('Carb'), fat: calc('Fat'),
-      ...(pGrams ? { portionGrams: pGrams } : {}), // queda guardado para la próxima
-    }
-    s.patch({
-      meals: { ...s.meals, [target.meal]: s.meals[target.meal].map((x, i) => i === target.idx ? updated : x) },
-      today: {
-        ...s.today,
-        kcal: Math.max(0, s.today.kcal - item.kcal + updated.kcal),
-        prot: Math.max(0, round1(s.today.prot - item.prot + updated.prot)),
-        carb: Math.max(0, round1(s.today.carb - item.carb + updated.carb)),
-        fat: Math.max(0, round1(s.today.fat - item.fat + updated.fat)),
-      },
-    })
-    s.toast('Porción actualizada', 'ok')
-    onClose()
-  }
+// ── Guía "Cómo usar Zestly" — tour para quien recién entra, y siempre
+// disponible como recordatorio (colapsada, se puede reabrir tocándola) ──
+function HowToGuide() {
+  const open = useStore(s => s.homeGuideOpen)
+  const toggle = () => useStore.getState().patch({ homeGuideOpen: !open })
 
   return (
-    <Sheet open onClose={onClose} title={baseName(item.name)} subtitle="Ajusta la cantidad — las calorías y macros se recalculan">
-      <div className="mb-3 flex items-center justify-center gap-4">
-        <button className="h-10 w-10 rounded-full border border-line text-xl text-ink2" onClick={() => setQty(Math.max(step, round1(qty - step)))}>−</button>
-        <div className="text-center">
-          <input
-            type="number" inputMode="decimal" value={qty}
-            onChange={e => setQty(Math.max(0, parseFloat(e.target.value) || 0))}
-            className="w-24 bg-transparent text-center font-display text-3xl font-bold text-brand-600 outline-none"
-          />
-          <span className="text-xs text-ink3">
-            {grams ? item.unit : qty === 1 ? 'porción' : 'porciones'}
-            {!grams && pGrams ? <b className="text-brand-600"> · ≈ {Math.round(pGrams * qty)} g</b> : ''}
-          </span>
+    <div className="card mt-3 overflow-hidden">
+      <button onClick={toggle} className="flex w-full items-center gap-2.5 px-4 py-3 text-left">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-accent-600 to-brand-500 text-white">
+          <Sparkles size={15} />
         </div>
-        <button className="h-10 w-10 rounded-full bg-brand-600 text-xl text-white" onClick={() => setQty(round1(qty + step))}>+</button>
-      </div>
-      <div className="mb-3 flex flex-wrap justify-center gap-1.5">
-        {presets.map(v => <Chip key={v} on={qty === v} onClick={() => setQty(v)}>{v}{grams ? item.unit : 'x'}{!grams && pGrams ? ` (${Math.round(pGrams * v)}g)` : ''}</Chip>)}
-      </div>
-      {!grams && !item.portionGrams && (
-        <label className="mb-3 flex items-center justify-center gap-2 text-[11px] text-ink3">
-          ¿Cuántos gramos pesa 1 porción?
-          <input
-            type="number" inputMode="numeric" placeholder="ej. 250" value={pgInput}
-            onChange={e => setPgInput(e.target.value)}
-            className="w-20 rounded-lg border border-line bg-card2 py-1.5 text-center text-xs font-semibold outline-none focus:border-brand-500"
-          />
-          <span>g</span>
-        </label>
-      )}
-      <p className="mb-4 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-        = {Math.round(per('Kcal') * ratio)} kcal{!grams && pGrams ? ` · ${Math.round(pGrams * qty)} g` : ''} · P:{calc('Prot')}g · C:{calc('Carb')}g · G:{calc('Fat')}g
-      </p>
-      <Button onClick={save} disabled={!qty}>Guardar cambios</Button>
-    </Sheet>
-  )
-}
-
-function Macro({ label, val, goal, color, text }) {
-  return (
-    <div>
-      <div className="mb-1 flex justify-between text-[11px]">
-        <span className="font-semibold uppercase tracking-wide text-ink3">{label}</span>
-        <span className={`font-bold ${text}`}>{round1(val)}<span className="font-normal text-ink3">/{goal}g</span></span>
-      </div>
-      <Bar pct={(val / goal) * 100} className={color} />
-    </div>
-  )
-}
-
-function removeFood(meal, idx) {
-  const s = useStore.getState()
-  const it = s.meals[meal][idx]
-  s.patch({
-    meals: { ...s.meals, [meal]: s.meals[meal].filter((_, i) => i !== idx) },
-    today: {
-      ...s.today,
-      kcal: Math.max(0, s.today.kcal - it.kcal), prot: Math.max(0, round1(s.today.prot - it.prot)),
-      carb: Math.max(0, round1(s.today.carb - it.carb)), fat: Math.max(0, round1(s.today.fat - it.fat)),
-    },
-  })
-}
-
-// Agua: meta configurable y botón para deshacer un vaso
-function WaterCard() {
-  const s = useStore()
-  const goal = s.waterGoal || 8
-  const glassMl = s.waterGlassMl || 250
-  const water = s.today.water || 0
-  const setWater = w => s.patch({ today: { ...s.today, water: Math.max(0, Math.min(goal, w)) } })
-  const fmtMl = ml => ml >= 1000 ? `${(ml / 1000).toFixed(ml % 1000 ? 1 : 0)}L` : `${ml}ml`
-  return (
-    <div className="card p-3.5">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-ink2"><GlassWater size={14} className="text-brand-500" /> Agua</span>
-        <span className="text-xs font-bold text-brand-600">{fmtMl(water * glassMl)}/{fmtMl(goal * glassMl)}</span>
-      </div>
-      <Bar pct={(water / goal) * 100} />
-      <div className="mt-1 text-center text-[10px] text-ink3">+{fmtMl(glassMl)} por toque</div>
-      <div className="mt-1.5 flex gap-2">
-        <button onClick={() => setWater(water - 1)} className="flex h-9 flex-1 items-center justify-center rounded-lg border border-line text-ink2" aria-label="Quitar porción">
-          <Minus size={15} />
-        </button>
-        <button onClick={() => setWater(water + 1)} className="flex h-9 flex-1 items-center justify-center rounded-lg bg-brand-600 text-white" aria-label="Agregar porción">
-          <Plus size={15} />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function FastingCard() {
-  const s = useStore()
-  const [, force] = useState(0)
-  const active = s.fastingActive
-  const elapsed = active && s.fastingStart ? Date.now() - s.fastingStart : 0
-  const h = Math.floor(elapsed / 3600000), m = Math.floor((elapsed % 3600000) / 60000)
-
-  useEffect(() => {
-    if (!active) return
-    const t = setInterval(() => force(x => x + 1), 30000)
-    return () => clearInterval(t)
-  }, [active])
-
-  return (
-    <div className="card p-3.5">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-xs font-semibold text-ink2"><Timer size={14} className="text-accent-500" /> Ayuno {s.fastingHours || 16}:{24 - (s.fastingHours || 16)}</span>
-        {active && <Flame size={13} className="text-orange-500" />}
-      </div>
-      {active ? (
-        <>
-          <div className="font-display text-xl font-bold text-brand-600">{h}h {String(m).padStart(2, '0')}m</div>
-          <Bar pct={(elapsed / ((s.fastingHours || 16) * 3600000)) * 100} className="bg-accent-500" />
-        </>
-      ) : (
-        <div className="text-[11px] leading-relaxed text-ink3">Activa el temporizador de ayuno intermitente</div>
-      )}
-      <button
-        onClick={() => s.patch({ fastingActive: !active, fastingStart: !active ? Date.now() : null })}
-        className={`mt-2.5 h-9 w-full rounded-lg text-xs font-semibold ${active ? 'border border-line text-ink2' : 'bg-accent-600 text-white'}`}
-      >
-        {active ? 'Terminar ayuno' : 'Iniciar ayuno'}
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-bold">Cómo usar Zestly</div>
+          {!open && <div className="text-[10px] text-ink3">Toca para ver la guía otra vez</div>}
+        </div>
+        {open ? <ChevronDown size={16} className="shrink-0 text-ink3" /> : <ChevronRight size={16} className="shrink-0 text-ink3" />}
       </button>
+      {open && (
+        <div className="flex gap-2.5 overflow-x-auto px-4 pb-4 no-scrollbar">
+          {GUIDE_STEPS.map((st, i) => (
+            <div key={i} className="w-40 shrink-0 rounded-2xl border border-line bg-card2 p-3">
+              <div className="mb-2 flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white">{i + 1}</span>
+                <st.icon size={15} className="text-brand-600" />
+              </div>
+              <div className="mb-1 text-[12px] font-bold leading-tight">{st.title}</div>
+              <p className="text-[10px] leading-relaxed text-ink3">{st.text}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Resumen rápido de progreso — vista previa del dashboard completo ──
+function MiniProgress({ go }) {
+  const s = useStore()
+  const week = useMemo(() => {
+    const cut = Date.now() - 7 * 86400000
+    return (s.workoutLogs || []).filter(l => { const t = new Date(l.date).getTime(); return !isNaN(t) && t >= cut })
+  }, [s.workoutLogs])
+
+  return (
+    <button onClick={() => go({ tab: 'progress' })} className="card mt-3 flex w-full items-center gap-3 p-3.5 text-left active:scale-[0.99]">
+      <MiniStat icon={Flame} color="text-orange-500" label="Racha" value={`${s.streak} d`} />
+      <MiniStat icon={Dumbbell} color="text-brand-600" label="Entrenos" value={week.length} />
+      <MiniStat icon={Scale} color="text-accent-600" label="Peso" value={s.profile.weight ? `${s.profile.weight}kg` : '—'} />
+      <ChevronRight size={16} className="ml-auto shrink-0 text-ink3" />
+    </button>
+  )
+}
+function MiniStat({ icon: Icon, color, label, value }) {
+  return (
+    <div className="flex flex-1 flex-col items-center gap-0.5">
+      <Icon size={15} className={color} />
+      <span className="text-[13px] font-bold leading-none">{value}</span>
+      <span className="text-[9px] text-ink3">{label}</span>
     </div>
   )
 }

@@ -53,11 +53,15 @@ export default function Workout({ open, onClose }) {
     }
   }, [restLeft]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Mini-cronómetro para ejercicios por tiempo (reps como '30-60s')
+  // Mini-cronómetro para ejercicios por tiempo — reps como '30-60s' (segundos)
+  // o '20-40min' (cardio de máquina: caminadora, escaladora, elíptica...)
   const parseTimedReps = reps => {
-    const m = String(reps).match(/(\d+)(?:-(\d+))?s$/)
-    return m ? { min: parseInt(m[1]), max: parseInt(m[2] || m[1]) } : null
+    const m = String(reps).match(/(\d+)(?:-(\d+))?(s|min)$/)
+    if (!m) return null
+    const mul = m[3] === 'min' ? 60 : 1
+    return { min: parseInt(m[1]) * mul, max: parseInt(m[2] || m[1]) * mul }
   }
+  const fmtSec = sec => sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
   const timerElapsed = exTimer ? Math.floor((Date.now() - exTimer.startTs) / 1000) : 0
   const timerLeft = exTimer ? Math.max(0, exTimer.target - timerElapsed) : 0
   useEffect(() => {
@@ -230,7 +234,7 @@ export default function Workout({ open, onClose }) {
                               className="w-full scroll-mt-28 bg-transparent py-1 text-center font-display text-[14px] font-bold outline-none placeholder:font-normal placeholder:text-ink3/60 disabled:opacity-40"
                             />
                             <input
-                              type="number" inputMode="numeric" placeholder={timed ? `${timed.max}s` : ghostR(si)}
+                              type="number" inputMode="numeric" placeholder={timed ? fmtSec(timed.max) : ghostR(si)}
                               value={st.r ?? ''}
                               onChange={ev => setField(ei, si, 'r', ev.target.value)}
                               className="w-full scroll-mt-28 border-t border-dashed border-line bg-transparent py-1.5 text-center text-[13px] font-semibold outline-none placeholder:font-normal placeholder:text-ink3/60"
@@ -238,11 +242,11 @@ export default function Workout({ open, onClose }) {
                             {timed && (
                               exTimer?.ei === ei && exTimer?.si === si ? (
                                 <button onClick={stopTimer} className="mt-1 flex h-8 w-full items-center justify-center gap-1 rounded-lg bg-red-500/15 font-display text-xs font-bold text-red-500">
-                                  {timerLeft}s ■
+                                  {fmtSec(timerLeft)} ■
                                 </button>
                               ) : (
                                 <button onClick={() => startTimer(ei, si, timed.max)} className="mt-1 flex h-8 w-full items-center justify-center gap-1 rounded-lg border border-accent-400/50 text-[11px] font-semibold text-accent-500">
-                                  <Timer size={11} /> {timed.max}s
+                                  <Timer size={11} /> {fmtSec(timed.max)}
                                 </button>
                               )
                             )}
@@ -296,8 +300,8 @@ export default function Workout({ open, onClose }) {
                         />
                         {timed && (
                           exTimer?.ei === ei && exTimer?.si === si ? (
-                            <button onClick={stopTimer} className="flex h-9 w-14 shrink-0 items-center justify-center gap-1 rounded-lg bg-red-500/15 font-display text-sm font-bold text-red-500">
-                              {timerLeft}s
+                            <button onClick={stopTimer} className="flex h-9 w-16 shrink-0 items-center justify-center gap-1 rounded-lg bg-red-500/15 font-display text-sm font-bold text-red-500">
+                              {fmtSec(timerLeft)}
                             </button>
                           ) : (
                             <button onClick={() => startTimer(ei, si, timed.max)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent-400 text-accent-500" aria-label="Iniciar cronómetro">

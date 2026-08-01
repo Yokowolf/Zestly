@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { Sparkles, Share2, FileDown, ShoppingCart, ChefHat, ChevronRight, UtensilsCrossed } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Sparkles, Share2, FileDown, ShoppingCart, ChefHat, ChevronRight, UtensilsCrossed, Pencil, Shuffle, Check } from 'lucide-react'
 import { useStore } from '../store'
 import { callAI, parseAIJson, hasKey } from '../lib/ai'
-import { Sheet, Button, Empty } from '../components/ui'
+import { Sheet, Button, Empty, Input } from '../components/ui'
 
 // ── Plan alimenticio semanal — pantalla propia ───────────
 // Genera el plan con IA, y cada plato se puede abrir para ver su
@@ -164,12 +164,41 @@ Incluye los 7 días. La lista shopping con máx 15 items.`
 }
 
 // ── Receta del plato: ingredientes con cantidades + pasos ─
+// También permite editar el plato a mano o pedirle a la IA que lo
+// cambie por otro (mismo horario/kcal aprox.) directamente desde aquí.
 function RecipeSheet({ target, onClose }) {
   const s = useStore()
   const [busy, setBusy] = useState(false)
+  const [swapping, setSwapping] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [form, setForm] = useState({ name: '', kcal: '' })
   const mp = s.mealPlan
   const meal = target ? mp?.days?.[target.di]?.meals?.[target.mi] : null
+
+  useEffect(() => {
+    setEditing(false)
+    if (meal) setForm({ name: meal.name, kcal: meal.kcal })
+  }, [target]) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!meal) return null
+
+  const updateMeal = patch => {
+    const days = mp.days.map((d, di) => di !== target.di ? d : {
+      ...d, meals: d.meals.map((m, mi) => mi !== target.mi ? m : { ...m, ...patch }),
+    })
+    s.patch({ mealPlan: { ...mp, days } })
+  }
+
+  const saveEdit = () => {
+    const name = form.name.trim()
+    const kcal = Math.max(0, parseInt(form.kcal) || 0)
+    if (!name || !kcal) { s.toast('Nombre y calorías son obligatorios', 'err'); return }
+    // Si cambió el plato, la receta anterior ya no corresponde (null, no
+    // undefined — Firestore rechaza valores undefined al sincronizar)
+    updateMeal(name !== meal.name ? { name, kcal, recipe: null } : { name, kcal })
+    setEditing(false)
+    s.toast('Plato actualizado', 'ok')
+  }
 
   const getRecipe = async () => {
     if (!hasKey()) { s.toast('Configura tu clave IA en Perfil primero', 'err'); return }
@@ -181,11 +210,7 @@ Responde SOLO este JSON:
 Máximo 8 ingredientes y 6 pasos claros y cortos.`
       const r = parseAIJson(await callAI('Eres chef y nutricionista colombiano. Respondes únicamente JSON válido.', prompt, 900))
       if (!r.ingredients?.length || !r.steps?.length) throw new Error('Receta incompleta — intenta de nuevo')
-      // Se guarda dentro del plan (queda para siempre y entra al PDF)
-      const days = mp.days.map((d, di) => di !== target.di ? d : {
-        ...d, meals: d.meals.map((m, mi) => mi !== target.mi ? m : { ...m, recipe: r }),
-      })
-      s.patch({ mealPlan: { ...mp, days } })
+      updateMeal({ recipe: r }) // se guarda dentro del plan (queda para siempre y entra al PDF)
       s.toast('Receta lista — quedó guardada en el plan', 'ok')
     } catch (e) {
       s.toast(e.message.slice(0, 60), 'err')
@@ -193,13 +218,53 @@ Máximo 8 ingredientes y 6 pasos claros y cortos.`
     setBusy(false)
   }
 
+  // Le pide a la IA otro plato distinto para el mismo horario/kcal, con su
+  // receta ya incluida — reemplaza el plato actual en un solo paso.
+  const swapMeal = async () => {
+    if (!hasKey()) { s.toast('Configura tu clave IA en Perfil primero', 'err'); return }
+    setSwapping(true)
+    try {
+      const prompt = `Sugiere un plato DISTINTO a "${meal.name}" para reemplazarlo en ${meal.time}, con aproximadamente ${meal.kcal} kcal (cocina colombiana casera y económica). Incluye su receta completa.
+Responde SOLO este JSON:
+{"name":"nombre corto","kcal":numero,"recipe":{"ingredients":[{"item":"nombre","qty":"cantidad exacta"}],"steps":["paso 1 corto","paso 2..."],"time_min":numero}}
+Máximo 8 ingredientes y 6 pasos cortos.`
+      const p = parseAIJson(await callAI('Eres chef y nutricionista colombiano. Respondes únicamente JSON válido.', prompt, 1000))
+      if (!p.name || !p.recipe?.ingredients?.length || !p.recipe?.steps?.length) throw new Error('No se pudo generar el reemplazo — intenta de nuevo')
+      updateMeal({ name: p.name, kcal: p.kcal || meal.kcal, recipe: p.recipe })
+      s.toast(`Cambiado a "${p.name}"`, 'ok')
+    } catch (e) {
+      s.toast(e.message.slice(0, 60), 'err')
+    }
+    setSwapping(false)
+  }
+
   const r = meal.recipe
+  const busyAny = busy || swapping
   return (
     <Sheet open onClose={onClose} title={meal.name} subtitle={`${meal.time} · ${meal.kcal} kcal${r?.time_min ? ` · ${r.time_min} min de preparación` : ''}`}>
+      <div className="mb-3 flex gap-2">
+        <Button variant="ghost" className="flex flex-1 items-center justify-center gap-1.5 !py-2" onClick={() => setEditing(v => !v)} disabled={busyAny}>
+          <Pencil size={13} /> {editing ? 'Cancelar' : 'Editar'}
+        </Button>
+        <Button variant="ghost" className="flex flex-1 items-center justify-center gap-1.5 !py-2" onClick={swapMeal} disabled={busyAny}>
+          <Shuffle size={13} /> {swapping ? 'Cambiando…' : 'Cambiar plato'}
+        </Button>
+      </div>
+
+      {editing && (
+        <div className="card mb-3 flex flex-col gap-2.5 p-3.5">
+          <Input placeholder="Nombre del plato" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+          <Input type="number" inputMode="numeric" placeholder="Calorías" value={form.kcal} onChange={e => setForm({ ...form, kcal: e.target.value })} />
+          <Button variant="accent" className="flex items-center justify-center gap-2 !py-2.5" onClick={saveEdit}>
+            <Check size={14} /> Guardar cambios
+          </Button>
+        </div>
+      )}
+
       {!r ? (
         <>
           <Empty icon={ChefHat}>Genera la receta de este plato: ingredientes con cantidades exactas y preparación paso a paso.</Empty>
-          <Button variant="accent" className="mt-3 flex items-center justify-center gap-2" onClick={getRecipe} disabled={busy}>
+          <Button variant="accent" className="mt-3 flex items-center justify-center gap-2" onClick={getRecipe} disabled={busyAny}>
             <Sparkles size={15} /> {busy ? 'Creando receta…' : 'Generar receta'}
           </Button>
         </>
@@ -222,7 +287,7 @@ Máximo 8 ingredientes y 6 pasos claros y cortos.`
               </div>
             ))}
           </div>
-          <Button variant="ghost" className="mt-4 !py-2.5" onClick={getRecipe} disabled={busy}>
+          <Button variant="ghost" className="mt-4 !py-2.5" onClick={getRecipe} disabled={busyAny}>
             {busy ? 'Regenerando…' : 'Regenerar receta'}
           </Button>
         </>

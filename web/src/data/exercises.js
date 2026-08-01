@@ -243,6 +243,19 @@ export const EXERCISES = [
   { id: 'kb_swing', name: 'Kettlebell swing', muscle: ['gluteos', 'isquios', 'cardio'], equipment: 'kettlebell', type: 'cardio', weight: true, sets: 4, reps: '15-20', rest: 60, img: CDN + '2021/09/Kettlebell-Swings.gif', desc: 'El impulso nace de la cadera (bisagra), no de los brazos. La kettlebell sube a la altura del pecho.' },
   { id: 'incline_walk', name: 'Caminata inclinada', muscle: ['cardio'], equipment: 'cardio', type: 'cardio', weight: false, sets: 1, reps: '20-40min', rest: 0, img: CDN + '2021/09/Briskly-Walking.gif', desc: 'Caminadora con inclinación 10-15%. Cardio LISS de bajo impacto ideal para definición.' },
 
+  // ── CARDIO DE MÁQUINA — caminadora, escaladora, elíptica, funcional.
+  // reps en minutos ('Nmin') o segundos ('Ns') activa el cronómetro del
+  // set; el desc trae la velocidad/inclinación/nivel recomendado.
+  { id: 'treadmill_liss', name: 'Caminadora — Ritmo sostenido', muscle: ['cardio'], equipment: 'cardio', type: 'cardio', weight: false, sets: 1, reps: '20-40min', rest: 0, img: null, desc: 'Velocidad 5-6 km/h, inclinación 1-2%. Ritmo constante — debes poder hablar sin ahogarte.' },
+  { id: 'treadmill_run', name: 'Caminadora — Trote continuo', muscle: ['cardio', 'cuadriceps'], equipment: 'cardio', type: 'cardio', weight: false, sets: 1, reps: '20-30min', rest: 0, img: null, desc: 'Velocidad 8-10 km/h, inclinación 0-1%. Trote sostenido para resistencia cardiovascular.' },
+  { id: 'treadmill_hiit', name: 'Caminadora — Intervalos HIIT', muscle: ['cardio', 'cuadriceps'], equipment: 'cardio', type: 'cardio', weight: false, sets: 8, reps: '30s', rest: 90, img: null, desc: 'Sprint a 12-14 km/h 30s, luego camina a 5 km/h (inclinación 1%) 90s de recuperación. 8 rondas.' },
+  { id: 'stairmaster_liss', name: 'Escaladora — Ritmo sostenido', muscle: ['cardio', 'gluteos', 'cuadriceps'], equipment: 'cardio', type: 'cardio', weight: false, sets: 1, reps: '15-25min', rest: 0, img: null, desc: 'Nivel 5-7 de intensidad, ritmo constante sin apoyarte en las barras. Alta demanda de glúteo.' },
+  { id: 'stairmaster_hiit', name: 'Escaladora — Intervalos', muscle: ['cardio', 'gluteos', 'cuadriceps'], equipment: 'cardio', type: 'cardio', weight: false, sets: 8, reps: '30s', rest: 60, img: null, desc: 'Nivel 10-12 por 30s, luego nivel 4-5 por 60s de recuperación. 8 rondas — muy exigente.' },
+  { id: 'elliptical_liss', name: 'Elíptica — Bajo impacto', muscle: ['cardio'], equipment: 'cardio', type: 'cardio', weight: false, sets: 1, reps: '20-40min', rest: 0, img: null, desc: 'Resistencia media (nivel 4-6), cadencia 60-70 rpm. Cero impacto en rodillas — ideal para lesiones o principiantes.' },
+  { id: 'elliptical_hiit', name: 'Elíptica — Intervalos', muscle: ['cardio'], equipment: 'cardio', type: 'cardio', weight: false, sets: 8, reps: '40s', rest: 80, img: null, desc: 'Resistencia alta (nivel 10+) 40s, luego resistencia baja (nivel 3-4) 80s de recuperación. 8-10 rondas.' },
+  { id: 'assault_bike_hiit', name: 'Assault bike — Sprints', muscle: ['cardio', 'cuadriceps'], equipment: 'cardio', type: 'cardio', weight: false, sets: 8, reps: '20s', rest: 60, img: null, desc: 'Máxima potencia contra el aire por 20s, descanso completo. Brutal para acondicionamiento — usa piernas y brazos.' },
+  { id: 'battle_ropes', name: 'Battle ropes (cuerdas de batalla)', muscle: ['cardio', 'hombros', 'core'], equipment: 'cardio', type: 'cardio', weight: false, sets: 6, reps: '20-30s', rest: 40, img: null, desc: 'Ondas alternas o dobles a máxima potencia, rodillas semiflexionadas y core apretado.' },
+
     { id: 'pvc_hinge', name: 'Bisagra de cadera con palo', muscle: ['isquios', 'lumbares'], equipment: 'corporal', type: 'warmup', zone: 'inferior', weight: false, sets: 2, reps: '10-12', rest: 15, img: CDN + '2025/07/Pvc-Hip-Hinge.gif', desc: 'Palo pegado a espalda-cabeza-cadera mientras haces la bisagra. Enseña el patrón del peso muerto.' },
 
     { id: 'navy_seal_burpee', name: 'Burpee Navy Seal', muscle: ['cardio', 'pecho', 'core'], equipment: 'corporal', type: 'cardio', weight: false, sets: 3, reps: '6-10', rest: 90, img: CDN + '2023/10/Navy-Seal-Burpee.gif', desc: 'Burpee con 3 flexiones y rodilla al pecho entre cada una. La versión más exigente.' },
@@ -345,6 +358,13 @@ export const ROUTINE_TEMPLATES = [
   { name: 'Cardio suave — Primeras semanas', level: 'principiante', category: 'cardio', focus: 'both', days: ['mar', 'jue', 'sab'], ex: ['walking_cardio', 'stationary_bike', 'jumping_jacks', 'bw_squat', 'plank'] },
   { name: 'Pecho y espalda — Principiante', level: 'principiante', category: 'superior', focus: 'both', days: ['lun', 'jue'], ex: ['db_bench', 'lat_pulldown', 'db_row', 'pushups', 'db_shoulder_press'] },
   { name: 'Glúteo y femoral — Principiante', level: 'principiante', category: 'inferior', focus: 'back', days: ['mar', 'vie'], ex: ['glute_bridge', 'leg_curl', 'romanian_dl', 'bw_squat', 'standing_calf'] },
+  { name: '2 días — Empieza aquí', level: 'principiante', category: 'full', focus: 'both', days: ['lun', 'jue'], ex: ['bw_squat', 'pushups', 'inverted_row', 'glute_bridge', 'plank'] },
+  { name: 'Tren superior — Máquinas', level: 'principiante', category: 'superior', focus: 'both', days: ['lun', 'jue'], ex: ['chest_press_machine', 'machine_row', 'lat_pulldown', 'lateral_raise_machine', 'triceps_dips'] },
+  { name: 'Cuádriceps — Principiante', level: 'principiante', category: 'inferior', focus: 'front', days: ['mar', 'vie'], ex: ['leg_press', 'goblet_squat', 'leg_extension', 'walking_lunge', 'standing_calf'] },
+  { name: 'Definición — Circuito quema grasa', level: 'principiante', category: 'full', focus: 'both', days: ['lun', 'mie', 'vie'], ex: ['jumping_jacks', 'bw_squat', 'pushups', 'mountain_climbers', 'plank', 'jump_rope'] },
+  { name: 'Brazos tonificados — Principiante', level: 'principiante', category: 'enfoque', focus: 'both', days: ['mar', 'vie'], ex: ['db_curl', 'tricep_pushdown', 'hammer_curl', 'cable_lateral_raise'] },
+  { name: 'Espalda y postura — Principiante', level: 'principiante', category: 'enfoque', focus: 'both', days: ['mie'], ex: ['face_pull', 'rear_delt_fly', 'superman', 'machine_row', 'cable_lateral_raise'] },
+  { name: 'Cardio máquinas — Bajo impacto', level: 'principiante', category: 'cardio', focus: 'both', days: ['mar', 'jue', 'sab'], ex: ['treadmill_liss', 'elliptical_liss', 'walking_cardio'] },
   // ── Intermedio ────────────────────────────────────────
   { name: 'Push A — Pecho, Hombro, Tríceps', level: 'intermedio', category: 'superior', focus: 'front', days: ['lun', 'jue'], ex: ['bench_press', 'incline_bench', 'db_shoulder_press', 'lateral_raise', 'tricep_pushdown', 'french_press'] },
   { name: 'Pull A — Espalda y Bíceps', level: 'intermedio', category: 'superior', focus: 'back', days: ['mar', 'vie'], ex: ['deadlift', 'pullups', 'barbell_row', 'lat_pulldown', 'face_pull', 'barbell_curl', 'hammer_curl'] },
@@ -356,6 +376,10 @@ export const ROUTINE_TEMPLATES = [
   { name: 'HIIT — Quema y resistencia', level: 'intermedio', category: 'cardio', focus: 'both', days: ['mar', 'sab'], ex: ['jump_rope', 'burpees', 'box_jumps', 'kb_swing', 'mountain_climbers', 'sprint'] },
   { name: 'Enfoque hombros — Deltoides 3D', level: 'intermedio', category: 'enfoque', focus: 'both', days: ['jue'], ex: ['ohp', 'lateral_raise', 'rear_delt_fly', 'front_raise', 'face_pull', 'arnold_press'] },
   { name: 'Calistenia intermedia — Empuje y jalón', level: 'intermedio', category: 'calistenia', focus: 'both', days: ['lun', 'jue'], ex: ['pullups', 'chest_dips', 'pike_pushups', 'inverted_row', 'diamond_pushups', 'l_sit'] },
+  { name: 'Pecho — Enfoque intermedio', level: 'intermedio', category: 'enfoque', focus: 'front', days: ['mie'], ex: ['bench_press', 'incline_bench', 'cable_crossover', 'db_fly', 'chest_dips'] },
+  { name: 'Espalda — Enfoque grosor', level: 'intermedio', category: 'enfoque', focus: 'back', days: ['sab'], ex: ['barbell_row', 'tbar_row', 'cable_pullover', 'close_grip_pulldown', 'face_pull'] },
+  { name: 'Cardio máquinas — Intervalos', level: 'intermedio', category: 'cardio', focus: 'both', days: ['mar', 'vie'], ex: ['treadmill_hiit', 'stairmaster_liss', 'elliptical_hiit', 'rowing_machine'] },
+  { name: 'Funcional — Circuito de acondicionamiento', level: 'intermedio', category: 'cardio', focus: 'both', days: ['jue'], ex: ['kb_swing', 'battle_ropes', 'box_jumps', 'jump_rope', 'burpees'] },
   // ── Avanzado ──────────────────────────────────────────
   { name: 'Calistenia — Habilidades', level: 'avanzado', category: 'calistenia', focus: 'both', days: ['lun', 'mie', 'vie', 'sab'], ex: ['muscle_up', 'pullups', 'chest_dips', 'pike_pushups', 'pistol_squat', 'l_sit', 'burpees'] },
   { name: 'Pierna brutal — Volumen alto', level: 'avanzado', category: 'inferior', focus: 'both', days: ['mar', 'vie'], ex: ['squat', 'leg_press', 'bulgarian_squat', 'romanian_dl', 'leg_extension', 'leg_curl', 'hip_thrust', 'standing_calf'] },
@@ -367,6 +391,9 @@ export const ROUTINE_TEMPLATES = [
   { name: 'Enfoque pantorrillas y antebrazos', level: 'avanzado', category: 'enfoque', focus: 'both', days: ['jue'], ex: ['standing_calf', 'seated_calf', 'donkey_calf', 'wrist_curl', 'hammer_curl'] },
   { name: 'Cuádriceps máximo — Avanzado', level: 'avanzado', category: 'inferior', focus: 'front', days: ['mar'], ex: ['front_squat', 'hack_squat', 'bulgarian_squat', 'leg_extension', 'walking_lunge'] },
   { name: 'Glúteo y femoral — Avanzado', level: 'avanzado', category: 'inferior', focus: 'back', days: ['vie'], ex: ['romanian_dl', 'hip_thrust', 'seated_leg_curl_m', 'glute_kickback_machine', 'good_morning_bw'] },
+  { name: 'Pecho — Fuerza y volumen', level: 'avanzado', category: 'superior', focus: 'front', days: ['lun'], ex: ['bench_press', 'incline_bench', 'cable_crossover', 'chest_dips', 'db_pullover'] },
+  { name: 'Cadena posterior — Avanzado', level: 'avanzado', category: 'inferior', focus: 'back', days: ['vie'], ex: ['deadlift', 'romanian_dl', 'nordic_curl', 'hip_thrust', 'back_extension_45'] },
+  { name: 'Cardio máquinas — Alta intensidad', level: 'avanzado', category: 'cardio', focus: 'both', days: ['mar', 'vie'], ex: ['stairmaster_hiit', 'treadmill_hiit', 'assault_bike_hiit', 'battle_ropes', 'sprint'] },
 ]
 
 // Bloques de calentamiento / estiramiento por zona

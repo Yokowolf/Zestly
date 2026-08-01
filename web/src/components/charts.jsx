@@ -82,7 +82,7 @@ export function HBars({ data, unit = '' }) {
 }
 
 // Calendario mensual con días marcados
-export function MonthCalendar({ trainedDates, loggedDates }) {
+export function MonthCalendar({ trainedDates, loggedDates, onDayClick, selectedDate }) {
   const now = new Date()
   const year = now.getFullYear(), month = now.getMonth()
   const first = new Date(year, month, 1)
@@ -104,17 +104,20 @@ export function MonthCalendar({ trainedDates, loggedDates }) {
           const trained = trainedDates.has(dateStr)
           const logged = loggedDates.has(dateStr)
           const isToday = day === now.getDate()
+          const isSelected = selectedDate === dateStr
           return (
-            <div
+            <button
               key={i}
-              className={`relative mx-auto flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-medium ${
+              onClick={() => onDayClick?.(dateStr)}
+              disabled={!onDayClick || (!trained && !logged)}
+              className={`relative mx-auto flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-medium transition-transform ${
                 trained ? 'bg-brand-600 text-white'
                 : logged ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300'
                 : 'text-ink2'
-              } ${isToday ? 'ring-2 ring-accent-500' : ''}`}
+              } ${isToday ? 'ring-2 ring-accent-500' : ''} ${isSelected ? 'ring-2 ring-offset-1 ring-offset-[var(--card)] ring-emerald-500' : ''} ${onDayClick && (trained || logged) ? 'active:scale-90' : ''}`}
             >
               {day}
-            </div>
+            </button>
           )
         })}
       </div>

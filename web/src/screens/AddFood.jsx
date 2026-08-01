@@ -511,9 +511,15 @@ function CamTab({ meal, onDone }) {
   const analyze = async () => {
     setBusy(true)
     try {
-      const prompt = 'Eres nutricionista experto en comida colombiana y latinoamericana. Analiza CUIDADOSAMENTE esta imagen. Identifica cada alimento visible con porciones realistas. Devuelve SOLO este JSON sin texto ni backticks: {"items":[{"name":"nombre en español","kcal":numero,"prot":numero,"carb":numero,"fat":numero,"grams":numero}]}. Los kcal y grams deben representar la PORCION VISIBLE, no 100g.'
-      const parsed = parseAIJson(await callAIWithImage(prompt, img))
-      if (!parsed.items?.length) throw new Error('No se detectaron alimentos')
+      const prompt = 'Eres nutricionista experto en comida colombiana y latinoamericana. Analiza CUIDADOSAMENTE esta imagen de un plato de comida. Identifica cada alimento visible con porciones realistas. Responde ÚNICAMENTE con un objeto JSON, sin explicaciones, sin markdown, sin backticks, con EXACTAMENTE este formato: {"items":[{"name":"nombre en español","kcal":numero,"prot":numero,"carb":numero,"fat":numero,"grams":numero}]}. Los kcal y grams deben representar la PORCIÓN VISIBLE en el plato, no valores por 100g. Si no reconoces el plato exacto, estima con el alimento más parecido — nunca respondas texto libre.'
+      // validate: si el modelo responde con texto libre en vez de JSON, se
+      // descarta y se reintenta con el siguiente modelo automáticamente
+      const raw = await callAIWithImage(prompt, img, text => {
+        const p = parseAIJson(text)
+        if (!p.items?.length) throw new Error('sin items')
+      })
+      const parsed = parseAIJson(raw)
+      if (!parsed.items?.length) throw new Error('No se detectaron alimentos en la foto')
       setItems(parsed.items)
     } catch (e) {
       s.toast(e.message.slice(0, 60), 'err')

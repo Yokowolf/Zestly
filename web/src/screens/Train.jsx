@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { useStore, fromKg, unitLbl } from '../store'
 import { Button, Chip, SectionTitle, Empty, ExerciseImg, Sheet } from '../components/ui'
-import { ROUTINE_TEMPLATES, TEMPLATE_LEVELS, EX_BY_ID, DAYS, DAY_NAMES } from '../data/exercises'
+import { ROUTINE_TEMPLATES, TEMPLATE_LEVELS, TEMPLATE_CATEGORIES, EX_BY_ID, DAYS, DAY_NAMES } from '../data/exercises'
 import { startSession, todaysRoutineIndex } from '../lib/train'
 import RoutineBuilder from './RoutineBuilder'
 import Workout from './Workout'
@@ -18,6 +18,7 @@ export default function Train({ initialAction }) {
   const [aiOpen, setAiOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(initialAction === 'start' && !useStore.getState().activeWorkout)
   const [level, setLevel] = useState('principiante')
+  const [category, setCategory] = useState('all')
   const routines = s.routines || []
   const todayIdx = todaysRoutineIndex(routines)
   const dayName = DAY_NAMES[DAYS[(new Date().getDay() + 6) % 7][0]]
@@ -142,16 +143,40 @@ export default function Train({ initialAction }) {
           <Chip key={v} on={level === v} onClick={() => setLevel(v)}>{label}</Chip>
         ))}
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {ROUTINE_TEMPLATES.filter(t => t.level === level).map((t, i) => (
-          <Chip key={i} onClick={() => setBuilderDraft({
-            name: t.name, days: [...t.days],
-            exercises: t.ex.filter(id => EX_BY_ID[id]).map(id => ({
-              exerciseId: id, sets: EX_BY_ID[id].sets, reps: EX_BY_ID[id].reps, rest: EX_BY_ID[id].rest,
-            })),
-          })}>{t.name}</Chip>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        <Chip on={category === 'all'} onClick={() => setCategory('all')}>Todas</Chip>
+        {Object.entries(TEMPLATE_CATEGORIES).map(([v, label]) => (
+          <Chip key={v} on={category === v} onClick={() => setCategory(v)}>{label}</Chip>
         ))}
       </div>
+      {(() => {
+        const templates = ROUTINE_TEMPLATES.filter(t => t.level === level && (category === 'all' || t.category === category))
+        if (!templates.length) return <p className="py-3 text-center text-xs text-ink3">No hay plantillas en esta combinación — prueba otra categoría</p>
+        const useTemplate = t => setBuilderDraft({
+          name: t.name, days: [...t.days],
+          exercises: t.ex.filter(id => EX_BY_ID[id]).map(id => ({
+            exerciseId: id, sets: EX_BY_ID[id].sets, reps: EX_BY_ID[id].reps, rest: EX_BY_ID[id].rest,
+          })),
+        })
+        return (
+          <div className="flex flex-col gap-2">
+            {templates.map((t, i) => (
+              <button key={i} onClick={() => useTemplate(t)}
+                className="card flex items-center justify-between gap-3 p-3.5 text-left active:scale-[0.99]">
+                <div className="min-w-0">
+                  <div className="text-[13px] font-semibold">{t.name}</div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-ink3">
+                    <span>{t.ex.length} ejercicios · {t.days.map(d => DAYS.find(x => x[0] === d)?.[1]).join(' ')}</span>
+                    {t.focus === 'front' && <span className="rounded-full bg-orange-500/10 px-1.5 py-0.5 font-bold text-orange-500">Frente</span>}
+                    {t.focus === 'back' && <span className="rounded-full bg-sky-500/10 px-1.5 py-0.5 font-bold text-sky-500">Atrás</span>}
+                  </div>
+                </div>
+                <Plus size={16} className="shrink-0 text-brand-600" />
+              </button>
+            ))}
+          </div>
+        )
+      })()}
 
       <SectionTitle>Historial reciente</SectionTitle>
       {(s.workoutLogs || []).length === 0 && <Empty icon={Dumbbell}>Tus sesiones aparecerán aquí</Empty>}

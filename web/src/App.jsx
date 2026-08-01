@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Settings } from 'lucide-react'
+import { Settings, Home as HomeIcon, Dumbbell, UtensilsCrossed, BarChart3, Bot } from 'lucide-react'
 import { useStore, rolloverIfNewDay } from './store'
 import { watchAuth } from './lib/firebase'
 import { Toasts } from './components/ui'
@@ -10,17 +10,23 @@ import Train from './screens/Train'
 import Progress from './screens/Progress'
 import Coach from './screens/Coach'
 import Profile from './screens/Profile'
-import Index from './screens/Index'
 import Plan from './screens/Plan'
 
+const TABS = [
+  { id: 'home', label: 'Inicio', icon: HomeIcon },
+  { id: 'train', label: 'Entrena', icon: Dumbbell },
+  { id: 'plan', label: 'Plan', icon: UtensilsCrossed },
+  { id: 'progress', label: 'Progreso', icon: BarChart3 },
+  { id: 'coach', label: 'Coach', icon: Bot },
+]
 const TITLES = {
-  home: 'Contador de calorías', train: 'Entrenamiento', progress: 'Mi progreso',
-  coach: 'IA Coach', profile: 'Perfil', index: 'Inicio', plan: 'Plan alimenticio',
+  home: 'Contador de calorías', train: 'Entrenamiento', plan: 'Plan alimenticio',
+  progress: 'Mi progreso', coach: 'IA Coach', profile: 'Perfil',
 }
 
 export default function App() {
-  // La app abre en el menú interactivo (Inicio)
-  const [nav, setNav] = useState({ tab: 'index', action: null, ts: 0 })
+  // Navegación global por pestañas fijas — Inicio es la pantalla de entrada
+  const [nav, setNav] = useState({ tab: 'home', action: null, ts: 0 })
   const [booting, setBooting] = useState(true)
   const [screen, setScreen] = useState('app') // 'welcome' | 'onboarding' | 'app'
   const onboarded = useStore(s => s.onboarded)
@@ -58,24 +64,19 @@ export default function App() {
   if (screen === 'onboarding') return <><Toasts /><Onboarding onDone={() => setScreen('app')} onBack={() => setScreen('welcome')} /></>
 
   const { tab, action, ts } = nav
+  const activeTab = tab === 'profile' ? 'home' : tab // el gear no tiene tab propio en la barra
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col md:max-w-5xl">
       <Toasts />
 
-      {/* Barra superior: en secciones muestra volver al menú */}
+      {/* Barra superior: logo + título de sección + engranaje de Perfil */}
       <header className="sticky top-0 z-40 border-b border-line bg-bg2/95 backdrop-blur-lg">
         <div className="mx-auto flex w-full max-w-lg items-center gap-3 px-3 py-2.5 md:max-w-5xl">
-          {tab !== 'index' ? (
-            <button onClick={() => go({ tab: 'index' })} className="flex items-center gap-1.5 rounded-xl border border-line py-2 pl-2 pr-3 text-[12px] font-semibold text-ink2" aria-label="Volver al menú">
-              <ArrowLeft size={16} /> Menú
-            </button>
-          ) : (
-            <span className="flex items-center gap-2 pl-1">
-              <Logo size={24} />
-              <span className="font-display text-[16px] font-bold tracking-tight">Ze<span className="text-brand-600">stly</span></span>
-            </span>
-          )}
+          <button onClick={() => go({ tab: 'home' })} className="flex items-center gap-2 pl-1">
+            <Logo size={24} />
+            <span className="font-display text-[16px] font-bold tracking-tight">Ze<span className="text-brand-600">stly</span></span>
+          </button>
           <span className="ml-auto text-[11px] font-medium text-ink3">{TITLES[tab]}</span>
           <SyncDot />
           <button
@@ -88,15 +89,30 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 pb-10">
-        {tab === 'home' && <HomeScreen goTab={t => go({ tab: t })} />}
-        {tab === 'index' && <Index go={go} />}
+      <main className="flex-1 pb-24">
+        {tab === 'home' && <HomeScreen go={go} />}
         {tab === 'progress' && <Progress key={ts} initialAction={action} />}
         {tab === 'train' && <Train key={ts} initialAction={action} />}
         {tab === 'coach' && <Coach key={ts} initialAction={action} go={go} />}
         {tab === 'plan' && <Plan />}
         {tab === 'profile' && <Profile />}
       </main>
+
+      {/* Barra de pestañas fija abajo — navegación principal siempre visible */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg2/95 backdrop-blur-lg">
+        <div className="mx-auto flex w-full max-w-lg md:max-w-5xl">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => go({ tab: id })}
+              className="flex flex-1 flex-col items-center gap-0.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
+            >
+              <Icon size={20} strokeWidth={activeTab === id ? 2.4 : 1.8} className={activeTab === id ? 'text-brand-600' : 'text-ink3'} />
+              <span className={`text-[10px] font-medium ${activeTab === id ? 'text-brand-600' : 'text-ink3'}`}>{label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
 
       <SessionPill onResume={() => go({ tab: 'train' })} />
     </div>
@@ -117,7 +133,7 @@ function SessionPill({ onResume }) {
   return (
     <button
       onClick={onResume}
-      className="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-brand-600 py-2.5 pl-3.5 pr-4 text-white shadow-xl active:scale-95"
+      className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-brand-600 py-2.5 pl-3.5 pr-4 text-white shadow-xl active:scale-95"
     >
       <span className="relative flex h-2.5 w-2.5">
         <span className="absolute h-full w-full animate-ping rounded-full bg-white/60" />

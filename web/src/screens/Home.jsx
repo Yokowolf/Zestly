@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react'
 import {
   Plus, Minus, GlassWater, Timer, Flame, TrendingUp, Trash2,
-  Sunrise, Sun, Moon, Apple, ChevronRight,
+  Sunrise, Sun, Moon, Apple, Play, LogIn, Quote, Sparkles,
 } from 'lucide-react'
 import { useStore } from '../store'
 import { Ring, Bars } from '../components/charts'
 import { Bar, SectionTitle, Sheet, Button, Chip } from '../components/ui'
 import AddFood, { baseName } from './AddFood'
 import { round1 } from '../lib/calc'
+import { todaysRoutineIndex } from '../lib/train'
+import { quoteOfTheDay } from '../data/quotes'
+import { trackAndGetRecentBadge } from '../lib/badges'
+import { getDailyTip } from '../lib/tips'
 
 const MEALS = [
   { key: 'breakfast', name: 'Desayuno', icon: Sunrise },
@@ -16,7 +20,7 @@ const MEALS = [
   { key: 'snack', name: 'Snack', icon: Apple },
 ]
 
-export default function Home({ goTab }) {
+export default function Home({ go }) {
   const s = useStore()
   const [foodMeal, setFoodMeal] = useState(null)
   const [editing, setEditing] = useState(null) // { meal, idx } → editar porción
@@ -42,6 +46,8 @@ export default function Home({ goTab }) {
       <p className="text-[11px] capitalize text-ink3">
         {new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
       </p>
+
+      <DaySummary go={go} />
 
       <div className="md:grid md:grid-cols-2 md:items-start md:gap-4">
       <div>
@@ -138,6 +144,90 @@ export default function Home({ goTab }) {
 
       <AddFood meal={foodMeal} onClose={() => setFoodMeal(null)} />
       <EditPortionSheet target={editing} onClose={() => setEditing(null)} />
+    </div>
+  )
+}
+
+// ── Resumen del día: racha, semana, logro reciente, consejo, frase ──
+// (antes vivía en la pantalla Índice — ahora Inicio ES el contador de
+// calorías, así que este contenido motivacional se muestra aquí arriba)
+function DaySummary({ go }) {
+  const s = useStore()
+  const user = s.user
+  const todayIdx = todaysRoutineIndex(s.routines)
+  const routineName = todayIdx >= 0 ? s.routines[todayIdx].name : null
+  const trainedToday = (s.workoutLogs || []).some(l => l.date === new Date().toDateString())
+
+  const [tip, setTip] = useState(s.aiTip?.date === new Date().toDateString() ? s.aiTip.text : '')
+  useEffect(() => { setTip(getDailyTip()) }, [])
+  const liveTip = useStore(st => st.aiTip)
+  useEffect(() => { if (liveTip?.date === new Date().toDateString()) setTip(liveTip.text) }, [liveTip])
+
+  const [recentBadge, setRecentBadge] = useState(null)
+  useEffect(() => { setRecentBadge(trackAndGetRecentBadge(useStore.getState())) }, [])
+
+  const weekDots = [...Array(7)].map((_, i) => {
+    const d = new Date(Date.now() - (6 - i) * 86400000)
+    const ds = d.toDateString()
+    const trained = (s.workoutLogs || []).some(l => l.date === ds)
+    const logged = ds === new Date().toDateString() ? s.today.kcal > 0 : (s.log || []).some(l => l.date === ds)
+    return { letter: 'DLMXJVS'[d.getDay()], trained, logged, today: i === 6 }
+  })
+
+  return (
+    <div className="mt-3">
+      <div className="card flex items-center justify-between px-4 py-2.5">
+        {weekDots.map((d, i) => (
+          <div key={i} className="flex flex-col items-center gap-1">
+            <span className={`h-3 w-3 rounded-full ${
+              d.trained ? 'bg-brand-600' : d.logged ? 'bg-emerald-400' : 'bg-line'
+            } ${d.today ? 'ring-2 ring-accent-400 ring-offset-1 ring-offset-[var(--card)]' : ''}`} />
+            <span className="text-[9px] font-bold text-ink3">{d.letter}</span>
+          </div>
+        ))}
+        <div className="ml-2 flex flex-col gap-0.5 text-[8px] text-ink3">
+          <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-brand-600" /> Entrenó</span>
+          <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Registró</span>
+        </div>
+        {!user && (
+          <button onClick={() => go({ tab: 'profile' })} aria-label="Iniciar sesión"
+            className="ml-2 shrink-0 rounded-xl border border-brand-300 bg-brand-50 p-2 text-brand-700 dark:border-brand-800 dark:bg-brand-900/30 dark:text-brand-300">
+            <LogIn size={14} />
+          </button>
+        )}
+      </div>
+
+      {!trainedToday && (
+        <button onClick={() => go({ tab: 'train', action: 'start' })}
+          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-brand-600 px-3 py-2.5 text-[12px] font-bold text-white">
+          <Play size={13} /> {routineName ? `Hoy toca: ${routineName.split('—')[0].trim()}` : 'Entrenar hoy'}
+        </button>
+      )}
+
+      {recentBadge && (
+        <div className="fade-up mt-2.5 flex items-center gap-3 rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-3 dark:border-amber-800 dark:from-amber-950/40 dark:to-orange-950/30">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-400/20">
+            <recentBadge.icon size={18} className="text-amber-500" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[9px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">Logro desbloqueado</div>
+            <div className="text-[12px] font-bold">{recentBadge.label}</div>
+          </div>
+          <button onClick={() => go({ tab: 'profile' })} className="shrink-0 text-[11px] font-semibold text-amber-600 dark:text-amber-400">Ver</button>
+        </div>
+      )}
+
+      {tip && (
+        <div className="card mt-2.5 flex items-start gap-2.5 border-accent-400/30 bg-accent-500/5 p-3">
+          <Sparkles size={14} className="mt-0.5 shrink-0 text-accent-600" />
+          <p className="text-[11px] leading-relaxed text-ink2">{tip}</p>
+        </div>
+      )}
+
+      <div className="mt-2.5 flex items-start gap-2 px-1">
+        <Quote size={12} className="mt-0.5 shrink-0 rotate-180 text-ink3" />
+        <p className="text-[11px] italic leading-relaxed text-ink3">{quoteOfTheDay()}</p>
+      </div>
     </div>
   )
 }

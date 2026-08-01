@@ -7,9 +7,15 @@ import { EX_BY_ID, MUSCLES } from '../data/exercises'
 import { exName, exerciseHistory } from '../lib/train'
 import { round1 } from '../lib/calc'
 
+const SECTIONS = [
+  ['resumen', 'Resumen'], ['nutricion', 'Nutrición'], ['entreno', 'Entrenamiento'], ['cuerpo', 'Cuerpo'],
+]
+
 export default function Progress({ initialAction }) {
   const s = useStore()
   const [anthroOpen, setAnthroOpen] = useState(initialAction === 'anthro')
+  const [section, setSection] = useState('resumen')
+  const [dayView, setDayView] = useState(null) // fecha (toDateString) tocada en el calendario
 
   const trainedDates = useMemo(() => new Set((s.workoutLogs || []).map(l => l.date)), [s.workoutLogs])
   const loggedDates = useMemo(() => new Set((s.log || []).map(l => l.date)), [s.log])
@@ -43,59 +49,120 @@ export default function Progress({ initialAction }) {
       <h1 className="font-display text-[22px] font-bold tracking-tight">Mi Progreso</h1>
       <p className="text-[11px] text-ink3">Nutrición, entrenamiento y medidas</p>
 
-      {/* Resumen rápido */}
-      <div className="mt-4 grid grid-cols-2 gap-2.5">
-        <Stat icon={Flame} color="text-orange-500" label="Racha" value={`${s.streak} días`} />
-        <Stat icon={Scale} color="text-accent-600" label="Peso" value={s.profile.weight ? `${s.profile.weight} kg` : '—'} />
-        <Stat icon={Beef} color="text-brand-600" label="Proteína hoy" value={`${round1(s.today.prot)}/${s.nutrition.prot}g`} />
-        <Stat icon={Droplets} color="text-sky-500" label="Agua hoy" value={`${s.today.water}/${s.waterGoal || 8}`} />
+      {/* Navegación por secciones — organiza el dashboard en vez de una sola lista larga */}
+      <div className="mt-3 flex gap-1.5 overflow-x-auto no-scrollbar">
+        {SECTIONS.map(([id, label]) => (
+          <Chip key={id} on={section === id} onClick={() => setSection(id)} className="shrink-0">{label}</Chip>
+        ))}
       </div>
 
-      {/* Calendario del mes */}
-      <div className="md:grid md:grid-cols-2 md:items-start md:gap-4">
-      <div className="card mt-3 p-4">
-        <MonthCalendar trainedDates={trainedDates} loggedDates={loggedDates} />
-      </div>
-      <div>
+      {section === 'resumen' && (
+        <>
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <Stat icon={Flame} color="text-orange-500" label="Racha" value={`${s.streak} días`} />
+            <Stat icon={Scale} color="text-accent-600" label="Peso" value={s.profile.weight ? `${s.profile.weight} kg` : '—'} />
+            <Stat icon={Beef} color="text-brand-600" label="Proteína hoy" value={`${round1(s.today.prot)}/${s.nutrition.prot}g`} />
+            <Stat icon={Droplets} color="text-sky-500" label="Agua hoy" value={`${s.today.water}/${s.waterGoal || 8}`} />
+          </div>
+          <div className="card mt-3 p-4">
+            <MonthCalendar trainedDates={trainedDates} loggedDates={loggedDates} onDayClick={setDayView} selectedDate={dayView} />
+          </div>
+          <DayDetail date={dayView} onClose={() => setDayView(null)} />
+        </>
+      )}
 
-      <SectionTitle>Nutrición</SectionTitle>
-      <div className="card p-4">
-        <p className="mb-2 text-xs font-semibold text-ink2">Calorías — 7 días</p>
-        <Bars data={kcalWeek} height={72} />
-      </div>
-      <div className="card mt-2.5 p-4">
-        <p className="mb-2 text-xs font-semibold text-ink2">Evolución de peso (kg)</p>
-        {weightData.length > 1 ? <Bars data={weightData} height={80} /> :
-          <p className="py-3 text-center text-xs text-ink3">Registra tu peso en Antropometría para ver la gráfica</p>}
-      </div>
+      {section === 'nutricion' && (
+        <>
+          <SectionTitle>Calorías — 7 días</SectionTitle>
+          <div className="card p-4"><Bars data={kcalWeek} height={72} /></div>
+          <SectionTitle>Evolución de peso (kg)</SectionTitle>
+          <div className="card p-4">
+            {weightData.length > 1 ? <Bars data={weightData} height={80} /> :
+              <p className="py-3 text-center text-xs text-ink3">Registra tu peso en Antropometría para ver la gráfica</p>}
+          </div>
+        </>
+      )}
 
-      </div>
-      </div>
-      <SectionTitle>Entrenamiento</SectionTitle>
-      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
-        <Stat icon={Dumbbell} color="text-brand-600" label="Sesiones — 7 días" value={week.length} />
-        <Stat icon={Flame} color="text-emerald-600" label="Volumen — 7 días" value={`${volWeek ? fromKg(volWeek) : 0} ${unitLbl()}`} />
-        <Stat icon={Clock} color="text-sky-500" label="Tiempo — 7 días" value={week.length ? timeWeek : '—'} />
-        <Stat icon={Trophy} color="text-amber-500" label="PRs — 7 días" value={prWeek} />
-      </div>
-      <div className="card mt-2.5 p-4">
-        <p className="mb-3 text-xs font-semibold text-ink2">Volumen por músculo — 7 días</p>
-        {muscleVol.length ? <HBars data={muscleVol} unit={unitLbl()} /> :
-          <p className="py-3 text-center text-xs text-ink3">Entrena esta semana para ver tu volumen</p>}
-      </div>
-      <PrChart />
-      <RecentSessions />
+      {section === 'entreno' && (
+        <>
+          <div className="mt-3 grid grid-cols-2 gap-2.5 md:grid-cols-4">
+            <Stat icon={Dumbbell} color="text-brand-600" label="Sesiones — 7 días" value={week.length} />
+            <Stat icon={Flame} color="text-emerald-600" label="Volumen — 7 días" value={`${volWeek ? fromKg(volWeek) : 0} ${unitLbl()}`} />
+            <Stat icon={Clock} color="text-sky-500" label="Tiempo — 7 días" value={week.length ? timeWeek : '—'} />
+            <Stat icon={Trophy} color="text-amber-500" label="PRs — 7 días" value={prWeek} />
+          </div>
+          <div className="card mt-2.5 p-4">
+            <p className="mb-3 text-xs font-semibold text-ink2">Volumen por músculo — 7 días</p>
+            {muscleVol.length ? <HBars data={muscleVol} unit={unitLbl()} /> :
+              <p className="py-3 text-center text-xs text-ink3">Entrena esta semana para ver tu volumen</p>}
+          </div>
+          <PrChart />
+          <RecentSessions />
+        </>
+      )}
 
-      <SectionTitle>Progreso visual</SectionTitle>
-      <PhotoGallery />
+      {section === 'cuerpo' && (
+        <>
+          <SectionTitle>Progreso visual</SectionTitle>
+          <PhotoGallery />
+          <SectionTitle right={
+            <button onClick={() => setAnthroOpen(true)} className="flex items-center gap-1 text-xs font-semibold text-brand-600">
+              <Plus size={13} /> Registrar
+            </button>
+          }>Medidas corporales</SectionTitle>
+          <AnthroCard />
+        </>
+      )}
 
-      <SectionTitle right={
-        <button onClick={() => setAnthroOpen(true)} className="flex items-center gap-1 text-xs font-semibold text-brand-600">
-          <Plus size={13} /> Registrar
-        </button>
-      }>Medidas corporales</SectionTitle>
-      <AnthroCard />
       <AnthroSheet open={anthroOpen} onClose={() => setAnthroOpen(false)} />
+      <div className="h-4" />
+    </div>
+  )
+}
+
+// ── Detalle de un día tocado en el calendario ────────────
+function DayDetail({ date, onClose }) {
+  const s = useStore()
+  if (!date) return null
+  const log = (s.workoutLogs || []).find(l => l.date === date)
+  const nutrition = date === new Date().toDateString() ? s.today : (s.log || []).find(l => l.date === date)
+  if (!log && !nutrition) return null
+
+  return (
+    <div className="card fade-up mt-2.5 p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-xs font-bold text-ink2">{new Date(date).toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+        <button onClick={onClose} className="text-[11px] font-semibold text-ink3">Cerrar</button>
+      </div>
+      {nutrition && (
+        <div className="mb-2 flex items-center gap-1.5 text-[11px] text-ink2">
+          <Flame size={12} className="text-orange-500" /> {nutrition.kcal} kcal · P:{round1(nutrition.prot)}g · C:{round1(nutrition.carb)}g · G:{round1(nutrition.fat)}g
+        </div>
+      )}
+      {log && (
+        <>
+          <div className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold">
+            <Dumbbell size={13} className="text-brand-600" /> {log.name} · {log.duration_min} min · {fromKg(log.volume)} {unitLbl()}
+          </div>
+          <div className="flex flex-col gap-2">
+            {log.exercises.map((e, j) => (
+              <div key={j}>
+                <div className="mb-1 flex items-center justify-between text-[11px] font-semibold">
+                  <span>{exName(e.exerciseId)}</span>
+                  {e.pr && <Trophy size={11} className="text-amber-500" />}
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {e.sets.map((st, k) => (
+                    <span key={k} className="rounded-md bg-card2 px-1.5 py-0.5 text-[10px] font-medium">
+                      {st.w ? `${fromKg(st.w)}${unitLbl()} × ` : ''}{st.r}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

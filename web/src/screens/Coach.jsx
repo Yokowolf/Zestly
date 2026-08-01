@@ -56,7 +56,7 @@ export default function Coach({ initialAction, go }) {
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-64px)] w-full max-w-2xl flex-col px-4 pt-4">
+    <div className="mx-auto flex h-[calc(100dvh-3.6rem-3.6rem-env(safe-area-inset-bottom))] w-full max-w-2xl flex-col px-4 pt-4">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-600 to-brand-500 text-white">
           <Bot size={20} />

@@ -24,15 +24,17 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 800) {
   return data.choices[0].message.content
 }
 
+// Modelos de visión de Groq verificados (soportan imagen + instrucciones
+// de formato). Scout primero (rápido); Maverick de respaldo — más grande
+// y sigue mejor la instrucción de responder solo JSON.
 const VISION_MODELS = [
-  'qwen/qwen3.6-27b',
   'meta-llama/llama-4-scout-17b-16e-instruct',
+  'meta-llama/llama-4-maverick-17b-128e-instruct',
 ]
 
-export async function callAIWithImage(prompt, imageBase64) {
-  const key = getKey()
-  if (!key) throw new Error('Sin API key — configúrala en Perfil')
+async function requestVision(model, key, prompt, imageBase64, jsonMode) {
   const body = {
+    model,
     messages: [{
       role: 'user',
       content: [
@@ -40,21 +42,60 @@ export async function callAIWithImage(prompt, imageBase64) {
         { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
       ],
     }],
-    max_tokens: 600,
+    max_tokens: 700,
+    temperature: 0.2,
+    ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
   }
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json()
+  return { res, data }
+}
+
+// Analiza una foto con IA y devuelve el texto crudo. `validate` (opcional)
+// recibe el texto y debe lanzar si no sirve — en ese caso se prueba con el
+// siguiente modelo en vez de devolver una respuesta inválida (esto era el
+// bug: un modelo podía responder 200 con texto libre en vez de JSON y la
+// app se quedaba con eso).
+export async function callAIWithImage(prompt, imageBase64, validate) {
+  const key = getKey()
+  if (!key) throw new Error('Sin API key — configúrala en Perfil')
+  let lastErr = null
+
   for (const model of VISION_MODELS) {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model, ...body }),
-    })
-    const data = await res.json()
-    if (res.ok) return data.choices[0].message.content
-    const code = data.error?.code || ''
-    if (code === 'model_decommissioned' || code === 'model_not_found') continue
-    throw new Error(friendlyError(res.status, data))
+    // 1er intento: modo JSON forzado. Si el modelo/plan no lo soporta,
+    // reintenta el MISMO modelo sin ese parámetro antes de descartarlo.
+    for (const jsonMode of [true, false]) {
+      let res, data
+      try {
+        ({ res, data } = await requestVision(model, key, prompt, imageBase64, jsonMode))
+      } catch {
+        lastErr = new Error('Sin conexión con el servidor de IA')
+        continue
+      }
+      if (!res.ok) {
+        const code = data.error?.code || ''
+        const msg = (data.error?.message || '').toLowerCase()
+        if (code === 'model_decommissioned' || code === 'model_not_found') { lastErr = new Error(friendlyError(res.status, data)); break }
+        if (jsonMode && (msg.includes('response_format') || msg.includes('json_object') || code === 'json_validate_failed')) {
+          lastErr = new Error(friendlyError(res.status, data)); continue // prueba sin json_object
+        }
+        lastErr = new Error(friendlyError(res.status, data))
+        continue
+      }
+      const text = data.choices?.[0]?.message?.content || ''
+      try {
+        validate?.(text)
+        return text
+      } catch (e) {
+        lastErr = e // el modelo respondió pero no en el formato esperado — prueba el siguiente
+      }
+    }
   }
-  throw new Error('Ningún modelo de visión disponible — revisa actualizaciones de la app')
+  throw lastErr || new Error('La IA no devolvió una respuesta válida — intenta con otra foto o usa Texto IA')
 }
 
 // Traduce errores comunes de la API a mensajes accionables
@@ -69,8 +110,8 @@ function friendlyError(status, data) {
 
 // Extrae el primer objeto JSON de una respuesta de IA
 export function parseAIJson(raw) {
-  const clean = raw.replace(/```json|```/g, '').trim()
+  const clean = (raw || '').replace(/```json|```/g, '').trim()
   const s = clean.indexOf('{'), e = clean.lastIndexOf('}')
-  if (s === -1 || e === -1) throw new Error('La IA no devolvió JSON válido')
+  if (s === -1 || e === -1) throw new Error('La IA no devolvió JSON válido — intenta de nuevo o usa otra foto')
   return JSON.parse(clean.slice(s, e + 1))
 }

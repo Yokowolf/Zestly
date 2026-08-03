@@ -25,11 +25,13 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 800) {
 }
 
 // Modelos de visión de Groq verificados (soportan imagen + instrucciones
-// de formato). Scout primero (rápido); Maverick de respaldo — más grande
-// y sigue mejor la instrucción de responder solo JSON.
+// de formato). Groq decomisionó llama-4-maverick (9 mar 2026) y
+// llama-4-scout (17 jul 2026) — a esta fecha (ago 2026) qwen3.6-27b es el
+// ÚNICO modelo de visión activo en Groq (console.groq.com/docs/vision).
+// Si Groq vuelve a cambiar su catálogo, revisar esa página antes de asumir
+// que un modelo nuevo existe — su lineup cambia muy seguido.
 const VISION_MODELS = [
-  'meta-llama/llama-4-scout-17b-16e-instruct',
-  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  'qwen/qwen3.6-27b',
 ]
 
 async function requestVision(model, key, prompt, imageBase64, jsonMode) {

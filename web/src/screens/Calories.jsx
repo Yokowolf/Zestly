@@ -134,25 +134,28 @@ export default function Calories() {
 function EditPortionSheet({ target, onClose }) {
   const s = useStore()
   const item = target ? s.meals[target.meal]?.[target.idx] : null
-  const [qty, setQty] = useState(null)
+  // qty es TEXTO mientras se edita — así se puede borrar todo el campo sin
+  // que salte a 1 o 0 solo; qtyNum es el número derivado para los cálculos
+  const [qty, setQty] = useState('')
   const [pgInput, setPgInput] = useState('')
-  useEffect(() => { setQty(item ? item.qty || (item.fromDB ? 100 : 1) : null); setPgInput('') }, [target]) // eslint-disable-line react-hooks/exhaustive-deps
-  if (!item || qty == null) return null
+  useEffect(() => { setQty(item ? String(item.qty || (item.fromDB ? 100 : 1)) : ''); setPgInput('') }, [target]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!item) return null
 
+  const qtyNum = parseFloat(qty) || 0
   const grams = item.unit === 'g' || item.unit === 'ml'
   // Gramos de 1 porción: los trae la IA, o el usuario los define aquí una vez
   const pGrams = item.portionGrams || parseFloat(pgInput) || null
   const step = grams ? 25 : 0.5
   // Valores base: por 100g si viene de la BD, por porción si viene de IA/rápidos
   const per = k => item['base' + k] ?? (item[k.toLowerCase()] / ((item.qty || 1) / (item.fromDB ? 100 : 1)) || 0)
-  const ratio = grams ? qty / 100 : qty
+  const ratio = grams ? qtyNum / 100 : qtyNum
   const calc = k => round1(per(k) * ratio)
   const presets = grams ? [50, 75, 100, 150, 200, 250] : [0.5, 1, 1.5, 2]
 
   const save = () => {
     const updated = {
-      ...item, qty,
-      name: grams ? `${baseName(item.name)} (${qty}${item.unit})` : item.name,
+      ...item, qty: qtyNum,
+      name: grams ? `${baseName(item.name)} (${qtyNum}${item.unit})` : item.name,
       kcal: Math.round(per('Kcal') * ratio), prot: calc('Prot'), carb: calc('Carb'), fat: calc('Fat'),
       ...(pGrams ? { portionGrams: pGrams } : {}), // queda guardado para la próxima
     }
@@ -173,22 +176,22 @@ function EditPortionSheet({ target, onClose }) {
   return (
     <Sheet open onClose={onClose} title={baseName(item.name)} subtitle="Ajusta la cantidad — las calorías y macros se recalculan">
       <div className="mb-3 flex items-center justify-center gap-4">
-        <button className="h-10 w-10 rounded-full border border-line text-xl text-ink2" onClick={() => setQty(Math.max(step, round1(qty - step)))}>−</button>
+        <button className="h-10 w-10 rounded-full border border-line text-xl text-ink2" onClick={() => setQty(String(Math.max(step, round1(qtyNum - step))))}>−</button>
         <div className="text-center">
           <input
             type="number" inputMode="decimal" value={qty}
-            onChange={e => setQty(Math.max(0, parseFloat(e.target.value) || 0))}
+            onChange={e => setQty(e.target.value)}
             className="w-24 bg-transparent text-center font-display text-3xl font-bold text-brand-600 outline-none"
           />
           <span className="text-xs text-ink3">
-            {grams ? item.unit : qty === 1 ? 'porción' : 'porciones'}
-            {!grams && pGrams ? <b className="text-brand-600"> · ≈ {Math.round(pGrams * qty)} g</b> : ''}
+            {grams ? item.unit : qtyNum === 1 ? 'porción' : 'porciones'}
+            {!grams && pGrams ? <b className="text-brand-600"> · ≈ {Math.round(pGrams * qtyNum)} g</b> : ''}
           </span>
         </div>
-        <button className="h-10 w-10 rounded-full bg-brand-600 text-xl text-white" onClick={() => setQty(round1(qty + step))}>+</button>
+        <button className="h-10 w-10 rounded-full bg-brand-600 text-xl text-white" onClick={() => setQty(String(round1(qtyNum + step)))}>+</button>
       </div>
       <div className="mb-3 flex flex-wrap justify-center gap-1.5">
-        {presets.map(v => <Chip key={v} on={qty === v} onClick={() => setQty(v)}>{v}{grams ? item.unit : 'x'}{!grams && pGrams ? ` (${Math.round(pGrams * v)}g)` : ''}</Chip>)}
+        {presets.map(v => <Chip key={v} on={qtyNum === v} onClick={() => setQty(String(v))}>{v}{grams ? item.unit : 'x'}{!grams && pGrams ? ` (${Math.round(pGrams * v)}g)` : ''}</Chip>)}
       </div>
       {!grams && !item.portionGrams && (
         <label className="mb-3 flex items-center justify-center gap-2 text-[11px] text-ink3">
@@ -202,9 +205,9 @@ function EditPortionSheet({ target, onClose }) {
         </label>
       )}
       <p className="mb-4 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-        = {Math.round(per('Kcal') * ratio)} kcal{!grams && pGrams ? ` · ${Math.round(pGrams * qty)} g` : ''} · P:{calc('Prot')}g · C:{calc('Carb')}g · G:{calc('Fat')}g
+        = {Math.round(per('Kcal') * ratio)} kcal{!grams && pGrams ? ` · ${Math.round(pGrams * qtyNum)} g` : ''} · P:{calc('Prot')}g · C:{calc('Carb')}g · G:{calc('Fat')}g
       </p>
-      <Button onClick={save} disabled={!qty}>Guardar cambios</Button>
+      <Button onClick={save} disabled={!qtyNum}>Guardar cambios</Button>
     </Sheet>
   )
 }

@@ -48,27 +48,34 @@ export function Sheet({ open, onClose, title, subtitle, children, locked = false
   // Teclado móvil (fix definitivo): cuando el teclado reduce el viewport
   // visible, el sheet se encoge y se ancla ARRIBA del teclado para que los
   // resultados de búsqueda queden siempre visibles.
+  // Solo escuchamos 'resize' (el teclado abriendo/cerrando) — 'scroll' del
+  // visualViewport dispara seguido mientras se escribe (barra de sugerencias,
+  // autocompletar) y era la causa de que el sheet "brincara" con cada tecla.
+  // requestAnimationFrame además coalesce ráfagas de eventos en un solo ajuste.
   useEffect(() => {
     if (!open) return
     const vv = window.visualViewport
     if (!vv) return
+    let raf = null
     const adjust = () => {
-      const panel = panelRef.current
-      if (!panel) return
-      const kbOpen = window.innerHeight - vv.height > 120
-      if (kbOpen) {
-        panel.style.maxHeight = `${vv.height - 12}px`
-        panel.parentElement.style.justifyContent = 'flex-start'
-        panel.parentElement.style.transform = `translateY(${vv.offsetTop}px)`
-      } else {
-        panel.style.maxHeight = ''
-        panel.parentElement.style.justifyContent = ''
-        panel.parentElement.style.transform = ''
-      }
+      if (raf) cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        const panel = panelRef.current
+        if (!panel) return
+        const kbOpen = window.innerHeight - vv.height > 120
+        if (kbOpen) {
+          panel.style.maxHeight = `${vv.height - 12}px`
+          panel.parentElement.style.justifyContent = 'flex-start'
+          panel.parentElement.style.transform = `translateY(${vv.offsetTop}px)`
+        } else {
+          panel.style.maxHeight = ''
+          panel.parentElement.style.justifyContent = ''
+          panel.parentElement.style.transform = ''
+        }
+      })
     }
     vv.addEventListener('resize', adjust)
-    vv.addEventListener('scroll', adjust)
-    return () => { vv.removeEventListener('resize', adjust); vv.removeEventListener('scroll', adjust) }
+    return () => { vv.removeEventListener('resize', adjust); if (raf) cancelAnimationFrame(raf) }
   }, [open])
 
   // Además, al enfocar un campo se sube a la vista dentro del sheet
@@ -81,10 +88,10 @@ export function Sheet({ open, onClose, title, subtitle, children, locked = false
   if (!open) return null
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-end bg-black/45 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex flex-col justify-end bg-black/45 backdrop-blur-sm transition-transform duration-150 ease-out"
       onClick={e => { if (e.target === e.currentTarget && !locked) onClose?.() }}
     >
-      <div ref={panelRef} onFocus={onFocusField} className="mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl border-t border-line bg-bg2 p-5 pb-10 fade-up md:border-x">
+      <div ref={panelRef} onFocus={onFocusField} className="mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl border-t border-line bg-bg2 p-5 pb-10 fade-up transition-[max-height] duration-150 ease-out md:border-x">
         <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-line" />
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>

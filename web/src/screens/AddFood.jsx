@@ -238,30 +238,33 @@ function FoodRow({ f, onClick }) {
 
 function PortionPicker({ food, onAdd, onCancel }) {
   const isMl = (food.unit || '100g').includes('ml')
-  const [qty, setQty] = useState(isMl ? 200 : 100)
-  const r = qty / 100
+  // qty es TEXTO mientras se edita — así se puede borrar todo el campo sin
+  // que salte a 1 solo; qtyNum es el número derivado para cálculos/Añadir
+  const [qty, setQty] = useState(String(isMl ? 200 : 100))
+  const qtyNum = parseFloat(qty) || 0
+  const r = qtyNum / 100
   const presets = isMl ? [150, 200, 250, 300, 400, 500] : [50, 75, 100, 150, 200, 250]
   return (
     <div className="card fade-up mb-3 border-brand-300 p-4 dark:border-brand-700">
       <div className="mb-3 text-xs text-ink2"><b className="text-ink">{food.name}</b> — {food.kcal} kcal por {food.unit}</div>
       <div className="mb-3 flex items-center justify-center gap-4">
-        <button className="h-10 w-10 rounded-full border border-line text-xl text-ink2" onClick={() => setQty(Math.max(1, qty - (isMl ? 50 : 25)))}>−</button>
+        <button className="h-10 w-10 rounded-full border border-line text-xl text-ink2" onClick={() => setQty(String(Math.max(1, qtyNum - (isMl ? 50 : 25))))}>−</button>
         <div className="text-center">
-          <input type="number" value={qty} onChange={e => setQty(Math.max(1, parseFloat(e.target.value) || 0))}
+          <input type="number" value={qty} onChange={e => setQty(e.target.value)}
             className="w-20 bg-transparent text-center font-display text-3xl font-bold text-brand-600 outline-none" />
           <span className="text-xs text-ink3">{isMl ? 'ml' : 'g'}</span>
         </div>
-        <button className="h-10 w-10 rounded-full bg-brand-600 text-xl text-white" onClick={() => setQty(qty + (isMl ? 50 : 25))}>+</button>
+        <button className="h-10 w-10 rounded-full bg-brand-600 text-xl text-white" onClick={() => setQty(String(qtyNum + (isMl ? 50 : 25)))}>+</button>
       </div>
       <div className="mb-3 flex flex-wrap justify-center gap-1.5">
-        {presets.map(v => <Chip key={v} on={qty === v} onClick={() => setQty(v)}>{v}{isMl ? 'ml' : 'g'}</Chip>)}
+        {presets.map(v => <Chip key={v} on={qtyNum === v} onClick={() => setQty(String(v))}>{v}{isMl ? 'ml' : 'g'}</Chip>)}
       </div>
       <p className="mb-3 text-center text-xs font-semibold text-emerald-600 dark:text-emerald-400">
         = {Math.round(food.kcal * r)} kcal · P:{round1(food.prot * r)}g · C:{round1(food.carb * r)}g · G:{round1(food.fat * r)}g
       </p>
       <div className="flex gap-2">
         <Button variant="ghost" className="!py-2.5" onClick={onCancel}>Cancelar</Button>
-        <Button className="!py-2.5" onClick={() => onAdd(qty, isMl)}>Añadir</Button>
+        <Button className="!py-2.5" onClick={() => onAdd(qtyNum, isMl)} disabled={!qtyNum}>Añadir</Button>
       </div>
     </div>
   )

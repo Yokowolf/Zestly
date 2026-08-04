@@ -184,13 +184,13 @@ export function Logo({ size = 80 }) {
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
       <defs>
         <linearGradient id="zlg" x1="0" y1="100" x2="100" y2="0" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#7c3aed" /><stop offset="1" stopColor="#06b6d4" />
+          <stop stopColor="#059669" /><stop offset="1" stopColor="#84cc16" />
         </linearGradient>
       </defs>
       <path d="M50 10 L85 80 L15 80 Z" fill="none" stroke="url(#zlg)" strokeWidth="4.5" strokeLinejoin="round" />
       <path d="M50 30 L68 72 L32 72 Z" fill="url(#zlg)" opacity=".2" />
-      <path d="M50 10 L44 26 L52 26 L46 42" stroke="#06b6d4" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="50" cy="10" r="4.5" fill="#06b6d4" />
+      <path d="M50 10 L44 26 L52 26 L46 42" stroke="#84cc16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="50" cy="10" r="4.5" fill="#84cc16" />
     </svg>
   )
 }

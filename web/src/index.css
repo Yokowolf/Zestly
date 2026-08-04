@@ -7,7 +7,10 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", var(--font-sans);
 
-  /* Marca Zestly — verde límón (principal) + verde esmeralda (acento IA) */
+  /* Marca Zestly — verde límón (principal) + verde azulado/teal (acento IA).
+     Nota: el "verde éxito" (checks, toasts ok, "registrado") usa la escala
+     emerald-* de Tailwind directo en varias pantallas — por eso accent NO
+     puede ser emerald, se confundiría con esas señales de estado. */
   --color-brand-50: #f7fee7;
   --color-brand-100: #ecfccb;
   --color-brand-200: #d9f99d;
@@ -19,16 +22,16 @@
   --color-brand-800: #3f6212;
   --color-brand-900: #365314;
 
-  --color-accent-50: #ecfdf5;
-  --color-accent-100: #d1fae5;
-  --color-accent-200: #a7f3d0;
-  --color-accent-300: #6ee7b7;
-  --color-accent-400: #34d399;
-  --color-accent-500: #10b981;
-  --color-accent-600: #059669;
-  --color-accent-700: #047857;
-  --color-accent-800: #065f46;
-  --color-accent-900: #064e3b;
+  --color-accent-50: #f0fdfa;
+  --color-accent-100: #ccfbf1;
+  --color-accent-200: #99f6e4;
+  --color-accent-300: #5eead4;
+  --color-accent-400: #2dd4bf;
+  --color-accent-500: #14b8a6;
+  --color-accent-600: #0d9488;
+  --color-accent-700: #0f766e;
+  --color-accent-800: #115e59;
+  --color-accent-900: #134e4a;
 }
 
 /* Tokens de superficie — claro por defecto, .dark los invierte */

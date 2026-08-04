@@ -3,16 +3,18 @@ import { X } from 'lucide-react'
 import { useStore } from '../store'
 
 // ── Botones ──────────────────────────────────────────────
+// Feedback táctil reforzado: más escala al presionar + oscurecido en los
+// sólidos, para que se sientan "vivos" al tocar (pedido explícito del usuario).
 export function Button({ children, variant = 'primary', className = '', ...props }) {
   const styles = {
-    primary: 'bg-brand-600 text-white active:bg-brand-700 disabled:opacity-50',
+    primary: 'bg-brand-600 text-white active:bg-brand-700 active:brightness-90 disabled:opacity-50',
     ghost: 'border border-line text-ink2 bg-card active:bg-card2',
-    accent: 'bg-accent-600 text-white active:bg-accent-500 disabled:opacity-50',
-    danger: 'border border-red-300 text-red-500 bg-transparent dark:border-red-900',
+    accent: 'bg-accent-600 text-white active:bg-accent-500 active:brightness-90 disabled:opacity-50',
+    danger: 'border border-red-300 text-red-500 bg-transparent active:bg-red-50 dark:border-red-900 dark:active:bg-red-950/40',
   }
   return (
     <button
-      className={`w-full rounded-xl px-4 py-3.5 text-sm font-semibold transition-transform active:scale-[0.98] ${styles[variant]} ${className}`}
+      className={`w-full rounded-xl px-4 py-3.5 text-sm font-semibold transition-all duration-100 active:scale-[0.95] disabled:active:scale-100 ${styles[variant]} ${className}`}
       {...props}
     >
       {children}
@@ -24,10 +26,10 @@ export function Button({ children, variant = 'primary', className = '', ...props
 export function Chip({ on, children, className = '', ...props }) {
   return (
     <button
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-100 active:scale-[0.94] ${
         on
           ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300'
-          : 'border-line bg-card text-ink2'
+          : 'border-line bg-card text-ink2 active:bg-card2'
       } ${className}`}
       {...props}
     >

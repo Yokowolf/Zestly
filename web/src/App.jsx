@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Settings, Home as HomeIcon, Flame, Dumbbell, UtensilsCrossed, BarChart3, Bot } from 'lucide-react'
+import {
+  Settings, Home as HomeIcon, Flame, Dumbbell, UtensilsCrossed, BarChart3, Bot,
+  Camera, ChevronLeft, ChevronRight, X,
+} from 'lucide-react'
 import { useStore, rolloverIfNewDay } from './store'
 import { watchAuth } from './lib/firebase'
 import { Toasts } from './components/ui'
@@ -26,15 +29,33 @@ const TITLES = {
   progress: 'Mi progreso', coach: 'IA Coach', profile: 'Perfil',
 }
 
+// Recorrido guiado "Cómo usar Zestly" — navega las pestañas REALES mientras
+// explica cada una (no una simulación con capturas ni texto suelto).
+const TOUR_STEPS = [
+  { tab: 'calories', icon: Camera, title: 'Registra tu comida', text: 'Escanea el plato con foto, busca en el buscador o usa un atajo rápido — la IA calcula calorías y macros por ti.' },
+  { tab: 'train', icon: Dumbbell, title: 'Arma tu rutina', text: 'Elige una plantilla por categoría (tren superior, inferior, cardio...) o crea la tuya. Zestly recuerda tus pesos de la sesión anterior.' },
+  { tab: 'plan', icon: UtensilsCrossed, title: 'Genera tu plan semanal', text: 'La IA arma un menú de 7 días con lista de compras y la receta de cada plato.' },
+  { tab: 'progress', icon: BarChart3, title: 'Revisa tu progreso', text: 'Calendario, PRs, volumen por músculo, fotos y medidas — organizado por secciones.' },
+  { tab: 'coach', icon: Bot, title: 'Pregunta a tu Coach', text: 'Resuelve dudas de nutrición o entrenamiento y pídele que analice tu día o tu última sesión.' },
+]
+
 export default function App() {
   // Navegación global por pestañas fijas — Inicio es la pantalla de entrada
   const [nav, setNav] = useState({ tab: 'home', action: null, ts: 0 })
   const [booting, setBooting] = useState(true)
   const [screen, setScreen] = useState('app') // 'welcome' | 'onboarding' | 'app'
+  const [tourStep, setTourStep] = useState(null) // null = sin recorrido activo; 0..TOUR_STEPS.length-1
   const onboarded = useStore(s => s.onboarded)
   const theme = useStore(s => s.theme)
 
   const go = target => setNav({ tab: target.tab, action: target.action || null, ts: Date.now() })
+  const tourGo = i => {
+    if (i < 0) return
+    if (i >= TOUR_STEPS.length) { go({ tab: 'home' }); setTourStep(null); return }
+    go({ tab: TOUR_STEPS[i].tab })
+    setTourStep(i)
+  }
+  const startTour = () => tourGo(0)
 
   // Tema: claro predeterminado, .dark activa el modo oscuro
   useEffect(() => {
@@ -92,7 +113,7 @@ export default function App() {
       </header>
 
       <main className="flex-1 pb-24">
-        {tab === 'home' && <HomeScreen go={go} />}
+        {tab === 'home' && <HomeScreen go={go} onStartTour={startTour} />}
         {tab === 'calories' && <Calories />}
         {tab === 'progress' && <Progress key={ts} initialAction={action} />}
         {tab === 'train' && <Train key={ts} initialAction={action} />}
@@ -101,23 +122,70 @@ export default function App() {
         {tab === 'profile' && <Profile />}
       </main>
 
-      {/* Barra de pestañas fija abajo — navegación principal siempre visible */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg2/95 backdrop-blur-lg">
-        <div className="mx-auto flex w-full max-w-lg md:max-w-5xl">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => go({ tab: id })}
-              className="flex flex-1 flex-col items-center gap-0.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
-            >
-              <Icon size={20} strokeWidth={activeTab === id ? 2.4 : 1.8} className={activeTab === id ? 'text-brand-600' : 'text-ink3'} />
-              <span className={`text-[10px] font-medium ${activeTab === id ? 'text-brand-600' : 'text-ink3'}`}>{label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
+      {/* Barra de pestañas fija abajo — oculta durante el recorrido guiado
+          para que la única navegación posible sea Atrás/Siguiente del tour */}
+      {tourStep === null && (
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg2/95 backdrop-blur-lg">
+          <div className="mx-auto flex w-full max-w-lg md:max-w-5xl">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => go({ tab: id })}
+                className="flex flex-1 flex-col items-center gap-0.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] transition-transform active:scale-90"
+              >
+                <Icon size={20} strokeWidth={activeTab === id ? 2.4 : 1.8} className={activeTab === id ? 'text-brand-600' : 'text-ink3'} />
+                <span className={`text-[10px] font-medium ${activeTab === id ? 'text-brand-600' : 'text-ink3'}`}>{label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
 
-      <SessionPill onResume={() => go({ tab: 'train' })} />
+      {tourStep === null && <SessionPill onResume={() => go({ tab: 'train' })} />}
+      {tourStep !== null && (
+        <GuideTour step={tourStep} onNext={() => tourGo(tourStep + 1)} onBack={() => tourGo(tourStep - 1)} onSkip={() => tourGo(TOUR_STEPS.length)} />
+      )}
+    </div>
+  )
+}
+
+// Tarjeta flotante del recorrido guiado — flota sobre la pantalla real de
+// cada pestaña mientras `tourGo` la va cambiando paso a paso.
+function GuideTour({ step, onNext, onBack, onSkip }) {
+  const s = TOUR_STEPS[step]
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-line bg-bg2/98 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 shadow-2xl backdrop-blur-lg fade-up">
+      <div className="mx-auto w-full max-w-lg md:max-w-xl">
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex gap-1.5">
+            {TOUR_STEPS.map((_, i) => (
+              <span key={i} className={`h-1.5 rounded-full transition-all ${i === step ? 'w-5 bg-brand-600' : 'w-1.5 bg-line'}`} />
+            ))}
+          </div>
+          <button onClick={onSkip} className="flex items-center gap-1 text-[11px] font-semibold text-ink3 active:scale-95" aria-label="Saltar recorrido">
+            Saltar <X size={13} />
+          </button>
+        </div>
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent-600 to-brand-500 text-white">
+            <s.icon size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[14px] font-bold">{s.title}</div>
+            <p className="mt-0.5 text-[12px] leading-relaxed text-ink2">{s.text}</p>
+          </div>
+        </div>
+        <div className="mt-4 flex gap-2">
+          {step > 0 && (
+            <button onClick={onBack} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-line text-ink2 transition-transform active:scale-90" aria-label="Paso anterior">
+              <ChevronLeft size={18} />
+            </button>
+          )}
+          <button onClick={onNext} className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand-600 text-sm font-bold text-white transition-all active:scale-[0.97] active:brightness-90">
+            {step === TOUR_STEPS.length - 1 ? 'Finalizar' : 'Siguiente'} <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -184,13 +252,13 @@ export function Logo({ size = 80 }) {
     <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
       <defs>
         <linearGradient id="zlg" x1="0" y1="100" x2="100" y2="0" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#0d9488" /><stop offset="1" stopColor="#84cc16" />
+          <stop stopColor="#7c3aed" /><stop offset="1" stopColor="#06b6d4" />
         </linearGradient>
       </defs>
       <path d="M50 10 L85 80 L15 80 Z" fill="none" stroke="url(#zlg)" strokeWidth="4.5" strokeLinejoin="round" />
       <path d="M50 30 L68 72 L32 72 Z" fill="url(#zlg)" opacity=".2" />
-      <path d="M50 10 L44 26 L52 26 L46 42" stroke="#84cc16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="50" cy="10" r="4.5" fill="#84cc16" />
+      <path d="M50 10 L44 26 L52 26 L46 42" stroke="#06b6d4" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="50" cy="10" r="4.5" fill="#06b6d4" />
     </svg>
   )
 }

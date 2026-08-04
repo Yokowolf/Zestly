@@ -65,7 +65,7 @@ export default function Profile() {
         </div>
       ) : (
         <Button variant="ghost" className="mt-4 flex items-center justify-center gap-2"
-          onClick={() => signIn().catch(() => s.toast('Error al iniciar sesión', 'err'))}>
+          onClick={() => signIn().catch(e => s.toast('Error al iniciar sesión: ' + (e.message || '').slice(0, 80), 'err'))}>
           <LogIn size={15} /> Vincular Google — activa la sincronización
         </Button>
       )}

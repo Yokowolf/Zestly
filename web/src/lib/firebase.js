@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut,
+  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut,
   onAuthStateChanged, setPersistence, browserLocalPersistence,
 } from 'firebase/auth'
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'
@@ -23,14 +23,24 @@ const db = getFirestore(app)
 const provider = new GoogleAuthProvider()
 setPersistence(auth, browserLocalPersistence).catch(() => {})
 
+// signInWithPopup se descartó por completo: en PWA instalada, navegadores
+// móviles, webviews embebidos (Instagram/WhatsApp) y hasta en navegador de
+// escritorio con las políticas COOP que traen por defecto los navegadores
+// modernos, el popup puede quedar abierto pero sin poder avisarle de vuelta
+// a la app que terminó — ni error, ni éxito, se queda colgado en silencio.
+// signInWithRedirect no depende de esa comunicación entre ventanas: navega
+// a Google y vuelve a la app; el resultado se recoge en watchAuth al arrancar.
 export async function signIn() {
-  await signInWithPopup(auth, provider)
+  await signInWithRedirect(auth, provider)
 }
 export async function logOut() {
   await signOut(auth)
 }
 
 export function watchAuth(onReady) {
+  getRedirectResult(auth).catch(e => {
+    useStore.getState().toast('Error al iniciar sesión: ' + (e.message || '').slice(0, 80), 'err')
+  })
   return onAuthStateChanged(auth, async user => {
     useStore.getState().setUser(user)
     if (user) await cloudLoad(user.uid)
@@ -142,11 +152,17 @@ export async function cloudLoad(uid) {
     }
 
     const todayStr = new Date().toDateString()
+    // Si el dispositivo YA tiene comida de hoy registrada localmente (ej. se
+    // vinculó Google después de anotar algo), el local manda — nunca lo
+    // pisamos con lo que diga la nube, para no perder lo recién anotado.
+    const localHasToday = (st.today?.kcal || 0) > 0 || Object.values(st.meals || {}).some(arr => (arr || []).length > 0)
     if (tS.exists()) {
       const td = tS.data()
       if (td.date === todayStr) {
-        patch.today = td.today || st.today
-        patch.meals = td.meals || st.meals
+        if (!localHasToday) {
+          patch.today = td.today || st.today
+          patch.meals = td.meals || st.meals
+        }
       } else if (td.date && td.today && (td.today.kcal || 0) > 0) {
         // Día distinto: archivar ayer en el historial
         const log = patch.log || st.log || []
@@ -157,9 +173,11 @@ export async function cloudLoad(uid) {
             patch.streak = diff === 1 ? (patch.streak || st.streak || 0) + 1 : 1
           } catch { /* fecha ilegible */ }
         }
-        patch.today = { kcal: 0, prot: 0, carb: 0, fat: 0, water: 0 }
-        patch.meals = { breakfast: [], lunch: [], dinner: [], snack: [] }
-      } else {
+        if (!localHasToday) {
+          patch.today = { kcal: 0, prot: 0, carb: 0, fat: 0, water: 0 }
+          patch.meals = { breakfast: [], lunch: [], dinner: [], snack: [] }
+        }
+      } else if (!localHasToday) {
         patch.today = { kcal: 0, prot: 0, carb: 0, fat: 0, water: 0 }
         patch.meals = { breakfast: [], lunch: [], dinner: [], snack: [] }
       }

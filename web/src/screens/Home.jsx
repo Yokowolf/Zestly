@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Flame, Play, LogIn, Quote, Sparkles, Clock, Trophy,
-  ChevronDown, ChevronRight, Camera, UtensilsCrossed, Dumbbell, BarChart3, Bot, Scale,
+  ChevronRight, UtensilsCrossed, Dumbbell, Scale,
 } from 'lucide-react'
 import { useStore, fromKg, unitLbl } from '../store'
 import { Ring } from '../components/charts'
@@ -12,15 +12,7 @@ import { trackAndGetRecentBadge } from '../lib/badges'
 import { getDailyTip } from '../lib/tips'
 import { round1 } from '../lib/calc'
 
-const GUIDE_STEPS = [
-  { icon: Camera, title: 'Registra tu comida', text: 'Escanea el plato con foto, busca en el buscador o usa un atajo rápido — la IA calcula calorías y macros por ti.' },
-  { icon: Dumbbell, title: 'Arma tu rutina', text: 'En Entrena elige una plantilla por categoría (tren superior, inferior, cardio...) o crea la tuya. Zestly recuerda tus pesos.' },
-  { icon: UtensilsCrossed, title: 'Genera tu plan semanal', text: 'En Plan la IA arma un menú de 7 días con lista de compras y recetas paso a paso.' },
-  { icon: BarChart3, title: 'Revisa tu progreso', text: 'En Progreso ves tu calendario, PRs, volumen por músculo, fotos y medidas corporales.' },
-  { icon: Bot, title: 'Pregunta a tu Coach', text: 'Resuelve dudas de nutrición o entrenamiento y pídele que analice tu día o tu última sesión.' },
-]
-
-export default function Home({ go }) {
+export default function Home({ go, onStartTour }) {
   const s = useStore()
   const hour = new Date().getHours()
   const greet = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
@@ -34,7 +26,17 @@ export default function Home({ go }) {
         {new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
       </p>
 
-      <HowToGuide />
+      <button onClick={onStartTour} className="card mt-3 flex w-full items-center gap-2.5 p-3.5 text-left transition-transform active:scale-[0.99]">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent-600 to-brand-500 text-white">
+          <Sparkles size={16} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-bold">Cómo usar Zestly</div>
+          <div className="text-[10px] text-ink3">Recorrido guiado por cada pestaña — 5 pasos</div>
+        </div>
+        <ChevronRight size={16} className="shrink-0 text-ink3" />
+      </button>
+
       <DaySummary go={go} />
       <MiniProgress go={go} />
       <CaloriesPreview go={go} />
@@ -182,13 +184,20 @@ function DaySummary({ go }) {
           <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-brand-600" /> Entrenó</span>
           <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Registró</span>
         </div>
-        {!user && (
-          <button onClick={() => go({ tab: 'profile' })} aria-label="Iniciar sesión"
-            className="ml-2 shrink-0 rounded-xl border border-brand-300 bg-brand-50 p-2 text-brand-700 dark:border-brand-800 dark:bg-brand-900/30 dark:text-brand-300">
-            <LogIn size={14} />
-          </button>
-        )}
       </div>
+
+      {/* Antes era un ícono suelto sin texto (se confundía con "cerrar
+          sesión") — ahora es un banner claro con el botón "Iniciar sesión" */}
+      {!user && (
+        <button onClick={() => go({ tab: 'profile' })}
+          className="mt-2.5 flex w-full items-center gap-2.5 rounded-xl border border-brand-300 bg-brand-50 p-3 text-left dark:border-brand-800 dark:bg-brand-900/30">
+          <LogIn size={15} className="shrink-0 text-brand-700 dark:text-brand-300" />
+          <span className="min-w-0 flex-1 text-[11px] leading-snug text-brand-800 dark:text-brand-200">
+            No has iniciado sesión — tus datos solo quedan en este dispositivo.
+          </span>
+          <span className="shrink-0 text-[11px] font-bold text-brand-700 dark:text-brand-300">Entrar</span>
+        </button>
+      )}
 
       {!trainedToday && (
         <button onClick={() => go({ tab: 'train', action: 'start' })}
@@ -221,42 +230,6 @@ function DaySummary({ go }) {
         <Quote size={12} className="mt-0.5 shrink-0 rotate-180 text-ink3" />
         <p className="text-[11px] italic leading-relaxed text-ink3">{quoteOfTheDay()}</p>
       </div>
-    </div>
-  )
-}
-
-// ── Guía "Cómo usar Zestly" — tour para quien recién entra, y siempre
-// disponible como recordatorio (colapsada, se puede reabrir tocándola) ──
-function HowToGuide() {
-  const open = useStore(s => s.homeGuideOpen)
-  const toggle = () => useStore.getState().patch({ homeGuideOpen: !open })
-
-  return (
-    <div className="card mt-3 overflow-hidden">
-      <button onClick={toggle} className="flex w-full items-center gap-2.5 px-4 py-3 text-left">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-accent-600 to-brand-500 text-white">
-          <Sparkles size={15} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="text-[13px] font-bold">Cómo usar Zestly</div>
-          {!open && <div className="text-[10px] text-ink3">Toca para ver la guía otra vez</div>}
-        </div>
-        {open ? <ChevronDown size={16} className="shrink-0 text-ink3" /> : <ChevronRight size={16} className="shrink-0 text-ink3" />}
-      </button>
-      {open && (
-        <div className="flex gap-2.5 overflow-x-auto px-4 pb-4 no-scrollbar">
-          {GUIDE_STEPS.map((st, i) => (
-            <div key={i} className="w-40 shrink-0 rounded-2xl border border-line bg-card2 p-3">
-              <div className="mb-2 flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white">{i + 1}</span>
-                <st.icon size={15} className="text-brand-600" />
-              </div>
-              <div className="mb-1 text-[12px] font-bold leading-tight">{st.title}</div>
-              <p className="text-[10px] leading-relaxed text-ink3">{st.text}</p>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

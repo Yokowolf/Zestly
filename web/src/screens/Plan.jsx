@@ -336,8 +336,8 @@ function printPlan(mp, nutrition) {
     h3{font-size:14px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin:18px 0 6px}
     table{width:100%;border-collapse:collapse} td{padding:4px 6px}
     .t{color:#64748b;text-transform:uppercase;font-size:10px;font-weight:700;width:110px}
-    .k{color:#65a30d;font-weight:700;text-align:right;white-space:nowrap}
-    .rec{margin:2px 6px 10px 116px;padding:8px 10px;background:#f8fafc;border-left:3px solid #65a30d;font-size:11px;line-height:1.7;color:#334155}
+    .k{color:#0891b2;font-weight:700;text-align:right;white-space:nowrap}
+    .rec{margin:2px 6px 10px 116px;padding:8px 10px;background:#f8fafc;border-left:3px solid #0891b2;font-size:11px;line-height:1.7;color:#334155}
   </style></head><body>
     <h1>Plan alimenticio semanal — Zestly</h1>
     <h2>Meta: ${nutrition.kcal} kcal · ${nutrition.prot}g proteína/día · generado ${new Date(mp.ts).toLocaleDateString('es')}</h2>

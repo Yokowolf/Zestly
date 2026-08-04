@@ -36,7 +36,6 @@ const DEFAULTS = {
   aiTip: null,        // recomendación del día cacheada { date, text, source }
   progressPhoto: null, // legado — migrada a progressPhotos al iniciar
   progressPhotos: [], // galería de progreso [{ ts, data (jpeg base64 pequeño) }] máx 8
-  homeGuideOpen: true, // guía "Cómo usar Zestly" en Inicio — abierta la primera vez, luego recuerda si el usuario la cerró
 }
 
 function loadLocal() {

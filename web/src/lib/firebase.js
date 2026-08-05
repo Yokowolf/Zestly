@@ -97,6 +97,25 @@ function mergeByKey(local = [], cloud = [], keyFn, max = 60) {
 const byStart = l => l.startTs || `${l.date}|${l.name}`
 const byDate = l => l.date
 
+// Mismo problema que mergeByKey pero para el plan alimenticio: antes
+// "ganaba la nube" a secas, así que las recetas rellenadas con IA en este
+// dispositivo (aún sin subir) se perdían al recargar si la nube tenía una
+// copia más vieja del mismo plan. Ahora, si es el MISMO plan (mismo ts), se
+// conserva la receta de cada plato venga de donde venga — nunca se pierde
+// una ya generada. Si el ts difiere, es un plan distinto (se regeneró en
+// algún dispositivo) y gana el más reciente.
+function mergeMealPlan(local, cloud) {
+  if (!local) return cloud || null
+  if (!cloud) return local
+  if (local.ts !== cloud.ts) return (cloud.ts || 0) > (local.ts || 0) ? cloud : local
+  const days = local.days.map((d, di) => {
+    const cd = cloud.days?.[di]
+    if (!cd) return d
+    return { ...d, meals: d.meals.map((m, mi) => ({ ...m, recipe: m.recipe || cd.meals?.[mi]?.recipe || null })) }
+  })
+  return { ...local, days }
+}
+
 export async function cloudLoad(uid) {
   const st = useStore.getState()
   try {
@@ -141,13 +160,21 @@ export async function cloudLoad(uid) {
       const f = fS.data()
       Object.assign(patch, {
         unit: f.unit || 'kg',
-        routines: f.routines?.length ? f.routines : st.routines || [],
+        // Mismo bug que mealPlan: "gana la nube si existe" perdía rutinas
+        // creadas/editadas localmente sin alcanzar a subir. mergeByKey ya
+        // resuelve esto bien (en conflicto de la misma rutina, gana local).
+        routines: mergeByKey(st.routines, f.routines, r => r.createdAt || r.name, 200),
         workoutLogs: mergeByKey(st.workoutLogs, f.workoutLogs, byStart)
           .sort((a, b) => (a.startTs || 0) - (b.startTs || 0)),
-        activeWorkout: st.activeWorkout || f.activeWorkout || null,
+        // NUNCA se trae de la nube: es un estado en vivo de este dispositivo.
+        // Si se traía de f.activeWorkout cuando el local ya estaba en null
+        // (sesión recién terminada) y la nube no había alcanzado a
+        // actualizarse, resucitaba la sesión ya finalizada con su hora de
+        // inicio original — el cronómetro aparecía con horas de "atraso".
+        activeWorkout: st.activeWorkout || null,
         anthro: mergeByKey(st.anthro, f.anthro, byDate)
           .sort((a, b) => new Date(a.date) - new Date(b.date)),
-        mealPlan: f.mealPlan || st.mealPlan || null,
+        mealPlan: mergeMealPlan(st.mealPlan, f.mealPlan),
       })
     }
 

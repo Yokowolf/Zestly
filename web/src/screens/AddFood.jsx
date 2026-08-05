@@ -490,6 +490,13 @@ function CamTab({ meal, onDone }) {
   const [preview, setPreview] = useState(null)
   const [items, setItems] = useState(null) // detectados para revisar
   const [busy, setBusy] = useState(false)
+  const [cooldown, setCooldown] = useState(0) // segundos restantes tras un 429 de Groq
+
+  useEffect(() => {
+    if (!cooldown) return
+    const t = setInterval(() => setCooldown(c => Math.max(0, c - 1)), 1000)
+    return () => clearInterval(t)
+  }, [cooldown])
 
   const onFile = e => {
     const file = e.target.files[0]; if (!file) return
@@ -526,6 +533,10 @@ function CamTab({ meal, onDone }) {
       setItems(parsed.items)
     } catch (e) {
       s.toast(e.message.slice(0, 60), 'err')
+      // Si fue el límite de uso de Groq, bloquea el botón un rato — reintentar
+      // de inmediato solo vuelve a chocar con el mismo límite (visto en los
+      // logs: varios 429 seguidos en segundos por reintentos manuales).
+      if (e.message.includes('Límite de uso')) setCooldown(45)
     }
     setBusy(false)
   }
@@ -554,7 +565,9 @@ function CamTab({ meal, onDone }) {
       {preview && <img src={preview} alt="preview" className="max-h-52 rounded-2xl border border-line object-contain" />}
       <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
       {!items && preview && (
-        <Button onClick={analyze} disabled={busy}>{busy ? 'Analizando…' : 'Analizar con IA'}</Button>
+        <Button onClick={analyze} disabled={busy || cooldown > 0}>
+          {cooldown > 0 ? `Espera ${cooldown}s…` : busy ? 'Analizando…' : 'Analizar con IA'}
+        </Button>
       )}
       {!preview && <p className="text-center text-xs text-ink3">Toca para abrir la cámara — asegúrate de que todos los ingredientes sean visibles</p>}
       {items && (

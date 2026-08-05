@@ -23,7 +23,15 @@ export default function Workout({ open, onClose }) {
   const [summary, setSummary] = useState(null)
   const [viewMode, setViewMode] = useState('list') // 'list' | 'grid' (enfoque en la imagen)
   const [exTimer, setExTimer] = useState(null) // { ei, si, target, startTs }
+  const [collapsed, setCollapsed] = useState(() => new Set()) // exerciseId comprimidos a una línea
   const [, tick] = useState(0)
+
+  const toggleCollapse = id => setCollapsed(prev => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    return next
+  })
 
   const patchWorkout = exercises => w && s.patch({ activeWorkout: { ...w, exercises } })
 
@@ -87,20 +95,22 @@ export default function Workout({ open, onClose }) {
 
   if (!w && !summary) return null
 
+  // Un set completado no se puede desmarcar (evita reiniciar el descanso por
+  // accidente) — para corregir un dato, se edita el peso/reps directamente.
   const toggleSet = (ei, si) => {
     const e = w.exercises[ei]
     const st = e.sets[si]
+    if (st.done) return
     const ex = EX_BY_ID[e.exerciseId] || {}
-    if (!st.done && !setReady(ex, st)) {
+    if (!setReady(ex, st)) {
       s.toast(ex.weight === false ? 'Registra las reps antes de marcar el set' : 'Registra peso y reps antes de marcar el set', 'err')
       return
     }
-    const nowDone = !st.done
     patchWorkout(w.exercises.map((ex, i) => i !== ei ? ex : {
       ...ex,
-      sets: ex.sets.map((x, j) => j !== si ? x : { ...x, done: nowDone, doneAt: nowDone ? Date.now() : null }),
+      sets: ex.sets.map((x, j) => j !== si ? x : { ...x, done: true, doneAt: Date.now() }),
     }))
-    if (nowDone && e.rest > 0 && e.block === 'main') setRest({ end: Date.now() + e.rest * 1000, total: e.rest })
+    if (e.rest > 0 && e.block === 'main') setRest({ end: Date.now() + e.rest * 1000, total: e.rest })
   }
 
   const addSet = ei => patchWorkout(w.exercises.map((e, i) => i !== ei ? e : {
@@ -154,7 +164,7 @@ export default function Workout({ open, onClose }) {
     <Sheet open={open} onClose={() => onClose()} title={w.name} locked
       subtitle={`${doneSets}/${totalSets} sets completados`}>
       {/* Cabecera fija: minimizar + vista + tiempo + descanso */}
-      <div className="sticky -top-5 z-10 -mx-1 mb-3 rounded-2xl border border-line bg-bg2/95 p-3 backdrop-blur">
+      <div className="sticky -top-4 z-10 -mx-1 mb-3 rounded-2xl border border-line bg-bg2/95 p-3 backdrop-blur">
         <div className="flex items-center justify-between gap-2">
           <button onClick={onClose} className="flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-[11px] font-semibold text-ink2" aria-label="Minimizar sesión">
             <ChevronDown size={14} /> Minimizar
@@ -203,15 +213,32 @@ export default function Workout({ open, onClose }) {
                 return prev ? String(prev) : 'reps'
               }
               const timed = parseTimedReps(e.reps)
+              const allDone = e.sets.length > 0 && e.sets.every(st => st.done)
+              const doneCount = e.sets.filter(st => st.done).length
+              const isCollapsed = collapsed.has(e.exerciseId)
+
+              // ── Comprimida a una línea (manual o al completarse) ──
+              if (isCollapsed) {
+                return (
+                  <button key={ei} onClick={() => toggleCollapse(e.exerciseId)}
+                    className={`card flex w-full items-center gap-3 p-3 text-left active:scale-[0.99] ${allDone ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30' : ''}`}>
+                    <ExerciseImg exercise={ex} size="h-9 w-9" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[13px] font-semibold">{ex.name || e.exerciseId}</div>
+                      <div className="text-[10px] text-ink3">{doneCount}/{e.sets.length} sets{allDone && ' · completado'}</div>
+                    </div>
+                    {allDone && <Check size={16} className="shrink-0 text-emerald-500" />}
+                    <ChevronDown size={16} className="shrink-0 -rotate-90 text-ink3" />
+                  </button>
+                )
+              }
 
               // ── Vista cuadrícula: el GIF protagonista + celdas de sets ──
               if (viewMode === 'grid') {
                 return (
-                  <div key={ei} className="card overflow-hidden">
+                  <div key={ei} className={`card overflow-hidden ${allDone ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30' : ''}`}>
                     <button onClick={() => setDetail(ex)} className="block w-full bg-white">
-                      {ex.img
-                        ? <img src={ex.img} alt={ex.name} loading="lazy" className="mx-auto h-44 object-contain" />
-                        : <div className="flex h-44 items-center justify-center text-ink3"><ExerciseImg exercise={ex} size="h-20 w-20" /></div>}
+                      <ExerciseHero ex={ex} />
                     </button>
                     <div className="p-3">
                       <div className="flex items-center justify-between gap-2">
@@ -221,6 +248,7 @@ export default function Workout({ open, onClose }) {
                             Objetivo {e.reps} · descanso {e.rest}s{best > 0 && <> · <Trophy size={9} className="inline text-amber-500" /> {fromKg(best)} {unitLbl()}</>}
                           </div>
                         </div>
+                        <button onClick={() => toggleCollapse(e.exerciseId)} className="shrink-0 p-1.5 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
                         <button onClick={() => removeEx(ei)} className="shrink-0 p-1.5 text-ink3"><Trash2 size={15} /></button>
                       </div>
                       <div className="mt-2.5 grid grid-cols-3 gap-1.5">
@@ -268,7 +296,7 @@ export default function Workout({ open, onClose }) {
               }
 
               return (
-                <div key={ei} className="card p-3.5">
+                <div key={ei} className={`card p-3.5 ${allDone ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30' : ''}`}>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setDetail(ex)}><ExerciseImg exercise={ex} size="h-12 w-12" /></button>
                     <div className="min-w-0 flex-1">
@@ -277,6 +305,7 @@ export default function Workout({ open, onClose }) {
                         Objetivo {e.reps} · descanso {e.rest}s{best > 0 && <> · <Trophy size={9} className="inline text-amber-500" /> {fromKg(best)} {unitLbl()}</>}
                       </div>
                     </div>
+                    <button onClick={() => toggleCollapse(e.exerciseId)} className="p-1.5 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
                     <button onClick={() => removeEx(ei)} className="p-1.5 text-ink3"><Trash2 size={15} /></button>
                   </div>
 
@@ -373,6 +402,16 @@ export default function Workout({ open, onClose }) {
       <ExerciseSheet exercise={detail} onClose={() => setDetail(null)} />
     </Sheet>
   )
+}
+
+// El GIF protagonista de la vista cuadrícula — si falla (sin red y nunca
+// se vio antes) cae al ícono de respaldo en vez de dejar la imagen rota.
+function ExerciseHero({ ex }) {
+  const [failed, setFailed] = useState(false)
+  if (!ex.img || failed) {
+    return <div className="flex h-44 items-center justify-center text-ink3"><ExerciseImg exercise={{ ...ex, img: null }} size="h-20 w-20" /></div>
+  }
+  return <img src={ex.img} alt={ex.name} loading="lazy" className="mx-auto h-44 object-contain" onError={() => setFailed(true)} />
 }
 
 // ── Resumen post-entrenamiento ───────────────────────────

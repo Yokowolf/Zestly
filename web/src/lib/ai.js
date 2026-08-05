@@ -34,6 +34,8 @@ const VISION_MODELS = [
   'qwen/qwen3.6-27b',
 ]
 
+const sleep = ms => new Promise(r => setTimeout(r, ms))
+
 async function requestVision(model, key, prompt, imageBase64, jsonMode) {
   const body = {
     model,
@@ -44,7 +46,9 @@ async function requestVision(model, key, prompt, imageBase64, jsonMode) {
         { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
       ],
     }],
-    max_tokens: 700,
+    // 900 en vez de 700 — con json_object activo, un plato con varios
+    // ingredientes podía cortarse antes de cerrar el JSON (json_validate_failed)
+    max_tokens: 900,
     temperature: 0.2,
     ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
   }
@@ -60,8 +64,8 @@ async function requestVision(model, key, prompt, imageBase64, jsonMode) {
 // Analiza una foto con IA y devuelve el texto crudo. `validate` (opcional)
 // recibe el texto y debe lanzar si no sirve — en ese caso se prueba con el
 // siguiente modelo en vez de devolver una respuesta inválida (esto era el
-// bug: un modelo podía responder 200 con texto libre en vez de JSON y la
-// app se quedaba con eso).
+// bug original: un modelo podía responder 200 con texto libre en vez de
+// JSON y la app se quedaba con eso).
 export async function callAIWithImage(prompt, imageBase64, validate) {
   const key = getKey()
   if (!key) throw new Error('Sin API key — configúrala en Perfil')
@@ -81,11 +85,16 @@ export async function callAIWithImage(prompt, imageBase64, validate) {
       if (!res.ok) {
         const code = data.error?.code || ''
         const msg = (data.error?.message || '').toLowerCase()
-        if (code === 'model_decommissioned' || code === 'model_not_found') { lastErr = new Error(friendlyError(res.status, data)); break }
-        if (jsonMode && (msg.includes('response_format') || msg.includes('json_object') || code === 'json_validate_failed')) {
-          lastErr = new Error(friendlyError(res.status, data)); continue // prueba sin json_object
-        }
         lastErr = new Error(friendlyError(res.status, data))
+        if (code === 'model_decommissioned' || code === 'model_not_found') break
+        // 429: reintentar YA mismo (sin json_object) solo golpea el límite
+        // otra vez — visto en los logs de Groq, un intento fallido dispara
+        // el segundo también en 429 en cascada. Mejor fallar rápido y claro.
+        if (res.status === 429) break
+        if (jsonMode && (msg.includes('response_format') || msg.includes('json_object') || code === 'json_validate_failed')) {
+          await sleep(400) // pequeño respiro antes del segundo intento sin json_object
+          continue
+        }
         continue
       }
       const text = data.choices?.[0]?.message?.content || ''
@@ -105,8 +114,9 @@ function friendlyError(status, data) {
   const code = data.error?.code || ''
   const msg = data.error?.message || ''
   if (status === 401) return 'Clave IA inválida — revísala en Perfil'
-  if (status === 429) return 'Límite de uso alcanzado — espera un minuto e intenta de nuevo'
+  if (status === 429) return 'Límite de uso alcanzado en Groq — espera un minuto e intenta de nuevo'
   if (code === 'model_decommissioned' || code === 'model_not_found') return 'Modelo IA desactualizado — actualiza la app'
+  if (code === 'json_validate_failed') return 'La IA no logró estructurar la respuesta — intenta con otra foto o usa Texto IA'
   return `Groq ${status}: ${msg.slice(0, 80)}`
 }
 

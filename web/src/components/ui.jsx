@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { useStore } from '../store'
 
@@ -38,75 +38,43 @@ export function Chip({ on, children, className = '', ...props }) {
   )
 }
 
-// ── Sheet (modal deslizante inferior) ────────────────────
+// ── Sheet (panel fijo desde arriba, con su propio scroll) ─
+// Antes era un bottom-sheet que se repositionaba con JS al abrir el
+// teclado (visualViewport) — seguía saltando/perdiéndose porque ese hack
+// pelea con el navegador. Ahora el panel usa 100dvh (alto dinámico real:
+// el navegador YA lo recalcula solo cuando aparece el teclado, sin JS) y
+// vive fijo arriba de la pantalla con su contenido en un scroll propio —
+// el teclado nunca tapa nada porque el panel se encoge para dejarle espacio.
 export function Sheet({ open, onClose, title, subtitle, children, locked = false }) {
-  const panelRef = useRef(null)
-
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [open])
 
-  // Teclado móvil (fix definitivo): cuando el teclado reduce el viewport
-  // visible, el sheet se encoge y se ancla ARRIBA del teclado para que los
-  // resultados de búsqueda queden siempre visibles.
-  // Solo escuchamos 'resize' (el teclado abriendo/cerrando) — 'scroll' del
-  // visualViewport dispara seguido mientras se escribe (barra de sugerencias,
-  // autocompletar) y era la causa de que el sheet "brincara" con cada tecla.
-  // requestAnimationFrame además coalesce ráfagas de eventos en un solo ajuste.
-  useEffect(() => {
-    if (!open) return
-    const vv = window.visualViewport
-    if (!vv) return
-    let raf = null
-    const adjust = () => {
-      if (raf) cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(() => {
-        const panel = panelRef.current
-        if (!panel) return
-        const kbOpen = window.innerHeight - vv.height > 120
-        if (kbOpen) {
-          panel.style.maxHeight = `${vv.height - 12}px`
-          panel.parentElement.style.justifyContent = 'flex-start'
-          panel.parentElement.style.transform = `translateY(${vv.offsetTop}px)`
-        } else {
-          panel.style.maxHeight = ''
-          panel.parentElement.style.justifyContent = ''
-          panel.parentElement.style.transform = ''
-        }
-      })
-    }
-    vv.addEventListener('resize', adjust)
-    return () => { vv.removeEventListener('resize', adjust); if (raf) cancelAnimationFrame(raf) }
-  }, [open])
-
-  // Además, al enfocar un campo se sube a la vista dentro del sheet
-  const onFocusField = e => {
-    const el = e.target
-    if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA') return
-    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300)
-  }
-
   if (!open) return null
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-end bg-black/45 backdrop-blur-sm transition-transform duration-150 ease-out"
+      className="fixed inset-0 z-50 flex flex-col bg-black/45 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget && !locked) onClose?.() }}
     >
-      <div ref={panelRef} onFocus={onFocusField} className="mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl border-t border-line bg-bg2 p-5 pb-10 fade-up transition-[max-height] duration-150 ease-out md:border-x">
-        <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-line" />
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            {title && <h2 className="font-display text-lg font-bold">{title}</h2>}
-            {subtitle && <p className="mt-0.5 text-xs text-ink2">{subtitle}</p>}
+      <div className="mx-auto flex h-[100dvh] w-full max-w-xl flex-col overflow-hidden bg-bg2 fade-up md:my-6 md:h-auto md:max-h-[85dvh] md:rounded-3xl md:border md:border-line">
+        <div className="shrink-0 border-b border-line px-5 pb-3 pt-4">
+          <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-line md:hidden" />
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              {title && <h2 className="font-display text-lg font-bold">{title}</h2>}
+              {subtitle && <p className="mt-0.5 text-xs text-ink2">{subtitle}</p>}
+            </div>
+            {!locked && (
+              <button onClick={onClose} className="shrink-0 rounded-full border border-line p-1.5 text-ink3 active:scale-90" aria-label="Cerrar">
+                <X size={16} />
+              </button>
+            )}
           </div>
-          {!locked && (
-            <button onClick={onClose} className="rounded-full border border-line p-1.5 text-ink3" aria-label="Cerrar">
-              <X size={16} />
-            </button>
-          )}
         </div>
-        {children}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          {children}
+        </div>
       </div>
     </div>
   )
@@ -173,8 +141,11 @@ export function Input({ className = '', ...props }) {
 }
 
 // ── Imagen de ejercicio con placeholder ──────────────────
+// Si el GIF falla (sin red y nunca se vio antes, o el CDN no lo tiene) se
+// muestra el ícono de respaldo en vez de dejar un hueco/imagen rota.
 export function ExerciseImg({ exercise, size = 'h-14 w-14', rounded = 'rounded-xl' }) {
-  if (!exercise?.img) {
+  const [failed, setFailed] = useState(false)
+  if (!exercise?.img || failed) {
     return (
       <div className={`${size} ${rounded} flex shrink-0 items-center justify-center border border-line bg-card2 text-ink3`}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
@@ -189,7 +160,7 @@ export function ExerciseImg({ exercise, size = 'h-14 w-14', rounded = 'rounded-x
       alt={exercise.name}
       loading="lazy"
       className={`${size} ${rounded} shrink-0 border border-line bg-white object-cover`}
-      onError={e => { e.currentTarget.style.display = 'none' }}
+      onError={() => setFailed(true)}
     />
   )
 }

@@ -3,7 +3,20 @@ export const getKey = () => localStorage.getItem('zs_gkey') || ''
 export const setKey = k => localStorage.setItem('zs_gkey', k.trim())
 export const hasKey = () => !!getKey()
 
+// Proveedor principal (chat, coach, recetas, texto). Si falla por lo que sea
+// (clave sin configurar, límite de uso, modelo caído) y hay clave de
+// respaldo activa, se reintenta ahí mismo antes de reportar error — así un
+// problema puntual de un proveedor no tumba el coach ni el generador.
 export async function callAI(systemPrompt, userMessage, maxTokens = 800) {
+  try {
+    return await callGroqText(systemPrompt, userMessage, maxTokens)
+  } catch (e) {
+    if (!hasPhotoKey()) throw e
+    return await callGeminiText(systemPrompt, userMessage, maxTokens)
+  }
+}
+
+async function callGroqText(systemPrompt, userMessage, maxTokens) {
   const key = getKey()
   if (!key) throw new Error('Sin API key — configúrala en Perfil')
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -24,100 +37,16 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 800) {
   return data.choices[0].message.content
 }
 
-// Modelos de visión de Groq verificados (soportan imagen + instrucciones
-// de formato). Groq decomisionó llama-4-maverick (9 mar 2026) y
-// llama-4-scout (17 jul 2026) — a esta fecha (ago 2026) qwen3.6-27b es el
-// ÚNICO modelo de visión activo en Groq (console.groq.com/docs/vision).
-// Si Groq vuelve a cambiar su catálogo, revisar esa página antes de asumir
-// que un modelo nuevo existe — su lineup cambia muy seguido.
-const VISION_MODELS = [
-  'qwen/qwen3.6-27b',
-]
-
-const sleep = ms => new Promise(r => setTimeout(r, ms))
-
-async function requestVision(model, key, prompt, imageBase64, jsonMode) {
-  const body = {
-    model,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'text', text: prompt },
-        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
-      ],
-    }],
-    // 900 en vez de 700 — con json_object activo, un plato con varios
-    // ingredientes podía cortarse antes de cerrar el JSON (json_validate_failed)
-    max_tokens: 900,
-    temperature: 0.2,
-    ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
-  }
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    body: JSON.stringify(body),
-  })
-  const data = await res.json()
-  return { res, data }
-}
-
-// Analiza una foto con IA y devuelve el texto crudo. `validate` (opcional)
-// recibe el texto y debe lanzar si no sirve — en ese caso se prueba con el
-// siguiente modelo en vez de devolver una respuesta inválida (esto era el
-// bug original: un modelo podía responder 200 con texto libre en vez de
-// JSON y la app se quedaba con eso).
-export async function callAIWithImage(prompt, imageBase64, validate) {
-  const key = getKey()
-  if (!key) throw new Error('Sin API key — configúrala en Perfil')
-  let lastErr = null
-
-  for (const model of VISION_MODELS) {
-    // 1er intento: modo JSON forzado. Si el modelo/plan no lo soporta,
-    // reintenta el MISMO modelo sin ese parámetro antes de descartarlo.
-    for (const jsonMode of [true, false]) {
-      let res, data
-      try {
-        ({ res, data } = await requestVision(model, key, prompt, imageBase64, jsonMode))
-      } catch {
-        lastErr = new Error('Sin conexión con el servidor de IA')
-        continue
-      }
-      if (!res.ok) {
-        const code = data.error?.code || ''
-        const msg = (data.error?.message || '').toLowerCase()
-        lastErr = new Error(friendlyError(res.status, data))
-        if (code === 'model_decommissioned' || code === 'model_not_found') break
-        // 429: reintentar YA mismo (sin json_object) solo golpea el límite
-        // otra vez — visto en los logs de Groq, un intento fallido dispara
-        // el segundo también en 429 en cascada. Mejor fallar rápido y claro.
-        if (res.status === 429) break
-        if (jsonMode && (msg.includes('response_format') || msg.includes('json_object') || code === 'json_validate_failed')) {
-          await sleep(400) // pequeño respiro antes del segundo intento sin json_object
-          continue
-        }
-        continue
-      }
-      const text = data.choices?.[0]?.message?.content || ''
-      try {
-        validate?.(text)
-        return text
-      } catch (e) {
-        lastErr = e // el modelo respondió pero no en el formato esperado — prueba el siguiente
-      }
-    }
-  }
-  throw lastErr || new Error('La IA no devolvió una respuesta válida — intenta con otra foto o usa Texto IA')
-}
-
-// Traduce errores comunes de la API a mensajes accionables
+// Traduce errores comunes de la API a mensajes accionables — nunca se nombra
+// el proveedor en el texto que ve el usuario, solo "IA" (pedido explícito).
 function friendlyError(status, data) {
   const code = data.error?.code || ''
   const msg = data.error?.message || ''
   if (status === 401) return 'Clave IA inválida — revísala en Perfil'
-  if (status === 429) return 'Límite de uso alcanzado en Groq — espera un minuto e intenta de nuevo'
+  if (status === 429) return 'Límite de uso alcanzado en IA — espera un minuto e intenta de nuevo'
   if (code === 'model_decommissioned' || code === 'model_not_found') return 'Modelo IA desactualizado — actualiza la app'
   if (code === 'json_validate_failed') return 'La IA no logró estructurar la respuesta — intenta con otra foto o usa Texto IA'
-  return `Groq ${status}: ${msg.slice(0, 80)}`
+  return `IA ${status}: ${msg.slice(0, 80)}`
 }
 
 // Extrae el primer objeto JSON de una respuesta de IA
@@ -126,4 +55,90 @@ export function parseAIJson(raw) {
   const s = clean.indexOf('{'), e = clean.lastIndexOf('}')
   if (s === -1 || e === -1) throw new Error('La IA no devolvió JSON válido — intenta de nuevo o usa otra foto')
   return JSON.parse(clean.slice(s, e + 1))
+}
+
+// ── Proveedor de respaldo — también el único que analiza fotos ──────────
+// El de arriba falla de forma recurrente con imágenes por límites de cuota
+// de su modelo de visión, así que las fotos SIEMPRE usan este. Para
+// texto (chat/recetas) solo entra en acción si el principal falla. La
+// clave se guarda aparte (zs_gemini_key) y NUNCA se expone en el código
+// ni en git — vive solo en localStorage/Firestore del propio usuario.
+export const getPhotoKey = () => localStorage.getItem('zs_gemini_key') || ''
+export const setPhotoKey = k => localStorage.setItem('zs_gemini_key', k.trim())
+export const hasPhotoKey = () => !!getPhotoKey()
+
+// Modelo "flash" (no "pro") a propósito: en el nivel gratuito los modelos
+// pro traen cuotas mucho más bajas — flash es el que de verdad rinde gratis.
+const GEMINI_MODEL = 'gemini-3.6-flash'
+
+async function callGeminiText(systemPrompt, userMessage, maxTokens) {
+  const key = getPhotoKey()
+  const body = {
+    contents: [{ parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }],
+    generationConfig: { maxOutputTokens: maxTokens, temperature: 0.7 },
+  }
+  let res, data
+  try {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    data = await res.json()
+  } catch {
+    throw new Error('Sin conexión con el servidor de IA')
+  }
+  if (!res.ok) throw new Error(friendlyPhotoError(res.status, data))
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+  if (!text) throw new Error('La IA no devolvió respuesta — intenta de nuevo')
+  return text
+}
+
+// Analiza una foto con IA y devuelve el texto crudo.
+// `validate` recibe el texto y debe lanzar si no sirve.
+export async function callAIWithImage(prompt, imageBase64, validate) {
+  const key = getPhotoKey()
+  if (!key) throw new Error('Sin clave IA para fotos — configúrala en Perfil')
+  const body = {
+    contents: [{
+      parts: [
+        { text: prompt },
+        { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } },
+      ],
+    }],
+    generationConfig: { response_mime_type: 'application/json', temperature: 0.2 },
+  }
+  let res, data
+  try {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    data = await res.json()
+  } catch {
+    throw new Error('Sin conexión con el servidor de IA')
+  }
+  if (!res.ok) throw new Error(friendlyPhotoError(res.status, data))
+  const cand = data.candidates?.[0]
+  const text = cand?.content?.parts?.[0]?.text || ''
+  if (!text) {
+    throw new Error(cand?.finishReason === 'SAFETY'
+      ? 'La IA no pudo analizar esta imagen — intenta con otra foto'
+      : 'La IA no devolvió respuesta — intenta de nuevo')
+  }
+  try {
+    validate?.(text)
+  } catch (e) {
+    throw new Error(`${e.message} — IA dijo: "${text.slice(0, 120)}"`)
+  }
+  return text
+}
+
+function friendlyPhotoError(status, data) {
+  const msg = (data?.error?.message || '')
+  if (status === 400 && /API key/i.test(msg)) return 'Clave IA para fotos inválida — revísala en Perfil'
+  if (status === 403) return 'Clave IA para fotos inválida o sin permisos — revísala en Perfil'
+  if (status === 429) return 'Límite de uso alcanzado en IA — espera un minuto e intenta de nuevo'
+  return `IA ${status}: ${msg.slice(0, 80)}`
 }

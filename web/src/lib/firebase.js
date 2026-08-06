@@ -60,6 +60,8 @@ export async function cloudSave() {
         // Solo se escribe si este dispositivo tiene clave — un dispositivo
         // nuevo sin configurar NUNCA borra la clave guardada en la nube
         ...(localStorage.getItem('zs_gkey') ? { geminiKey: localStorage.getItem('zs_gkey') } : {}),
+        // Clave del proveedor de fotos, aparte de la de chat/recetas (arriba)
+        ...(localStorage.getItem('zs_gemini_key') ? { photoKey: localStorage.getItem('zs_gemini_key') } : {}),
         fastingActive: d.fastingActive, fastingStart: d.fastingStart,
         theme: d.theme, waterGoal: d.waterGoal, fastingHours: d.fastingHours || 16, foodFreq: d.foodFreq || {},
         recipes: d.recipes || [],
@@ -154,6 +156,7 @@ export async function cloudLoad(uid) {
       })
       // La clave de la nube llega sola a cualquier dispositivo nuevo
       if (d.geminiKey) localStorage.setItem('zs_gkey', d.geminiKey)
+      if (d.photoKey) localStorage.setItem('zs_gemini_key', d.photoKey)
     }
 
     if (fS.exists()) {

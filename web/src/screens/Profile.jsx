@@ -7,7 +7,7 @@ import { getBadges } from '../lib/badges'
 import { ChevronDown } from 'lucide-react'
 import { useStore, serializable } from '../store'
 import { signIn, logOut } from '../lib/firebase'
-import { getKey, setKey } from '../lib/ai'
+import { getKey, setKey, getPhotoKey, setPhotoKey } from '../lib/ai'
 import { calcNutrition, GOALS, ACTIVITIES } from '../lib/calc'
 import { Sheet, Button, Input, Chip } from '../components/ui'
 import { exName } from '../lib/train'
@@ -118,9 +118,9 @@ export default function Profile() {
             ))}
           </div>
         </Row>
-        <Row icon={KeyRound} label="Clave IA (Groq)" onClick={() => setKeyOpen(true)}>
-          <span className={`text-xs font-semibold ${getKey() ? 'text-emerald-600' : 'text-orange-500'}`}>
-            {getKey() ? 'Activa' : 'Sin configurar'}
+        <Row icon={KeyRound} label="Claves IA" onClick={() => setKeyOpen(true)}>
+          <span className={`text-xs font-semibold ${getKey() || getPhotoKey() ? 'text-emerald-600' : 'text-orange-500'}`}>
+            {getKey() && getPhotoKey() ? 'Principal + respaldo' : getKey() || getPhotoKey() ? '1 activa' : 'Sin configurar'}
           </span>
         </Row>
         <MealSplitEditor />
@@ -394,26 +394,41 @@ function EditProfileSheet({ open, onClose }) {
   )
 }
 
+// Un solo campo para las dos claves: la app detecta el formato al pegarla
+// y la guarda en el puesto correcto (principal o respaldo) — así el usuario
+// no necesita saber cuál es cuál, solo pegar la clave que tenga a mano.
 function KeySheet({ open, onClose }) {
   const s = useStore()
   const [val, setVal] = useState('')
-  useEffect(() => { if (open) setVal(getKey()) }, [open])
+  useEffect(() => { if (open) setVal('') }, [open])
 
   return (
-    <Sheet open={open} onClose={onClose} title="Clave IA (Groq)" subtitle="Activa el coach, el análisis de comidas y el generador de rutinas">
-      <div className="card mb-3 p-3.5 text-xs leading-relaxed text-ink2">
-        1. Entra a <b>console.groq.com</b> y regístrate con Google<br />
-        2. API Keys → Create API Key → copia la clave <code className="text-emerald-600">gsk_…</code><br />
-        <span className="text-ink3">Tu clave se guarda en tu dispositivo y en tu cuenta — nunca en el código.</span>
+    <Sheet open={open} onClose={onClose} title="Claves IA" subtitle="Activa el coach, el análisis de comidas, las recetas y el escaneo de fotos">
+      <div className="card mb-3 flex flex-col gap-1.5 p-3.5 text-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-ink2">Principal</span>
+          <span className={`font-semibold ${getKey() ? 'text-emerald-600' : 'text-orange-500'}`}>{getKey() ? 'Activa' : 'Sin configurar'}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-ink2">Respaldo (y fotos)</span>
+          <span className={`font-semibold ${getPhotoKey() ? 'text-emerald-600' : 'text-orange-500'}`}>{getPhotoKey() ? 'Activa' : 'Sin configurar'}</span>
+        </div>
       </div>
-      <Input placeholder="gsk_..." value={val} onChange={e => setVal(e.target.value.trim())} />
+      <div className="card mb-3 p-3.5 text-xs leading-relaxed text-ink2">
+        Pega aquí cualquiera de estas dos claves — la app reconoce cuál es y la activa sola:<br />
+        1. <b>console.groq.com</b> → API Keys → Create API Key<br />
+        2. <b>aistudio.google.com/apikey</b> → Create API Key<br />
+        <span className="text-ink3">Se guarda en tu dispositivo y en tu cuenta — nunca en el código.</span>
+      </div>
+      <Input placeholder="Pega cualquiera de las dos claves..." value={val} onChange={e => setVal(e.target.value.trim())} />
       <Button className="mt-3" onClick={() => {
         if (val.length < 10) { s.toast('Clave inválida — verifica que la copiaste completa', 'err'); return }
-        setKey(val)
+        const isGroq = val.startsWith('gsk_')
+        if (isGroq) setKey(val); else setPhotoKey(val)
         s.patch({}) // dispara persist + sync para llevar la clave a Firestore
-        s.toast('IA activada correctamente', 'ok')
-        onClose()
-      }}>Guardar y activar IA</Button>
+        s.toast(isGroq ? 'Clave principal activada' : 'Clave de respaldo activada', 'ok')
+        setVal('')
+      }}>Guardar clave</Button>
     </Sheet>
   )
 }

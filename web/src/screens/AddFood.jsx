@@ -16,7 +16,7 @@ const CAT_ICONS = {
 import { Sheet, Input, Button, Chip } from '../components/ui'
 import { useStore } from '../store'
 import { FOOD_CATS, FOODS, QUICK } from '../data/foods'
-import { callAI, callAIWithImage, parseAIJson, hasKey } from '../lib/ai'
+import { callAI, callAIWithImage, parseAIJson, hasKey, hasPhotoKey } from '../lib/ai'
 import { norm, round1 } from '../lib/calc'
 
 const TABS = [
@@ -490,7 +490,7 @@ function CamTab({ meal, onDone }) {
   const [preview, setPreview] = useState(null)
   const [items, setItems] = useState(null) // detectados para revisar
   const [busy, setBusy] = useState(false)
-  const [cooldown, setCooldown] = useState(0) // segundos restantes tras un 429 de Groq
+  const [cooldown, setCooldown] = useState(0) // segundos restantes tras un límite de uso de la IA
 
   useEffect(() => {
     if (!cooldown) return
@@ -519,11 +519,11 @@ function CamTab({ meal, onDone }) {
   }
 
   const analyze = async () => {
+    if (!hasPhotoKey()) { s.toast('Configura la clave IA para fotos en Perfil', 'err'); return }
     setBusy(true)
     try {
       const prompt = 'Eres nutricionista experto en comida colombiana y latinoamericana. Analiza CUIDADOSAMENTE esta imagen de un plato de comida. Identifica cada alimento visible con porciones realistas. Responde ÚNICAMENTE con un objeto JSON, sin explicaciones, sin markdown, sin backticks, con EXACTAMENTE este formato: {"items":[{"name":"nombre en español","kcal":numero,"prot":numero,"carb":numero,"fat":numero,"grams":numero}]}. Los kcal y grams deben representar la PORCIÓN VISIBLE en el plato, no valores por 100g. Si no reconoces el plato exacto, estima con el alimento más parecido — nunca respondas texto libre.'
-      // validate: si el modelo responde con texto libre en vez de JSON, se
-      // descarta y se reintenta con el siguiente modelo automáticamente
+      // validate: si la IA responde con texto libre en vez de JSON, se descarta
       const raw = await callAIWithImage(prompt, img, text => {
         const p = parseAIJson(text)
         if (!p.items?.length) throw new Error('sin items')
@@ -533,9 +533,8 @@ function CamTab({ meal, onDone }) {
       setItems(parsed.items)
     } catch (e) {
       s.toast(e.message.slice(0, 60), 'err')
-      // Si fue el límite de uso de Groq, bloquea el botón un rato — reintentar
-      // de inmediato solo vuelve a chocar con el mismo límite (visto en los
-      // logs: varios 429 seguidos en segundos por reintentos manuales).
+      // Si fue el límite de uso de la IA, bloquea el botón un rato — reintentar
+      // de inmediato solo vuelve a chocar con el mismo límite.
       if (e.message.includes('Límite de uso')) setCooldown(45)
     }
     setBusy(false)

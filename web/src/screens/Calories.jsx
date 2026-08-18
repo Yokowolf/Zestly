@@ -108,7 +108,7 @@ export default function Calories() {
                       </button>
                       <span className="flex shrink-0 items-center gap-2">
                         <b className="text-brand-600">{it.kcal} kcal</b>
-                        <button onClick={() => removeFood(key, idx)} className="p-1 text-ink3" aria-label="Eliminar">
+                        <button onClick={() => removeFood(key, idx)} className="p-2 text-ink3" aria-label="Eliminar">
                           <Trash2 size={13} />
                         </button>
                       </span>

@@ -106,7 +106,7 @@ export default function RoutineBuilder({ draft, onClose }) {
                   <div className="truncate text-[13px] font-semibold">{ex?.name || e.exerciseId}</div>
                   <div className="text-[10px] text-ink3">{ex?.muscle.map(m => MUSCLES[m]).join(' · ')}</div>
                 </div>
-                <button onClick={() => upd({ exercises: r.exercises.filter((_, j) => j !== i) })} className="p-1.5 text-ink3" aria-label="Eliminar ejercicio">
+                <button onClick={() => upd({ exercises: r.exercises.filter((_, j) => j !== i) })} className="p-2 text-ink3" aria-label="Eliminar ejercicio">
                   <Trash2 size={15} />
                 </button>
               </div>
@@ -244,7 +244,7 @@ export function BankRow({ ex, onAdd, onInfo }) {
           <div className="truncate text-[10px] text-ink3">{ex.muscle.map(m => MUSCLES[m] || m).join(' · ')} · {EQUIP[ex.equipment]}</div>
         </div>
       </button>
-      <button onClick={onInfo} className="p-1 text-ink3" aria-label="Ver detalle"><Info size={15} /></button>
+      <button onClick={onInfo} className="p-2 text-ink3" aria-label="Ver detalle"><Info size={15} /></button>
       {onAdd && (
         <button onClick={onAdd} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white" aria-label="Agregar">
           <Plus size={15} />

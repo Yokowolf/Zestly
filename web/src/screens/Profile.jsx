@@ -37,7 +37,7 @@ function Section({ title, right, children, defaultOpen = false }) {
         </button>
         <span className="flex items-center gap-2">
           {right}
-          <button onClick={() => setOpen(o => !o)} className="p-1 text-ink3" aria-label={open ? 'Contraer sección' : 'Expandir sección'} aria-expanded={open}>
+          <button onClick={() => setOpen(o => !o)} className="p-2 text-ink3" aria-label={open ? 'Contraer sección' : 'Expandir sección'} aria-expanded={open}>
             <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
         </span>

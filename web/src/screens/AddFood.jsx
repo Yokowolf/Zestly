@@ -147,7 +147,7 @@ function SearchTab({ meal, onDone }) {
                 {customFoods.map((f, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <div className="min-w-0 flex-1"><FoodRow f={f} onClick={() => setSel(f)} /></div>
-                    <button onClick={() => { if (confirm(`¿Eliminar "${f.name}"?`)) s.patch({ customFoods: customFoods.filter((_, j) => j !== i) }) }} className="p-1.5 text-ink3" aria-label={`Eliminar ${f.name}`}><Trash2 size={14} /></button>
+                    <button onClick={() => { if (confirm(`¿Eliminar "${f.name}"?`)) s.patch({ customFoods: customFoods.filter((_, j) => j !== i) }) }} className="p-2 text-ink3" aria-label={`Eliminar ${f.name}`}><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
@@ -426,7 +426,7 @@ function RecipesTab({ meal, onDone }) {
             <span className="truncate">{i.name} ({i.qty}g)</span>
             <span className="flex shrink-0 items-center gap-2">
               <b className="text-brand-600">{i.kcal} kcal</b>
-              <button onClick={() => setIngs(ings.filter((_, j) => j !== idx))} className="p-0.5 text-ink3" aria-label="Quitar ingrediente"><Trash2 size={13} /></button>
+              <button onClick={() => setIngs(ings.filter((_, j) => j !== idx))} className="p-1.5 text-ink3" aria-label="Quitar ingrediente"><Trash2 size={13} /></button>
             </span>
           </div>
         ))}
@@ -468,7 +468,7 @@ function RecipesTab({ meal, onDone }) {
             </button>
             <button
               onClick={() => { if (confirm(`¿Eliminar la receta "${r.name}"?`)) s.patch({ recipes: s.recipes.filter((_, j) => j !== i) }) }}
-              className="p-1.5 text-ink3"
+              className="p-2 text-ink3"
               aria-label={`Eliminar receta ${r.name}`}
             >
               <Trash2 size={14} />
@@ -589,7 +589,7 @@ function CamTab({ meal, onDone }) {
                   <div className="text-[13px] font-medium">{it.name}</div>
                   <div className="text-[11px] text-ink3">{it.kcal} kcal · P:{it.prot || 0}g · C:{it.carb || 0}g · G:{it.fat || 0}g</div>
                 </div>
-                <button onClick={() => setItems(items.filter((_, j) => j !== i))} className="p-1 text-ink3" aria-label="Quitar alimento detectado"><Trash2 size={14} /></button>
+                <button onClick={() => setItems(items.filter((_, j) => j !== i))} className="p-2 text-ink3" aria-label="Quitar alimento detectado"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>

@@ -258,8 +258,8 @@ export default function Workout({ open, onClose }) {
                             Objetivo {e.reps} · descanso {e.rest}s{best > 0 && <> · <Trophy size={9} className="inline text-amber-500" /> {fromKg(best)} {unitLbl()}</>}
                           </div>
                         </div>
-                        <button onClick={() => toggleCollapse(e.exerciseId)} className="shrink-0 p-1.5 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
-                        <button onClick={() => removeEx(ei)} className="shrink-0 p-1.5 text-ink3" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
+                        <button onClick={() => toggleCollapse(e.exerciseId)} className="shrink-0 p-2 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
+                        <button onClick={() => removeEx(ei)} className="shrink-0 p-2 text-ink3" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
                       </div>
                       <div className="mt-2.5 grid grid-cols-4 gap-1.5">
                         {e.sets.map((st, si) => (
@@ -315,8 +315,8 @@ export default function Workout({ open, onClose }) {
                         Objetivo {e.reps} · descanso {e.rest}s{best > 0 && <> · <Trophy size={9} className="inline text-amber-500" /> {fromKg(best)} {unitLbl()}</>}
                       </div>
                     </div>
-                    <button onClick={() => toggleCollapse(e.exerciseId)} className="p-1.5 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
-                    <button onClick={() => removeEx(ei)} className="p-1.5 text-ink3" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
+                    <button onClick={() => toggleCollapse(e.exerciseId)} className="p-2 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
+                    <button onClick={() => removeEx(ei)} className="p-2 text-ink3" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
                   </div>
 
                   <div className="mt-2.5 flex flex-col gap-1.5">

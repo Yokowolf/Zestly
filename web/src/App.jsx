@@ -94,7 +94,7 @@ export default function App() {
       <Toasts />
 
       {/* Barra superior: logo + título de sección + engranaje de Perfil */}
-      <header className="sticky top-0 z-40 border-b border-line bg-bg2/95 backdrop-blur-lg">
+      <header className="sticky top-0 z-40 border-b border-line bg-bg2/95 shadow-[0_4px_16px_rgb(0_0_0/0.05)] backdrop-blur-lg dark:shadow-[0_4px_16px_rgb(0_0_0/0.28)]">
         <div className="mx-auto flex w-full max-w-lg items-center gap-3 px-3 py-2.5 md:max-w-5xl">
           <button onClick={() => go({ tab: 'home' })} className="flex items-center gap-2 pl-1">
             <Logo size={24} />
@@ -112,7 +112,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 pb-24">
+      <main key={tab} className="flex-1 pb-24 fade-up">
         {tab === 'home' && <HomeScreen go={go} onStartTour={startTour} />}
         {tab === 'calories' && <Calories />}
         {tab === 'progress' && <Progress key={ts} initialAction={action} />}
@@ -125,7 +125,7 @@ export default function App() {
       {/* Barra de pestañas fija abajo — oculta durante el recorrido guiado
           para que la única navegación posible sea Atrás/Siguiente del tour */}
       {tourStep === null && (
-        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg2/95 backdrop-blur-lg">
+        <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg2/95 shadow-[0_-4px_16px_rgb(0_0_0/0.06)] backdrop-blur-lg dark:shadow-[0_-4px_16px_rgb(0_0_0/0.3)]">
           <div className="mx-auto flex w-full max-w-lg md:max-w-5xl">
             {TABS.map(({ id, label, icon: Icon }) => (
               <button
@@ -133,8 +133,10 @@ export default function App() {
                 onClick={() => go({ tab: id })}
                 className="flex flex-1 flex-col items-center gap-0.5 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] transition-transform active:scale-90"
               >
-                <Icon size={20} strokeWidth={activeTab === id ? 2.4 : 1.8} className={activeTab === id ? 'text-brand-600' : 'text-ink3'} />
-                <span className={`text-[10px] font-medium ${activeTab === id ? 'text-brand-600' : 'text-ink3'}`}>{label}</span>
+                {/* text-ink3 (#94a3b8) sobre fondo claro daba ~2.56:1, por debajo
+                    del mínimo WCAG 3:1 para íconos/UI — slate-500 sí cumple (~4.76:1) */}
+                <Icon size={22} strokeWidth={activeTab === id ? 2.4 : 1.8} className={activeTab === id ? 'text-brand-600' : 'text-slate-500 dark:text-ink3'} />
+                <span className={`text-[10px] ${activeTab === id ? 'font-bold text-brand-600' : 'font-medium text-slate-500 dark:text-ink3'}`}>{label}</span>
               </button>
             ))}
           </div>

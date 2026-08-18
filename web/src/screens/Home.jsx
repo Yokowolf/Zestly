@@ -26,7 +26,7 @@ export default function Home({ go, onStartTour }) {
         {new Date().toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' })}
       </p>
 
-      <button onClick={onStartTour} className="card mt-3 flex w-full items-center gap-2.5 p-3.5 text-left transition-transform active:scale-[0.99]">
+      <button onClick={onStartTour} className="card card-tap mt-3 flex w-full items-center gap-2.5 p-3.5 text-left transition-transform active:scale-[0.99]">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-accent-600 to-brand-500 text-white">
           <Sparkles size={16} />
         </div>
@@ -54,7 +54,7 @@ function CaloriesPreview({ go }) {
   const rem = Math.max(0, n.kcal - t.kcal)
   const pct = Math.min(1, t.kcal / n.kcal)
   return (
-    <button onClick={() => go({ tab: 'calories' })} className="card mt-3 flex w-full items-center gap-4 p-4 text-left active:scale-[0.99]">
+    <button onClick={() => go({ tab: 'calories' })} className="card card-tap mt-3 flex w-full items-center gap-4 p-4 text-left active:scale-[0.99]">
       <Ring pct={pct} size={88} stroke={9}>
         <span className="text-[9px] font-semibold text-brand-600">{t.kcal} kcal</span>
         <span className="font-display text-xl font-bold leading-tight">{rem}</span>
@@ -95,7 +95,7 @@ function TrainPreview({ go }) {
   const prWeek = week.reduce((n, l) => n + l.exercises.filter(e => e.pr).length, 0)
 
   return (
-    <button onClick={() => go({ tab: 'train' })} className="card mt-3 w-full p-4 text-left active:scale-[0.99]">
+    <button onClick={() => go({ tab: 'train' })} className="card card-tap mt-3 w-full p-4 text-left active:scale-[0.99]">
       <div className="mb-3 flex items-center justify-between">
         <span className="text-[12px] font-bold">Entrena — últimos 7 días</span>
         <ChevronRight size={14} className="text-ink3" />
@@ -124,7 +124,7 @@ function PlanPreview({ go }) {
   const dayIdx = (new Date().getDay() + 6) % 7 // lunes = 0, igual que el plan
   const planDay = s.mealPlan?.days?.[dayIdx]
   return (
-    <button onClick={() => go({ tab: 'plan' })} className="card mt-3 flex w-full items-center gap-3 p-3.5 text-left active:scale-[0.99]">
+    <button onClick={() => go({ tab: 'plan' })} className="card card-tap mt-3 flex w-full items-center gap-3 p-3.5 text-left active:scale-[0.99]">
       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-600 dark:bg-accent-900/30">
         <UtensilsCrossed size={16} />
       </div>
@@ -243,7 +243,7 @@ function MiniProgress({ go }) {
   }, [s.workoutLogs])
 
   return (
-    <button onClick={() => go({ tab: 'progress' })} className="card mt-3 flex w-full items-center gap-3 p-3.5 text-left active:scale-[0.99]">
+    <button onClick={() => go({ tab: 'progress' })} className="card card-tap mt-3 flex w-full items-center gap-3 p-3.5 text-left active:scale-[0.99]">
       <MiniStat icon={Flame} color="text-orange-500" label="Racha" value={`${s.streak} d`} />
       <MiniStat icon={Dumbbell} color="text-brand-600" label="Entrenos" value={week.length} />
       <MiniStat icon={Scale} color="text-accent-600" label="Peso" value={s.profile.weight ? `${s.profile.weight}kg` : '—'} />

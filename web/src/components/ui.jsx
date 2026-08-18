@@ -2,22 +2,40 @@ import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { useStore } from '../store'
 
+// ── Spinner ──────────────────────────────────────────────
+// Reemplaza los botones que solo cambiaban de texto ("Generando…") por un
+// giro real — la espera de la IA (3-15s) se siente activa, no congelada.
+export function Spinner({ className = 'h-4 w-4' }) {
+  return (
+    <svg className={`${className} shrink-0 animate-spin`} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle className="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" />
+      <path className="opacity-90" d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 // ── Botones ──────────────────────────────────────────────
 // Feedback táctil reforzado: más escala al presionar + oscurecido en los
 // sólidos, para que se sientan "vivos" al tocar (pedido explícito del usuario).
-export function Button({ children, variant = 'primary', className = '', ...props }) {
+// `loading`: muestra un spinner y bloquea el botón — para procesos con IA o
+// red que tardan varios segundos, en vez de solo cambiar el texto.
+export function Button({ children, variant = 'primary', className = '', loading = false, disabled, ...props }) {
   const styles = {
-    primary: 'bg-brand-600 text-white active:bg-brand-700 active:brightness-90 disabled:opacity-50',
+    primary: 'bg-brand-600 text-white shadow-[0_2px_10px_-2px_rgb(8_145_178/0.45)] active:bg-brand-700 active:brightness-90 active:shadow-none disabled:opacity-50 disabled:shadow-none',
     ghost: 'border border-line text-ink2 bg-card active:bg-card2',
-    accent: 'bg-accent-600 text-white active:bg-accent-500 active:brightness-90 disabled:opacity-50',
+    accent: 'bg-accent-600 text-white shadow-[0_2px_10px_-2px_rgb(124_58_237/0.45)] active:bg-accent-500 active:brightness-90 active:shadow-none disabled:opacity-50 disabled:shadow-none',
     danger: 'border border-red-300 text-red-500 bg-transparent active:bg-red-50 dark:border-red-900 dark:active:bg-red-950/40',
   }
   return (
     <button
       className={`w-full rounded-xl px-4 py-3.5 text-sm font-semibold transition-all duration-100 active:scale-[0.95] disabled:active:scale-100 ${styles[variant]} ${className}`}
+      disabled={disabled || loading}
       {...props}
     >
-      {children}
+      <span className="inline-flex items-center justify-center gap-2">
+        {loading && <Spinner className="h-3.5 w-3.5" />}
+        {children}
+      </span>
     </button>
   )
 }
@@ -57,7 +75,7 @@ export function Sheet({ open, onClose, title, subtitle, children, locked = false
       className="fixed inset-0 z-50 flex flex-col bg-black/45 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget && !locked) onClose?.() }}
     >
-      <div className="mx-auto flex h-[100dvh] w-full max-w-xl flex-col overflow-hidden bg-bg2 fade-up md:my-6 md:h-auto md:max-h-[85dvh] md:rounded-3xl md:border md:border-line">
+      <div className="mx-auto flex h-[100dvh] w-full max-w-xl flex-col overflow-hidden bg-bg2 fade-up md:my-6 md:h-auto md:max-h-[85dvh] md:rounded-3xl md:border md:border-line md:shadow-2xl">
         <div className="shrink-0 border-b border-line px-5 pb-3 pt-4">
           <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-line md:hidden" />
           <div className="flex items-start justify-between gap-3">

@@ -1,29 +1,47 @@
 import { useEffect, useState } from 'react'
 import {
   Moon, Sun, GlassWater, KeyRound, Download, FileSpreadsheet, LogOut, LogIn,
-  Pencil, Trash2, Scale, Timer, Upload, Info, Target, Eye, Lock,
+  Pencil, Trash2, Scale, Timer, Upload, Info, Target, Eye, Lock, ExternalLink, Clipboard,
 } from 'lucide-react'
 import { getBadges } from '../lib/badges'
 import { ChevronDown } from 'lucide-react'
 import { useStore, serializable } from '../store'
 import { signIn, logOut } from '../lib/firebase'
-import { getKey, setKey, getPhotoKey, setPhotoKey } from '../lib/ai'
+import { getKey, setKey } from '../lib/ai'
 import { calcNutrition, GOALS, ACTIVITIES } from '../lib/calc'
 import { Sheet, Button, Input, Chip } from '../components/ui'
 import { exName } from '../lib/train'
+
+// Foto de perfil de Google — si falla al cargar (bloqueada por un
+// ad-blocker/extensión de privacidad, sin red, o URL vencida) cae a la
+// inicial del nombre en vez de dejar el ícono de imagen rota.
+function UserAvatar({ url, fallback }) {
+  const [failed, setFailed] = useState(false)
+  if (!url || failed) return <>{fallback}</>
+  return <img src={url} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+}
 
 // Sección plegable: solo el título a la vista, se expande al tocar
 function Section({ title, right, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
     <div className="card mt-3 overflow-hidden">
-      <button onClick={() => setOpen(o => !o)} className="flex w-full items-center justify-between px-4 py-3.5">
-        <span className="text-[13px] font-bold">{title}</span>
+      <div className="flex w-full items-center justify-between px-4 py-3.5">
+        {/* Antes todo el header era un solo <button>, y `right` (cuando
+            traía un elemento clicable, ej. "Editar") quedaba anidado
+            adentro — un botón dentro de otro botón es HTML inválido y
+            confunde teclado/lector de pantalla. Ahora son elementos
+            hermanos: cada uno con su propia área táctil real. */}
+        <button onClick={() => setOpen(o => !o)} className="flex flex-1 items-center gap-2 py-1 text-left" aria-expanded={open}>
+          <span className="text-[13px] font-bold">{title}</span>
+        </button>
         <span className="flex items-center gap-2">
           {right}
-          <ChevronDown size={16} className={`text-ink3 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <button onClick={() => setOpen(o => !o)} className="p-1 text-ink3" aria-label={open ? 'Contraer sección' : 'Expandir sección'} aria-expanded={open}>
+            <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+          </button>
         </span>
-      </button>
+      </div>
       {open && <div className="border-t border-line px-3 pb-3 pt-2 fade-up">{children}</div>}
     </div>
   )
@@ -43,7 +61,7 @@ export default function Profile() {
       <div className="flex flex-col items-center text-center">
         <BadgeArc badges={badges} unlocks={s.badgeUnlocks || {}} onTap={b => s.toast(b.on ? `${b.label} — desbloqueado` : `${b.label} — aún bloqueado`)} >
           <div className="flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-accent-600 font-display text-2xl font-bold text-white" style={{ width: 72, height: 72 }}>
-            {s.user?.photoURL ? <img src={s.user.photoURL} alt="" className="h-full w-full object-cover" /> : name[0].toUpperCase()}
+            <UserAvatar url={s.user?.photoURL} fallback={name[0].toUpperCase()} />
           </div>
         </BadgeArc>
         <h1 className="font-display mt-1 text-xl font-bold">{name}</h1>
@@ -54,8 +72,8 @@ export default function Profile() {
       {/* Cuenta */}
       {s.user ? (
         <div className="card mt-4 flex items-center gap-3 p-3.5">
-          <div className="h-9 w-9 overflow-hidden rounded-full bg-card2">
-            {s.user.photoURL && <img src={s.user.photoURL} alt="" className="h-full w-full object-cover" />}
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-card2 text-xs font-bold text-ink2">
+            <UserAvatar url={s.user.photoURL} fallback={(s.user.displayName || s.user.email || '?')[0].toUpperCase()} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-[13px] font-semibold">{s.user.displayName}</div>
@@ -118,9 +136,9 @@ export default function Profile() {
             ))}
           </div>
         </Row>
-        <Row icon={KeyRound} label="Claves IA" onClick={() => setKeyOpen(true)}>
-          <span className={`text-xs font-semibold ${getKey() || getPhotoKey() ? 'text-emerald-600' : 'text-orange-500'}`}>
-            {getKey() && getPhotoKey() ? 'Principal + respaldo' : getKey() || getPhotoKey() ? '1 activa' : 'Sin configurar'}
+        <Row icon={KeyRound} label="Clave IA" onClick={() => setKeyOpen(true)}>
+          <span className={`text-xs font-semibold ${getKey() ? 'text-emerald-600' : 'text-orange-500'}`}>
+            {getKey() ? 'Activa' : 'Sin configurar'}
           </span>
         </Row>
         <MealSplitEditor />
@@ -129,7 +147,9 @@ export default function Profile() {
 
       {/* Mis datos */}
       <Section title="Mis datos" right={
-        <span onClick={e => { e.stopPropagation(); setEditOpen(true) }} className="flex items-center gap-1 text-xs font-semibold text-brand-600"><Pencil size={12} /> Editar</span>
+        <button onClick={() => setEditOpen(true)} className="flex items-center gap-1 px-1.5 py-1 text-xs font-semibold text-brand-600">
+          <Pencil size={12} /> Editar
+        </button>
       }>
       <div className="divide-y divide-[var(--border)]">
         {[['Edad', `${s.profile.age} años`], ['Altura', `${s.profile.height} cm`], ['Peso', `${s.profile.weight} kg`],
@@ -394,41 +414,55 @@ function EditProfileSheet({ open, onClose }) {
   )
 }
 
-// Un solo campo para las dos claves: la app detecta el formato al pegarla
-// y la guarda en el puesto correcto (principal o respaldo) — así el usuario
-// no necesita saber cuál es cuál, solo pegar la clave que tenga a mano.
-function KeySheet({ open, onClose }) {
+// Sheet reutilizable para configurar la clave IA — la usa también Onboarding
+// como paso del recorrido inicial, no solo Perfil.
+export function KeySetup({ onSaved }) {
   const s = useStore()
   const [val, setVal] = useState('')
-  useEffect(() => { if (open) setVal('') }, [open])
+
+  const paste = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (text) setVal(text.trim())
+    } catch {
+      s.toast('No se pudo leer el portapapeles — pégala manualmente', 'err')
+    }
+  }
+
+  const save = () => {
+    if (val.length < 10) { s.toast('Clave inválida — verifica que la copiaste completa', 'err'); return }
+    setKey(val)
+    s.patch({}) // dispara persist + sync para llevar la clave a Firestore
+    s.toast('IA activada correctamente', 'ok')
+    setVal('')
+    onSaved?.()
+  }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Claves IA" subtitle="Activa el coach, el análisis de comidas, las recetas y el escaneo de fotos">
-      <div className="card mb-3 flex flex-col gap-1.5 p-3.5 text-xs">
-        <div className="flex items-center justify-between">
-          <span className="text-ink2">Principal</span>
-          <span className={`font-semibold ${getKey() ? 'text-emerald-600' : 'text-orange-500'}`}>{getKey() ? 'Activa' : 'Sin configurar'}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-ink2">Respaldo (y fotos)</span>
-          <span className={`font-semibold ${getPhotoKey() ? 'text-emerald-600' : 'text-orange-500'}`}>{getPhotoKey() ? 'Activa' : 'Sin configurar'}</span>
-        </div>
-      </div>
+    <div>
       <div className="card mb-3 p-3.5 text-xs leading-relaxed text-ink2">
-        Pega aquí cualquiera de estas dos claves — la app reconoce cuál es y la activa sola:<br />
-        1. <b>console.groq.com</b> → API Keys → Create API Key<br />
-        2. <b>aistudio.google.com/apikey</b> → Create API Key<br />
-        <span className="text-ink3">Se guarda en tu dispositivo y en tu cuenta — nunca en el código.</span>
+        1. Entra a <b>aistudio.google.com/apikey</b> con tu cuenta de Google (la misma con la que iniciaste sesión)<br />
+        2. Create API Key → copia la clave<br />
+        <span className="text-ink3">Se guarda solo en tu dispositivo y en tu cuenta — nadie más la ve.</span>
       </div>
-      <Input placeholder="Pega cualquiera de las dos claves..." value={val} onChange={e => setVal(e.target.value.trim())} />
-      <Button className="mt-3" onClick={() => {
-        if (val.length < 10) { s.toast('Clave inválida — verifica que la copiaste completa', 'err'); return }
-        const isGroq = val.startsWith('gsk_')
-        if (isGroq) setKey(val); else setPhotoKey(val)
-        s.patch({}) // dispara persist + sync para llevar la clave a Firestore
-        s.toast(isGroq ? 'Clave principal activada' : 'Clave de respaldo activada', 'ok')
-        setVal('')
-      }}>Guardar clave</Button>
+      <Button variant="ghost" className="mb-2 flex items-center justify-center gap-1.5 !py-2.5" onClick={() => window.open('https://aistudio.google.com/apikey', '_blank')}>
+        <ExternalLink size={14} /> Abrir aistudio.google.com/apikey
+      </Button>
+      <div className="flex gap-2">
+        <Input className="flex-1" placeholder="Pega tu clave..." value={val} onChange={e => setVal(e.target.value.trim())} />
+        <button onClick={paste} className="shrink-0 rounded-xl border border-line bg-card px-3.5 text-ink2 active:scale-95" aria-label="Pegar desde el portapapeles">
+          <Clipboard size={16} />
+        </button>
+      </div>
+      <Button className="mt-3" onClick={save}>Guardar y activar IA</Button>
+    </div>
+  )
+}
+
+function KeySheet({ open, onClose }) {
+  return (
+    <Sheet open={open} onClose={onClose} title="Clave IA" subtitle="Activa el coach, el análisis de comidas, las recetas y el escaneo de fotos">
+      <KeySetup onSaved={onClose} />
     </Sheet>
   )
 }

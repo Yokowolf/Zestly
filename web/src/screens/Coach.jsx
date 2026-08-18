@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Bot, SendHorizontal, UtensilsCrossed } from 'lucide-react'
 import { useStore } from '../store'
 import { callAI } from '../lib/ai'
-import { Chip } from '../components/ui'
+import { Chip, Spinner } from '../components/ui'
 import { exName } from '../lib/train'
 
 const CHIPS = [
@@ -98,8 +98,8 @@ export default function Coach({ initialAction, go }) {
           value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
         />
-        <button onClick={() => send()} className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-600 text-white" aria-label="Enviar">
-          <SendHorizontal size={17} />
+        <button onClick={() => send()} disabled={busy} className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-600 text-white transition-all active:scale-90 disabled:opacity-50 disabled:active:scale-100" aria-label="Enviar">
+          {busy ? <Spinner className="h-4 w-4" /> : <SendHorizontal size={17} />}
         </button>
       </div>
 

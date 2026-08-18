@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { Target, UserRound, Activity, CheckCircle2, Flame, Dumbbell, Scale } from 'lucide-react'
+import { Target, UserRound, Activity, CheckCircle2, Flame, Dumbbell, Scale, Sparkles } from 'lucide-react'
 import { Button, Input } from '../components/ui'
 import { useStore } from '../store'
 import { calcNutrition, ACTIVITIES } from '../lib/calc'
+import { hasKey } from '../lib/ai'
+import { KeySetup } from './Profile'
 
 const GOAL_OPTS = [
   { v: 'lose', icon: Flame, t: 'Perder grasa', d: 'Déficit calórico controlado' },
@@ -18,7 +20,7 @@ export default function Onboarding({ onDone, onBack }) {
   const nutrition = calcNutrition(p)
 
   const next = () => {
-    if (step < 3) return setStep(step + 1)
+    if (step < 4) return setStep(step + 1)
     patch({ profile: p, nutrition, onboarded: true })
     onDone()
   }
@@ -27,7 +29,7 @@ export default function Onboarding({ onDone, onBack }) {
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col justify-between px-6 pb-8 pt-14">
       <div>
         <div className="mb-7 flex gap-1.5">
-          {[0, 1, 2, 3].map(i => (
+          {[0, 1, 2, 3, 4].map(i => (
             <div key={i} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-brand-500' : 'bg-line'}`} />
           ))}
         </div>
@@ -68,6 +70,12 @@ export default function Onboarding({ onDone, onBack }) {
         )}
 
         {step === 3 && (
+          <StepShell icon={Sparkles} title="Activa la IA" sub="Para el coach, el análisis de comidas, las recetas y el escaneo de fotos. Puedes hacerlo después desde Perfil si prefieres.">
+            <KeySetup onSaved={() => setStep(4)} />
+          </StepShell>
+        )}
+
+        {step === 4 && (
           <StepShell icon={CheckCircle2} title="Tu plan está listo" sub="Metas diarias calculadas para tu objetivo.">
             <div className="card p-6 text-center">
               <div className="font-display text-5xl font-bold text-brand-600">{nutrition.kcal}</div>
@@ -86,7 +94,7 @@ export default function Onboarding({ onDone, onBack }) {
       </div>
 
       <div className="mt-6 flex flex-col gap-2">
-        <Button onClick={next}>{step === 3 ? 'Comenzar Zestly' : 'Continuar'}</Button>
+        <Button onClick={next}>{step === 4 ? 'Comenzar Zestly' : step === 3 && hasKey() ? 'Continuar' : step === 3 ? 'Omitir por ahora' : 'Continuar'}</Button>
         <Button variant="ghost" onClick={() => (step > 0 ? setStep(step - 1) : onBack())}>Atrás</Button>
       </div>
     </div>

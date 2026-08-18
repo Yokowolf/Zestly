@@ -1,17 +1,30 @@
 // Gráficas ligeras en SVG/CSS — sin librerías externas
+import { useEffect, useState } from 'react'
+
+// Las barras/anillo nacen en 0 y crecen hasta su valor real al aparecer en
+// pantalla (en vez de mostrarse ya llenas) — un solo hook compartido: monta
+// en false, pasa a true un tick después para que el navegador sí anime la
+// transición CSS ya declarada en cada gráfica.
+function useGrowIn() {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 30); return () => clearTimeout(t) }, [])
+  return mounted
+}
 
 // Anillo de progreso (dona calórica)
 export function Ring({ pct, size = 180, stroke = 13, children }) {
+  const mounted = useGrowIn()
   const r = (size - stroke) / 2
   const c = 2 * Math.PI * r
+  const shownPct = mounted ? pct : 0
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-[var(--border)]" />
         <circle
           cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} strokeLinecap="round"
-          stroke="url(#ringGrad)" strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, pct))}
-          style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)' }}
+          stroke="url(#ringGrad)" strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(1, shownPct))}
+          style={{ transition: 'stroke-dashoffset 0.9s cubic-bezier(0.4,0,0.2,1)' }}
         />
         <defs>
           <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -26,9 +39,9 @@ export function Ring({ pct, size = 180, stroke = 13, children }) {
 }
 
 // Barras verticales con etiqueta — tocar una barra muestra su valor
-import { useState } from 'react'
 export function Bars({ data, height = 88, color = 'bg-brand-500', valueColor = 'text-ink2' }) {
   const [sel, setSel] = useState(null)
+  const mounted = useGrowIn()
   const max = Math.max(...data.map(d => d.value), 1)
   return (
     <div className="flex items-end gap-1.5" style={{ height }}>
@@ -48,7 +61,7 @@ export function Bars({ data, height = 88, color = 'bg-brand-500', valueColor = '
             )}
             <div
               className={`w-full rounded-t ${d.color || color} ${d.dim && sel !== i ? 'opacity-45' : ''} ${sel === i ? 'ring-2 ring-brand-400' : ''}`}
-              style={{ height: `${Math.max(4, (d.value / max) * (height - 26))}px`, transition: 'height 0.5s ease' }}
+              style={{ height: `${mounted ? Math.max(4, (d.value / max) * (height - 26)) : 0}px`, transition: `height 0.5s ease ${i * 0.03}s` }}
             />
             {d.label != null && <div className={`text-[9px] ${sel === i ? 'font-bold text-brand-600' : 'text-ink3'}`}>{d.label}</div>}
           </button>
@@ -60,6 +73,7 @@ export function Bars({ data, height = 88, color = 'bg-brand-500', valueColor = '
 
 // Barras horizontales (volumen por músculo)
 export function HBars({ data, unit = '' }) {
+  const mounted = useGrowIn()
   const max = Math.max(...data.map(d => d.value), 1)
   return (
     <div className="flex flex-col gap-2">
@@ -69,7 +83,7 @@ export function HBars({ data, unit = '' }) {
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
             <div
               className="h-full rounded-full bg-gradient-to-r from-brand-500 to-accent-500"
-              style={{ width: `${(d.value / max) * 100}%`, transition: 'width 0.5s ease' }}
+              style={{ width: `${mounted ? (d.value / max) * 100 : 0}%`, transition: `width 0.6s ease ${i * 0.05}s` }}
             />
           </div>
           <div className="w-16 shrink-0 text-right text-[11px] font-bold text-brand-600 dark:text-brand-400">

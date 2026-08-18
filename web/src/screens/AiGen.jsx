@@ -85,8 +85,8 @@ Los days deben ser ${prefs.days} valores entre: lun,mar,mie,jue,vie,sab,dom.${co
       />
       <p className="mt-1 text-[10px] text-ink3">La IA evita o adapta ejercicios que puedan agravar lo que cuentes aquí.</p>
 
-      <Button variant="accent" className="mt-5 flex items-center justify-center gap-2" onClick={generate} disabled={busy}>
-        <Sparkles size={16} /> {busy ? 'Generando…' : 'Generar rutina'}
+      <Button variant="accent" className="mt-5 flex items-center justify-center gap-2" onClick={generate} loading={busy}>
+        {!busy && <Sparkles size={16} />} {busy ? 'Generando…' : 'Generar rutina'}
       </Button>
     </Sheet>
   )

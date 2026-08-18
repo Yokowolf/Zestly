@@ -106,7 +106,7 @@ export default function RoutineBuilder({ draft, onClose }) {
                   <div className="truncate text-[13px] font-semibold">{ex?.name || e.exerciseId}</div>
                   <div className="text-[10px] text-ink3">{ex?.muscle.map(m => MUSCLES[m]).join(' · ')}</div>
                 </div>
-                <button onClick={() => upd({ exercises: r.exercises.filter((_, j) => j !== i) })} className="p-1.5 text-ink3">
+                <button onClick={() => upd({ exercises: r.exercises.filter((_, j) => j !== i) })} className="p-1.5 text-ink3" aria-label="Eliminar ejercicio">
                   <Trash2 size={15} />
                 </button>
               </div>

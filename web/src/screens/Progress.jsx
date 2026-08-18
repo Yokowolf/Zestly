@@ -59,10 +59,10 @@ export default function Progress({ initialAction }) {
       {section === 'resumen' && (
         <>
           <div className="mt-3 grid grid-cols-2 gap-2.5">
-            <Stat icon={Flame} color="text-orange-500" label="Racha" value={`${s.streak} días`} />
-            <Stat icon={Scale} color="text-accent-600" label="Peso" value={s.profile.weight ? `${s.profile.weight} kg` : '—'} />
-            <Stat icon={Beef} color="text-brand-600" label="Proteína hoy" value={`${round1(s.today.prot)}/${s.nutrition.prot}g`} />
-            <Stat icon={Droplets} color="text-sky-500" label="Agua hoy" value={`${s.today.water}/${s.waterGoal || 8}`} />
+            <Stat i={0} icon={Flame} color="text-orange-500" label="Racha" value={`${s.streak} días`} />
+            <Stat i={1} icon={Scale} color="text-accent-600" label="Peso" value={s.profile.weight ? `${s.profile.weight} kg` : '—'} />
+            <Stat i={2} icon={Beef} color="text-brand-600" label="Proteína hoy" value={`${round1(s.today.prot)}/${s.nutrition.prot}g`} />
+            <Stat i={3} icon={Droplets} color="text-sky-500" label="Agua hoy" value={`${s.today.water}/${s.waterGoal || 8}`} />
           </div>
           <div className="card mt-3 p-4">
             <MonthCalendar trainedDates={trainedDates} loggedDates={loggedDates} onDayClick={setDayView} selectedDate={dayView} />
@@ -86,10 +86,10 @@ export default function Progress({ initialAction }) {
       {section === 'entreno' && (
         <>
           <div className="mt-3 grid grid-cols-2 gap-2.5 md:grid-cols-4">
-            <Stat icon={Dumbbell} color="text-brand-600" label="Sesiones — 7 días" value={week.length} />
-            <Stat icon={Flame} color="text-emerald-600" label="Volumen — 7 días" value={`${volWeek ? fromKg(volWeek) : 0} ${unitLbl()}`} />
-            <Stat icon={Clock} color="text-sky-500" label="Tiempo — 7 días" value={week.length ? timeWeek : '—'} />
-            <Stat icon={Trophy} color="text-amber-500" label="PRs — 7 días" value={prWeek} />
+            <Stat i={0} icon={Dumbbell} color="text-brand-600" label="Sesiones — 7 días" value={week.length} />
+            <Stat i={1} icon={Flame} color="text-emerald-600" label="Volumen — 7 días" value={`${volWeek ? fromKg(volWeek) : 0} ${unitLbl()}`} />
+            <Stat i={2} icon={Clock} color="text-sky-500" label="Tiempo — 7 días" value={week.length ? timeWeek : '—'} />
+            <Stat i={3} icon={Trophy} color="text-amber-500" label="PRs — 7 días" value={prWeek} />
           </div>
           <div className="card mt-2.5 p-4">
             <p className="mb-3 text-xs font-semibold text-ink2">Volumen por músculo — 7 días</p>
@@ -167,9 +167,9 @@ function DayDetail({ date, onClose }) {
   )
 }
 
-function Stat({ icon: Icon, color, label, value }) {
+function Stat({ icon: Icon, color, label, value, i = 0 }) {
   return (
-    <div className="card p-3.5">
+    <div className="card fade-up p-3.5" style={{ animationDelay: `${i * 0.06}s`, animationFillMode: 'backwards' }}>
       <Icon size={16} className={`mb-1.5 ${color}`} />
       <div className="font-display text-lg font-bold">{value}</div>
       <div className="text-[10px] uppercase tracking-wide text-ink3">{label}</div>
@@ -245,7 +245,7 @@ function RecentSessions() {
       <SectionTitle>Sesiones recientes</SectionTitle>
       <div className="flex flex-col gap-2">
         {logs.map((l, i) => (
-          <div key={l.startTs || i} className="card overflow-hidden">
+          <div key={l.startTs || i} className="card card-tap overflow-hidden">
             <button onClick={() => setOpenIdx(openIdx === i ? null : i)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-semibold">{l.name}</div>

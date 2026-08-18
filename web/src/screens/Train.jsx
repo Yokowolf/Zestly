@@ -59,7 +59,7 @@ export default function Train({ initialAction }) {
       {/* Sesión activa */}
       {s.activeWorkout && (
         <button onClick={() => setWorkoutOpen(true)}
-          className="card mt-4 flex w-full items-center justify-between border-brand-300 bg-brand-50 p-4 text-left dark:border-brand-800 dark:bg-brand-900/20">
+          className="card card-tap mt-4 flex w-full items-center justify-between border-brand-300 bg-brand-50 p-4 text-left dark:border-brand-800 dark:bg-brand-900/20">
           <div>
             <div className="text-sm font-bold">{s.activeWorkout.name}</div>
             <div className="text-[11px] text-ink2">Sesión en curso — {Math.round((Date.now() - s.activeWorkout.startTs) / 60000)} min</div>
@@ -162,7 +162,7 @@ export default function Train({ initialAction }) {
           <div className="flex flex-col gap-2">
             {templates.map((t, i) => (
               <button key={i} onClick={() => useTemplate(t)}
-                className="card flex items-center justify-between gap-3 p-3.5 text-left active:scale-[0.99]">
+                className="card card-tap flex items-center justify-between gap-3 p-3.5 text-left active:scale-[0.99]">
                 <div className="min-w-0">
                   <div className="text-[13px] font-semibold">{t.name}</div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10px] text-ink3">
@@ -202,7 +202,7 @@ export default function Train({ initialAction }) {
       <Sheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="¿Qué entrenas hoy?" subtitle="Elige una rutina o arranca libre">
         <div className="flex flex-col gap-2">
           {routines.map((r, i) => (
-            <button key={i} onClick={() => start(r)} className="card flex items-center justify-between p-4 text-left">
+            <button key={i} onClick={() => start(r)} className="card card-tap flex items-center justify-between p-4 text-left">
               <div>
                 <div className="text-sm font-bold">{r.name}</div>
                 <div className="text-[11px] text-ink3">{r.exercises.length} ejercicios · {r.days.map(d => DAYS.find(x => x[0] === d)?.[1]).join(' ')}</div>

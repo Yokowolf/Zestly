@@ -16,7 +16,7 @@ const CAT_ICONS = {
 import { Sheet, Input, Button, Chip } from '../components/ui'
 import { useStore } from '../store'
 import { FOOD_CATS, FOODS, QUICK } from '../data/foods'
-import { callAI, callAIWithImage, parseAIJson, hasKey, hasPhotoKey } from '../lib/ai'
+import { callAI, callAIWithImage, parseAIJson, hasKey } from '../lib/ai'
 import { norm, round1 } from '../lib/calc'
 
 const TABS = [
@@ -147,7 +147,7 @@ function SearchTab({ meal, onDone }) {
                 {customFoods.map((f, i) => (
                   <div key={i} className="flex items-center gap-1.5">
                     <div className="min-w-0 flex-1"><FoodRow f={f} onClick={() => setSel(f)} /></div>
-                    <button onClick={() => { if (confirm(`¿Eliminar "${f.name}"?`)) s.patch({ customFoods: customFoods.filter((_, j) => j !== i) }) }} className="p-1.5 text-ink3"><Trash2 size={14} /></button>
+                    <button onClick={() => { if (confirm(`¿Eliminar "${f.name}"?`)) s.patch({ customFoods: customFoods.filter((_, j) => j !== i) }) }} className="p-1.5 text-ink3" aria-label={`Eliminar ${f.name}`}><Trash2 size={14} /></button>
                   </div>
                 ))}
               </div>
@@ -426,7 +426,7 @@ function RecipesTab({ meal, onDone }) {
             <span className="truncate">{i.name} ({i.qty}g)</span>
             <span className="flex shrink-0 items-center gap-2">
               <b className="text-brand-600">{i.kcal} kcal</b>
-              <button onClick={() => setIngs(ings.filter((_, j) => j !== idx))} className="p-0.5 text-ink3"><Trash2 size={13} /></button>
+              <button onClick={() => setIngs(ings.filter((_, j) => j !== idx))} className="p-0.5 text-ink3" aria-label="Quitar ingrediente"><Trash2 size={13} /></button>
             </span>
           </div>
         ))}
@@ -461,7 +461,7 @@ function RecipesTab({ meal, onDone }) {
       )}
       <div className="flex flex-col gap-2">
         {(s.recipes || []).map((r, i) => (
-          <div key={i} className="card flex items-center justify-between px-3.5 py-3">
+          <div key={i} className="card card-tap flex items-center justify-between px-3.5 py-3">
             <button onClick={() => logRecipe(r)} className="min-w-0 flex-1 text-left">
               <div className="truncate text-[13px] font-semibold">{r.name}</div>
               <div className="text-[11px] text-ink3">{r.ings.length} ingredientes · {r.kcal} kcal · P:{r.prot}g</div>
@@ -469,6 +469,7 @@ function RecipesTab({ meal, onDone }) {
             <button
               onClick={() => { if (confirm(`¿Eliminar la receta "${r.name}"?`)) s.patch({ recipes: s.recipes.filter((_, j) => j !== i) }) }}
               className="p-1.5 text-ink3"
+              aria-label={`Eliminar receta ${r.name}`}
             >
               <Trash2 size={14} />
             </button>
@@ -519,7 +520,7 @@ function CamTab({ meal, onDone }) {
   }
 
   const analyze = async () => {
-    if (!hasPhotoKey()) { s.toast('Configura la clave IA para fotos en Perfil', 'err'); return }
+    if (!hasKey()) { s.toast('Configura tu clave IA en Perfil primero', 'err'); return }
     setBusy(true)
     try {
       const prompt = 'Eres nutricionista experto en comida colombiana y latinoamericana. Analiza CUIDADOSAMENTE esta imagen de un plato de comida. Identifica cada alimento visible con porciones realistas. Responde ÚNICAMENTE con un objeto JSON, sin explicaciones, sin markdown, sin backticks, con EXACTAMENTE este formato: {"items":[{"name":"nombre en español","kcal":numero,"prot":numero,"carb":numero,"fat":numero,"grams":numero}]}. Los kcal y grams deben representar la PORCIÓN VISIBLE en el plato, no valores por 100g. Si no reconoces el plato exacto, estima con el alimento más parecido — nunca respondas texto libre.'
@@ -561,10 +562,19 @@ function CamTab({ meal, onDone }) {
           <Camera size={30} />
         </button>
       )}
-      {preview && <img src={preview} alt="preview" className="max-h-52 rounded-2xl border border-line object-contain" />}
+      {preview && (
+        <div className="relative">
+          <img src={preview} alt="preview" className={`max-h-52 rounded-2xl border border-line object-contain transition-opacity ${busy ? 'opacity-60' : ''}`} />
+          {busy && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/10">
+              <span className="h-full w-1/3 animate-[scan_1.4s_ease-in-out_infinite] bg-gradient-to-b from-transparent via-accent-400/40 to-transparent" />
+            </div>
+          )}
+        </div>
+      )}
       <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
       {!items && preview && (
-        <Button onClick={analyze} disabled={busy || cooldown > 0}>
+        <Button onClick={analyze} loading={busy} disabled={cooldown > 0}>
           {cooldown > 0 ? `Espera ${cooldown}s…` : busy ? 'Analizando…' : 'Analizar con IA'}
         </Button>
       )}
@@ -579,7 +589,7 @@ function CamTab({ meal, onDone }) {
                   <div className="text-[13px] font-medium">{it.name}</div>
                   <div className="text-[11px] text-ink3">{it.kcal} kcal · P:{it.prot || 0}g · C:{it.carb || 0}g · G:{it.fat || 0}g</div>
                 </div>
-                <button onClick={() => setItems(items.filter((_, j) => j !== i))} className="p-1 text-ink3"><Trash2 size={14} /></button>
+                <button onClick={() => setItems(items.filter((_, j) => j !== i))} className="p-1 text-ink3" aria-label="Quitar alimento detectado"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
@@ -627,7 +637,7 @@ function TextTab({ meal, onDone }) {
         placeholder={'Describe lo que comiste con porciones:\n\n4 huevos revueltos con cebolla y tomate\n2 arepas medianas\n1 vaso de jugo de naranja'}
         value={txt} onChange={e => setTxt(e.target.value)}
       />
-      <Button variant="accent" className="mt-3" onClick={analyze} disabled={busy}>{busy ? 'Analizando…' : 'Analizar con IA'}</Button>
+      <Button variant="accent" className="mt-3" onClick={analyze} loading={busy}>{busy ? 'Analizando…' : 'Analizar con IA'}</Button>
     </div>
   )
 }

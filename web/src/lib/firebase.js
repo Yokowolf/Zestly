@@ -59,9 +59,7 @@ export async function cloudSave() {
         weightLog: d.weightLog, log: d.log,
         // Solo se escribe si este dispositivo tiene clave — un dispositivo
         // nuevo sin configurar NUNCA borra la clave guardada en la nube
-        ...(localStorage.getItem('zs_gkey') ? { geminiKey: localStorage.getItem('zs_gkey') } : {}),
-        // Clave del proveedor de fotos, aparte de la de chat/recetas (arriba)
-        ...(localStorage.getItem('zs_gemini_key') ? { photoKey: localStorage.getItem('zs_gemini_key') } : {}),
+        ...(localStorage.getItem('zs_gemini_key') ? { aiKey: localStorage.getItem('zs_gemini_key') } : {}),
         fastingActive: d.fastingActive, fastingStart: d.fastingStart,
         theme: d.theme, waterGoal: d.waterGoal, fastingHours: d.fastingHours || 16, foodFreq: d.foodFreq || {},
         recipes: d.recipes || [],
@@ -154,9 +152,11 @@ export async function cloudLoad(uid) {
           p => p.ts, 8,
         ).sort((a, b) => (a.ts || 0) - (b.ts || 0)),
       })
-      // La clave de la nube llega sola a cualquier dispositivo nuevo
-      if (d.geminiKey) localStorage.setItem('zs_gkey', d.geminiKey)
-      if (d.photoKey) localStorage.setItem('zs_gemini_key', d.photoKey)
+      // La clave de la nube llega sola a cualquier dispositivo nuevo.
+      // También lee el campo legado (cuenta con clave guardada antes de
+      // unificar a un solo proveedor) para no perder la configuración.
+      if (d.aiKey) localStorage.setItem('zs_gemini_key', d.aiKey)
+      else if (d.photoKey) localStorage.setItem('zs_gemini_key', d.photoKey)
     }
 
     if (fS.exists()) {

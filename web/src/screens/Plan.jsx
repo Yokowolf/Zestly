@@ -154,8 +154,8 @@ Incluye los 7 días. La lista shopping con máx 15 items.`
         </>
       )}
 
-      <Button variant="accent" className="mb-8 mt-3 flex items-center justify-center gap-2" onClick={generate} disabled={busy}>
-        <Sparkles size={15} /> {busy ? 'Generando plan…' : mp ? 'Regenerar plan' : 'Generar mi plan semanal'}
+      <Button variant="accent" className="mb-8 mt-3 flex items-center justify-center gap-2" onClick={generate} loading={busy}>
+        {!busy && <Sparkles size={15} />} {busy ? 'Generando plan…' : mp ? 'Regenerar plan' : 'Generar mi plan semanal'}
       </Button>
 
       <RecipeSheet target={detail} onClose={() => setDetail(null)} />
@@ -246,8 +246,8 @@ Máximo 8 ingredientes y 6 pasos cortos.`
         <Button variant="ghost" className="flex flex-1 items-center justify-center gap-1.5 !py-2" onClick={() => setEditing(v => !v)} disabled={busyAny}>
           <Pencil size={13} /> {editing ? 'Cancelar' : 'Editar'}
         </Button>
-        <Button variant="ghost" className="flex flex-1 items-center justify-center gap-1.5 !py-2" onClick={swapMeal} disabled={busyAny}>
-          <Shuffle size={13} /> {swapping ? 'Cambiando…' : 'Cambiar plato'}
+        <Button variant="ghost" className="flex flex-1 items-center justify-center gap-1.5 !py-2" onClick={swapMeal} loading={swapping} disabled={busy}>
+          {!swapping && <Shuffle size={13} />} {swapping ? 'Cambiando…' : 'Cambiar plato'}
         </Button>
       </div>
 
@@ -264,8 +264,8 @@ Máximo 8 ingredientes y 6 pasos cortos.`
       {!r ? (
         <>
           <Empty icon={ChefHat}>Genera la receta de este plato: ingredientes con cantidades exactas y preparación paso a paso.</Empty>
-          <Button variant="accent" className="mt-3 flex items-center justify-center gap-2" onClick={getRecipe} disabled={busyAny}>
-            <Sparkles size={15} /> {busy ? 'Creando receta…' : 'Generar receta'}
+          <Button variant="accent" className="mt-3 flex items-center justify-center gap-2" onClick={getRecipe} loading={busy} disabled={swapping}>
+            {!busy && <Sparkles size={15} />} {busy ? 'Creando receta…' : 'Generar receta'}
           </Button>
         </>
       ) : (
@@ -287,7 +287,7 @@ Máximo 8 ingredientes y 6 pasos cortos.`
               </div>
             ))}
           </div>
-          <Button variant="ghost" className="mt-4 !py-2.5" onClick={getRecipe} disabled={busyAny}>
+          <Button variant="ghost" className="mt-4 !py-2.5" onClick={getRecipe} loading={busy} disabled={swapping}>
             {busy ? 'Regenerando…' : 'Regenerar receta'}
           </Button>
         </>

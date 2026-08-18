@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Plus, Minus, Search, Trash2, Timer, Flag, Flame, Trophy, Hash, Repeat2, Clock, ChevronDown, LayoutGrid, List } from 'lucide-react'
+import { Check, Plus, Minus, Search, Trash2, Timer, Flag, Flame, Trophy, Hash, Repeat2, Clock, ChevronDown, LayoutGrid, List, PersonStanding } from 'lucide-react'
 import { Sheet, Input, Button, Chip, SectionTitle, ExerciseImg, Empty } from '../components/ui'
 import { Bar } from '../components/ui'
 import { useStore, fromKg, toKg, unitLbl } from '../store'
@@ -7,6 +7,7 @@ import { EXERCISES, EX_BY_ID, MUSCLES, WARMUP_BLOCKS } from '../data/exercises'
 import { bestWeight, exerciseHistory, buildSessionExercises, finishSession, discardSession, sessionVolume } from '../lib/train'
 import { norm } from '../lib/calc'
 import ExerciseSheet from './ExerciseSheet'
+import BodyMap from '../components/BodyMap'
 
 const BLOCKS = [
   { id: 'warmup', label: 'Calentamiento', color: 'text-amber-500' },
@@ -24,6 +25,8 @@ export default function Workout({ open, onClose }) {
   const [viewMode, setViewMode] = useState('list') // 'list' | 'grid' (enfoque en la imagen)
   const [exTimer, setExTimer] = useState(null) // { ei, si, target, startTs }
   const [collapsed, setCollapsed] = useState(() => new Set()) // exerciseId comprimidos a una línea
+  const [pickMode, setPickMode] = useState('search') // 'search' | 'map' — atajo por mapa muscular
+  const [muscleSel, setMuscleSel] = useState(null)
   const [, tick] = useState(0)
 
   const toggleCollapse = id => setCollapsed(prev => {
@@ -32,6 +35,13 @@ export default function Workout({ open, onClose }) {
     else next.add(id)
     return next
   })
+
+  // Al arrancar (o retomar) una sesión, todos los ejercicios inician
+  // comprimidos — el usuario los despliega uno a uno según los va haciendo,
+  // en vez de ver la lista completa desplegada de entrada.
+  useEffect(() => {
+    if (w) setCollapsed(new Set(w.exercises.map(e => e.exerciseId)))
+  }, [w?.startTs]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const patchWorkout = exercises => w && s.patch({ activeWorkout: { ...w, exercises } })
 
@@ -221,13 +231,13 @@ export default function Workout({ open, onClose }) {
               if (isCollapsed) {
                 return (
                   <button key={ei} onClick={() => toggleCollapse(e.exerciseId)}
-                    className={`card flex w-full items-center gap-3 p-3 text-left active:scale-[0.99] ${allDone ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30' : ''}`}>
+                    className={`card flex w-full items-center gap-3 p-3 text-left active:scale-[0.99] ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
                     <ExerciseImg exercise={ex} size="h-9 w-9" />
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[13px] font-semibold">{ex.name || e.exerciseId}</div>
                       <div className="text-[10px] text-ink3">{doneCount}/{e.sets.length} sets{allDone && ' · completado'}</div>
                     </div>
-                    {allDone && <Check size={16} className="shrink-0 text-emerald-500" />}
+                    {allDone && <Check size={16} className="shrink-0 text-brand-500" />}
                     <ChevronDown size={16} className="shrink-0 -rotate-90 text-ink3" />
                   </button>
                 )
@@ -236,7 +246,7 @@ export default function Workout({ open, onClose }) {
               // ── Vista cuadrícula: el GIF protagonista + celdas de sets ──
               if (viewMode === 'grid') {
                 return (
-                  <div key={ei} className={`card overflow-hidden ${allDone ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30' : ''}`}>
+                  <div key={ei} className={`card overflow-hidden ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
                     <button onClick={() => setDetail(ex)} className="block w-full bg-white">
                       <ExerciseHero ex={ex} />
                     </button>
@@ -249,9 +259,9 @@ export default function Workout({ open, onClose }) {
                           </div>
                         </div>
                         <button onClick={() => toggleCollapse(e.exerciseId)} className="shrink-0 p-1.5 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
-                        <button onClick={() => removeEx(ei)} className="shrink-0 p-1.5 text-ink3"><Trash2 size={15} /></button>
+                        <button onClick={() => removeEx(ei)} className="shrink-0 p-1.5 text-ink3" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
                       </div>
-                      <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                      <div className="mt-2.5 grid grid-cols-4 gap-1.5">
                         {e.sets.map((st, si) => (
                           <div key={si} className={`rounded-xl border p-1.5 text-center ${st.done ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'border-line bg-card2'}`}>
                             <input
@@ -296,7 +306,7 @@ export default function Workout({ open, onClose }) {
               }
 
               return (
-                <div key={ei} className={`card p-3.5 ${allDone ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30' : ''}`}>
+                <div key={ei} className={`card p-3.5 ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setDetail(ex)}><ExerciseImg exercise={ex} size="h-12 w-12" /></button>
                     <div className="min-w-0 flex-1">
@@ -306,7 +316,7 @@ export default function Workout({ open, onClose }) {
                       </div>
                     </div>
                     <button onClick={() => toggleCollapse(e.exerciseId)} className="p-1.5 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
-                    <button onClick={() => removeEx(ei)} className="p-1.5 text-ink3"><Trash2 size={15} /></button>
+                    <button onClick={() => removeEx(ei)} className="p-1.5 text-ink3" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
                   </div>
 
                   <div className="mt-2.5 flex flex-col gap-1.5">
@@ -371,24 +381,51 @@ export default function Workout({ open, onClose }) {
         ))}
       </div>
 
-      <SectionTitle>Agregar ejercicio</SectionTitle>
-      <div className="relative">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink3" />
-        <Input className="pl-10" placeholder="Buscar ejercicio..." value={q} onChange={e => setQ(e.target.value)} />
-      </div>
-      {q && (
-        <div className="mt-2 flex flex-col gap-1.5">
-          {results.map(ex => (
-            <button key={ex.id} onClick={() => addExercise(ex, ex.type === 'warmup' || ex.type === 'stretch' ? ex.type : 'main')}
-              className="flex items-center gap-3 rounded-xl border border-line bg-card px-3 py-2 text-left">
-              <ExerciseImg exercise={ex} size="h-10 w-10" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] font-medium">{ex.name}</div>
-                <div className="text-[10px] text-ink3">{ex.muscle.map(m => MUSCLES[m] || m).join(' · ')}</div>
+      <SectionTitle right={
+        <div className="flex overflow-hidden rounded-lg border border-line text-[10px] font-bold">
+          <button onClick={() => setPickMode('search')} className={`flex items-center gap-1 px-2.5 py-1.5 ${pickMode === 'search' ? 'bg-brand-600 text-white' : 'text-ink3'}`}><Search size={12} /> Buscar</button>
+          <button onClick={() => setPickMode('map')} className={`flex items-center gap-1 px-2.5 py-1.5 ${pickMode === 'map' ? 'bg-brand-600 text-white' : 'text-ink3'}`}><PersonStanding size={12} /> Mapa</button>
+        </div>
+      }>Agregar ejercicio</SectionTitle>
+
+      {pickMode === 'search' ? (
+        <>
+          <div className="relative">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink3" />
+            <Input className="pl-10" placeholder="Buscar ejercicio..." value={q} onChange={e => setQ(e.target.value)} />
+          </div>
+          {q && (
+            <div className="mt-2 flex flex-col gap-1.5">
+              {results.length === 0 && <p className="py-3 text-center text-xs text-ink3">Sin resultados — prueba el atajo "Mapa" si no recuerdas el nombre</p>}
+              {results.map(ex => <AddExRow key={ex.id} ex={ex} onAdd={() => addExercise(ex, ex.type === 'warmup' || ex.type === 'stretch' ? ex.type : 'main')} />)}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="card p-3">
+          <BodyMap selected={muscleSel} onSelect={setMuscleSel} />
+          {muscleSel && (() => {
+            const primary = EXERCISES.filter(ex => ex.muscle[0] === muscleSel)
+            const secondary = EXERCISES.filter(ex => ex.muscle[0] !== muscleSel && ex.muscle.includes(muscleSel))
+            return (
+              <div className="mt-2">
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">Enfoque principal ({primary.length})</p>
+                <div className="flex flex-col gap-1.5">
+                  {primary.map(ex => <AddExRow key={ex.id} ex={ex} onAdd={() => addExercise(ex, ex.type === 'warmup' || ex.type === 'stretch' ? ex.type : 'main')} />)}
+                </div>
+                {secondary.length > 0 && (
+                  <details className="mt-2.5">
+                    <summary className="cursor-pointer list-none py-1 text-[10px] font-bold uppercase tracking-wider text-ink3">
+                      También lo trabajan indirectamente ({secondary.length}) — toca para ver
+                    </summary>
+                    <div className="mt-1.5 flex flex-col gap-1.5">
+                      {secondary.map(ex => <AddExRow key={ex.id} ex={ex} onAdd={() => addExercise(ex, ex.type === 'warmup' || ex.type === 'stretch' ? ex.type : 'main')} />)}
+                    </div>
+                  </details>
+                )}
               </div>
-              <Plus size={16} className="shrink-0 text-brand-600" />
-            </button>
-          ))}
+            )
+          })()}
         </div>
       )}
 
@@ -401,6 +438,21 @@ export default function Workout({ open, onClose }) {
 
       <ExerciseSheet exercise={detail} onClose={() => setDetail(null)} />
     </Sheet>
+  )
+}
+
+// Fila de ejercicio para agregar — la comparten la búsqueda por nombre y el
+// atajo de mapa muscular (resultados principal/secundario).
+function AddExRow({ ex, onAdd }) {
+  return (
+    <button onClick={onAdd} className="flex items-center gap-3 rounded-xl border border-line bg-card px-3 py-2 text-left active:scale-[0.98]">
+      <ExerciseImg exercise={ex} size="h-10 w-10" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13px] font-medium">{ex.name}</div>
+        <div className="text-[10px] text-ink3">{ex.muscle.map(m => MUSCLES[m] || m).join(' · ')}</div>
+      </div>
+      <Plus size={16} className="shrink-0 text-brand-600" />
+    </button>
   )
 }
 

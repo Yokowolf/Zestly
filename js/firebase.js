@@ -5,9 +5,14 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
 import { getFirestore, doc, setDoc, getDoc }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-const FB = { apiKey:"AIzaSyAQ_Io3ZIzIEj6z4NV1nhFSoveFsq8ItjE", authDomain:"zestly-d13ae.firebaseapp.com",
-  projectId:"zestly-d13ae", storageBucket:"zestly-d13ae.firebasestorage.app",
-  messagingSenderId:"98909467544", appId:"1:98909467544:web:2b98f83eaa189877f071ed" };
+const FB = { 
+  apiKey: "AIzaSyAQ_Io3ZIzIEj6z4NV1nhFSoveFsq8ItjE", 
+  authDomain: "zestly-d13ae.firebaseapp.com",
+  projectId: "zestly-d13ae", 
+  storageBucket: "zestly-d13ae.firebasestorage.app",
+  messagingSenderId: "98909467544", 
+  appId: "1:98909467544:web:2b98f83eaa189877f071ed" 
+};
 
 const app  = initializeApp(FB);
 const auth = getAuth(app);
@@ -24,15 +29,21 @@ window.cloudSave = async function() {
   try {
     await Promise.all([
       setDoc(doc(db,'users',window.currentUser.uid,'d','profile'), {
-        profile:s.profile, nutrition:s.nutrition, streak:s.streak,
-        weightLog:s.weightLog, log:s.log,
+        profile: s.profile || {}, 
+        nutrition: s.nutrition || {}, 
+        streak: s.streak || 1,
+        weightLog: s.weightLog || [], 
+        log: s.log || [],
         geminiKey: localStorage.getItem('zs_gkey') || '',
-        fastingActive:s.fastingActive, fastingStart:s.fastingStart,
+        fastingActive: s.fastingActive || false, 
+        fastingStart: s.fastingStart || null,
         ts: Date.now()
       }, {merge:true}),
       setDoc(doc(db,'users',window.currentUser.uid,'d','today'), {
         date: new Date().toDateString(),
-        today:s.today, meals:s.meals, ts: Date.now()
+        today: s.today || { kcal:0, prot:0, carb:0, fat:0, water:0 }, 
+        meals: s.meals || { breakfast:[], lunch:[], dinner:[], snack:[] }, 
+        ts: Date.now()
       }, {merge:true}),
       setDoc(doc(db,'users',window.currentUser.uid,'d','fitness'), {
         unit: s.unit || 'kg',
@@ -44,12 +55,13 @@ window.cloudSave = async function() {
         ts: Date.now()
       }, {merge:true})
     ]);
-    window.showSync();
-  } catch(e) { console.warn('Cloud save error:',e); }
+    if (typeof window.showSync === 'function') window.showSync();
+  } catch(e) { console.warn('Cloud save error:', e); }
 };
 
 // ── LOAD ─────────────────────────────────────────────────────────────────
 async function cloudLoad(uid) {
+  let hasValidProfile = false;
   try {
     const [pS, tS, fS] = await Promise.all([
       getDoc(doc(db,'users',uid,'d','profile')),
@@ -69,6 +81,9 @@ async function cloudLoad(uid) {
 
     if (pS.exists()) {
       const d = pS.data();
+      if (d.profile && d.nutrition && d.nutrition.kcal) {
+        hasValidProfile = true;
+      }
       Object.assign(window.ST, {
         profile:       d.profile       || window.ST.profile,
         nutrition:     d.nutrition     || window.ST.nutrition,
@@ -89,30 +104,25 @@ async function cloudLoad(uid) {
     if (tS.exists()) {
       const td = tS.data();
       if (td.date === todayStr) {
-        // Mismo dia: cargar datos normalmente
         window.ST.today = td.today || window.ST.today;
         window.ST.meals = td.meals || window.ST.meals;
       } else if (td.date && td.today && (td.today.kcal || 0) > 0) {
-        // Dia diferente: archivar ayer en el historial
         const yaArchivado = (window.ST.log || []).some(function(l) { return l.date === td.date; });
         if (!yaArchivado) {
           if (!window.ST.log) window.ST.log = [];
           window.ST.log.push(Object.assign({ date: td.date }, td.today));
           if (window.ST.log.length > 60) window.ST.log = window.ST.log.slice(-60);
-          // Actualizar racha
           try {
             const prev = new Date(td.date);
             const diff = Math.round((new Date() - prev) / 86400000);
             if (diff === 1) window.ST.streak = (window.ST.streak || 0) + 1;
             else if (diff > 1) window.ST.streak = 1;
           } catch(e2) {}
-          // Guardar historial en Firebase
           await setDoc(doc(db,'users',uid,'d','profile'),
             { log: window.ST.log, streak: window.ST.streak, ts: Date.now() },
             { merge: true }
           );
         }
-        // Resetear dia nuevo
         window.ST.today = { kcal:0, prot:0, carb:0, fat:0, water:0 };
         window.ST.meals = { breakfast:[], lunch:[], dinner:[], snack:[] };
         await setDoc(doc(db,'users',uid,'d','today'),
@@ -128,13 +138,31 @@ async function cloudLoad(uid) {
       window.ST.meals = { breakfast:[], lunch:[], dinner:[], snack:[] };
     }
 
-    window.ST.onboarded = true;
-    localStorage.setItem('zs2', JSON.stringify(window.ST));
-    localStorage.setItem('zs_day', todayStr);
+    window.hideSplash();
 
-  } catch(e) { console.warn('Cloud load error:', e); }
-  window.hideSplash();
-  window.appReady();
+    // Si ya tiene perfil configurado en la nube o local:
+    if (hasValidProfile || (window.ST.onboarded && window.ST.nutrition && window.ST.nutrition.kcal)) {
+      window.ST.onboarded = true;
+      localStorage.setItem('zs2', JSON.stringify(window.ST));
+      localStorage.setItem('zs_day', todayStr);
+      window.appReady();
+    } else {
+      // Usuario nuevo: Autocompletar su nombre de Google y enviarlo al Onboarding
+      if (window.currentUser && window.currentUser.displayName && window.ST.profile) {
+        window.ST.profile.name = window.currentUser.displayName.split(' ')[0];
+      }
+      startOb();
+    }
+
+  } catch(e) { 
+    console.warn('Cloud load error:', e); 
+    window.hideSplash();
+    if (window.ST.onboarded && window.ST.nutrition && window.ST.nutrition.kcal) {
+      window.appReady();
+    } else {
+      startOb();
+    }
+  }
 }
 
 onAuthStateChanged(auth, async user => {
@@ -151,18 +179,27 @@ onAuthStateChanged(auth, async user => {
     const local = localStorage.getItem('zs2');
     if (local) try { Object.assign(window.ST, JSON.parse(local)); } catch(e) {}
     window.hideSplash();
-    if (window.ST.onboarded) window.appReady();
-    else showScreen('sw');
+    if (window.ST.onboarded && window.ST.nutrition && window.ST.nutrition.kcal) {
+      window.appReady();
+    } else {
+      showScreen('sw');
+    }
   }
 });
 
 window.gSignIn = async () => {
-  try { await signInWithPopup(auth, provider); }
-  catch(e) { window.toast('❌ Error al iniciar sesión','err'); }
+  try { 
+    await signInWithPopup(auth, provider); 
+  } catch(e) { 
+    console.error(e);
+    if (typeof window.toast === 'function') window.toast('❌ Error al iniciar sesión', 'err'); 
+  }
 };
+
 window.gSignOut = async () => {
   await signOut(auth);
-  window.toast('👋 Sesión cerrada');
-  document.getElementById('bnav').style.display = 'none';
+  if (typeof window.toast === 'function') window.toast('👋 Sesión cerrada');
+  const bnav = document.getElementById('bnav');
+  if (bnav) bnav.style.display = 'none';
   showScreen('sw');
 };

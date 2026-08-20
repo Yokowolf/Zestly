@@ -1,13 +1,12 @@
-// Cliente de IA oficial para Gemini 2.5 Flash
+// Cliente de IA oficial para Gemini 3.6 Flash
 export const getKey = () => localStorage.getItem('zs_gemini_key') || ''
 export const setKey = k => localStorage.setItem('zs_gemini_key', k.trim())
 export const hasKey = () => !!getKey()
 
-// Modelo oficial verificado en tu cuenta
-const MODEL = 'gemini-2.5-flash'
+const MODEL = 'gemini-3.6-flash'
 
 // Llamada de Texto (Comidas, Macros, Recetas, Coach)
-export async function callAI(systemPrompt, userMessage, maxTokens = 2000) {
+export async function callAI(systemPrompt, userMessage, maxTokens = 1500) {
   const key = getKey()
   if (!key) throw new Error('Sin clave IA — configúrala en Perfil')
 
@@ -15,8 +14,8 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 2000) {
     contents: [{ parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }],
     generationConfig: { 
       maxOutputTokens: maxTokens, 
-      temperature: 0.2, // Temperatura baja = cálculo exacto de gramos y calorías
-      responseMimeType: 'application/json' // Salida garantizada en JSON
+      temperature: 0.2, // Temperatura baja = precisión matemática
+      responseMimeType: 'application/json' // Salida JSON pura
     },
   }
 
@@ -39,7 +38,7 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 2000) {
   return text
 }
 
-// Llamada con Imagen (Scanner de fotos de comida)
+// Llamada con Imagen (Scanner de fotos)
 export async function callAIWithImage(prompt, imageBase64, validate) {
   const key = getKey()
   if (!key) throw new Error('Sin clave IA — configúrala en Perfil')
@@ -54,7 +53,7 @@ export async function callAIWithImage(prompt, imageBase64, validate) {
     generationConfig: { 
       responseMimeType: 'application/json', 
       temperature: 0.2,
-      maxOutputTokens: 2000
+      maxOutputTokens: 1500
     },
   }
 

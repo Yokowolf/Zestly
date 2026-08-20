@@ -1,60 +1,28 @@
-// Cliente de IA — Detección dinámica y automática de modelos oficiales
+// Cliente de IA oficial para Gemini 2.5 Flash
 export const getKey = () => localStorage.getItem('zs_gemini_key') || ''
-export const setKey = k => {
-  cachedModel = null // Resetear caché al cambiar la clave
-  localStorage.setItem('zs_gemini_key', k.trim())
-}
+export const setKey = k => localStorage.setItem('zs_gemini_key', k.trim())
 export const hasKey = () => !!getKey()
 
-// Caché en memoria del modelo activo
-let cachedModel = null
-
-// Consulta a Google qué modelo Flash está activo para esta API Key
-async function getActiveModel(key) {
-  if (cachedModel) return cachedModel
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`)
-    if (!res.ok) throw new Error('No se pudo listar modelos')
-    const data = await res.json()
-    const list = data.models || []
-
-    // Filtrar los que admiten generación de texto
-    const valid = list.filter(m => m.supportedGenerationMethods?.includes('generateContent'))
-    
-    // Priorizar el modelo Flash más moderno disponible en tu cuenta
-    const flash = valid.find(m => m.name.includes('2.0-flash') || m.name.includes('flash'))
-    const selected = flash ? flash.name : (valid[0]?.name || 'models/gemini-2.0-flash')
-    
-    // Guardar nombre limpio sin el prefijo "models/"
-    cachedModel = selected.replace(/^models\//, '')
-    console.log('[Zestly IA] Modelo activo detectado:', cachedModel)
-    return cachedModel
-  } catch (e) {
-    console.warn('[Zestly IA] Error detectando modelo, usando gemini-2.0-flash por defecto', e)
-    return 'gemini-2.0-flash'
-  }
-}
+// Modelo oficial verificado en tu cuenta
+const MODEL = 'gemini-2.5-flash'
 
 // Llamada de Texto (Comidas, Macros, Recetas, Coach)
-export async function callAI(systemPrompt, userMessage, maxTokens = 1500) {
+export async function callAI(systemPrompt, userMessage, maxTokens = 2000) {
   const key = getKey()
   if (!key) throw new Error('Sin clave IA — configúrala en Perfil')
-
-  const model = await getActiveModel(key)
 
   const body = {
     contents: [{ parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }],
     generationConfig: { 
       maxOutputTokens: maxTokens, 
-      temperature: 0.2,
-      responseMimeType: 'application/json'
+      temperature: 0.2, // Temperatura baja = cálculo exacto de gramos y calorías
+      responseMimeType: 'application/json' // Salida garantizada en JSON
     },
   }
 
   let res, data
   try {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -64,22 +32,17 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 1500) {
     throw new Error('Sin conexión con el servidor de IA')
   }
 
-  if (!res.ok) {
-    cachedModel = null // Si falla, limpia la caché para volver a detectar
-    throw new Error(friendlyError(res.status, data))
-  }
+  if (!res.ok) throw new Error(friendlyError(res.status, data))
 
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
   if (!text) throw new Error('La IA no devolvió respuesta — intenta de nuevo')
   return text
 }
 
-// Llamada con Imagen (Scanner de fotos)
+// Llamada con Imagen (Scanner de fotos de comida)
 export async function callAIWithImage(prompt, imageBase64, validate) {
   const key = getKey()
   if (!key) throw new Error('Sin clave IA — configúrala en Perfil')
-
-  const model = await getActiveModel(key)
 
   const body = {
     contents: [{
@@ -91,13 +54,13 @@ export async function callAIWithImage(prompt, imageBase64, validate) {
     generationConfig: { 
       responseMimeType: 'application/json', 
       temperature: 0.2,
-      maxOutputTokens: 1500
+      maxOutputTokens: 2000
     },
   }
 
   let res, data
   try {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -107,10 +70,7 @@ export async function callAIWithImage(prompt, imageBase64, validate) {
     throw new Error('Sin conexión con el servidor de IA')
   }
 
-  if (!res.ok) {
-    cachedModel = null
-    throw new Error(friendlyError(res.status, data))
-  }
+  if (!res.ok) throw new Error(friendlyError(res.status, data))
 
   const cand = data.candidates?.[0]
   const text = cand?.content?.parts?.[0]?.text || ''

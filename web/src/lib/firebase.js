@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import {
-  getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut,
+  getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut,
   onAuthStateChanged, setPersistence, browserLocalPersistence,
 } from 'firebase/auth'
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'
@@ -23,23 +23,26 @@ const db = getFirestore(app)
 const provider = new GoogleAuthProvider()
 setPersistence(auth, browserLocalPersistence).catch(() => {})
 
-// signInWithPopup se descartó por completo: en PWA instalada, navegadores
-// móviles, webviews embebidos (Instagram/WhatsApp) y hasta en navegador de
-// escritorio con las políticas COOP que traen por defecto los navegadores
-// modernos, el popup puede quedar abierto pero sin poder avisarle de vuelta
-// a la app que terminó — ni error, ni éxito, se queda colgado en silencio.
-// signInWithRedirect no depende de esa comunicación entre ventanas: navega
-// a Google y vuelve a la app; el resultado se recoge en watchAuth al arrancar.
+// Usar signInWithPopup para evitar el error 404 de /__/firebase/init.json en GitHub Pages
 export async function signIn() {
-  await signInWithRedirect(auth, provider)
+  try {
+    await signInWithPopup(auth, provider)
+  } catch (e) {
+    if (e.code === 'auth/popup-blocked') {
+      await signInWithRedirect(auth, provider)
+    } else if (e.code !== 'auth/popup-closed-by-user') {
+      useStore.getState().toast('Error al iniciar sesión: ' + (e.message || ''), 'err')
+    }
+  }
 }
+
 export async function logOut() {
   await signOut(auth)
 }
 
 export function watchAuth(onReady) {
   getRedirectResult(auth).catch(e => {
-    useStore.getState().toast('Error al iniciar sesión: ' + (e.message || '').slice(0, 80), 'err')
+    // Ignorar si no hubo redirección previa
   })
   return onAuthStateChanged(auth, async user => {
     useStore.getState().setUser(user)
@@ -57,8 +60,6 @@ export async function cloudSave() {
       setDoc(doc(db, 'users', s.user.uid, 'd', 'profile'), {
         profile: d.profile, nutrition: d.nutrition, streak: d.streak,
         weightLog: d.weightLog, log: d.log,
-        // Solo se escribe si este dispositivo tiene clave — un dispositivo
-        // nuevo sin configurar NUNCA borra la clave guardada en la nube
         ...(localStorage.getItem('zs_gemini_key') ? { aiKey: localStorage.getItem('zs_gemini_key') } : {}),
         fastingActive: d.fastingActive, fastingStart: d.fastingStart,
         theme: d.theme, waterGoal: d.waterGoal, fastingHours: d.fastingHours || 16, foodFreq: d.foodFreq || {},
@@ -85,9 +86,6 @@ export async function cloudSave() {
   }
 }
 
-// Fusión defensiva local+nube: NUNCA perder registros locales que aún no
-// alcanzaron a subir (p. ej. iOS congeló la app antes del sync). En conflicto
-// de clave gana lo local (es lo más reciente en este dispositivo).
 function mergeByKey(local = [], cloud = [], keyFn, max = 60) {
   const map = new Map()
   cloud.forEach(x => map.set(keyFn(x), x))
@@ -97,13 +95,6 @@ function mergeByKey(local = [], cloud = [], keyFn, max = 60) {
 const byStart = l => l.startTs || `${l.date}|${l.name}`
 const byDate = l => l.date
 
-// Mismo problema que mergeByKey pero para el plan alimenticio: antes
-// "ganaba la nube" a secas, así que las recetas rellenadas con IA en este
-// dispositivo (aún sin subir) se perdían al recargar si la nube tenía una
-// copia más vieja del mismo plan. Ahora, si es el MISMO plan (mismo ts), se
-// conserva la receta de cada plato venga de donde venga — nunca se pierde
-// una ya generada. Si el ts difiere, es un plan distinto (se regeneró en
-// algún dispositivo) y gana el más reciente.
 function mergeMealPlan(local, cloud) {
   if (!local) return cloud || null
   if (!cloud) return local
@@ -126,8 +117,13 @@ export async function cloudLoad(uid) {
     ])
 
     const patch = {}
+    let hasCloudProfile = false
+
     if (pS.exists()) {
       const d = pS.data()
+      if (d.profile && d.nutrition) {
+        hasCloudProfile = true
+      }
       Object.assign(patch, {
         profile: d.profile || st.profile,
         nutrition: d.nutrition || st.nutrition,
@@ -148,13 +144,10 @@ export async function cloudLoad(uid) {
         badgeUnlocks: d.badgeUnlocks || st.badgeUnlocks || {},
         progressPhotos: mergeByKey(
           st.progressPhotos,
-          d.progressPhotos || (d.progressPhoto?.data ? [d.progressPhoto] : []), // legado: foto única
+          d.progressPhotos || (d.progressPhoto?.data ? [d.progressPhoto] : []),
           p => p.ts, 8,
         ).sort((a, b) => (a.ts || 0) - (b.ts || 0)),
       })
-      // La clave de la nube llega sola a cualquier dispositivo nuevo.
-      // También lee el campo legado (cuenta con clave guardada antes de
-      // unificar a un solo proveedor) para no perder la configuración.
       if (d.aiKey) localStorage.setItem('zs_gemini_key', d.aiKey)
       else if (d.photoKey) localStorage.setItem('zs_gemini_key', d.photoKey)
     }
@@ -163,17 +156,9 @@ export async function cloudLoad(uid) {
       const f = fS.data()
       Object.assign(patch, {
         unit: f.unit || 'kg',
-        // Mismo bug que mealPlan: "gana la nube si existe" perdía rutinas
-        // creadas/editadas localmente sin alcanzar a subir. mergeByKey ya
-        // resuelve esto bien (en conflicto de la misma rutina, gana local).
         routines: mergeByKey(st.routines, f.routines, r => r.createdAt || r.name, 200),
         workoutLogs: mergeByKey(st.workoutLogs, f.workoutLogs, byStart)
           .sort((a, b) => (a.startTs || 0) - (b.startTs || 0)),
-        // NUNCA se trae de la nube: es un estado en vivo de este dispositivo.
-        // Si se traía de f.activeWorkout cuando el local ya estaba en null
-        // (sesión recién terminada) y la nube no había alcanzado a
-        // actualizarse, resucitaba la sesión ya finalizada con su hora de
-        // inicio original — el cronómetro aparecía con horas de "atraso".
         activeWorkout: st.activeWorkout || null,
         anthro: mergeByKey(st.anthro, f.anthro, byDate)
           .sort((a, b) => new Date(a.date) - new Date(b.date)),
@@ -182,9 +167,6 @@ export async function cloudLoad(uid) {
     }
 
     const todayStr = new Date().toDateString()
-    // Si el dispositivo YA tiene comida de hoy registrada localmente (ej. se
-    // vinculó Google después de anotar algo), el local manda — nunca lo
-    // pisamos con lo que diga la nube, para no perder lo recién anotado.
     const localHasToday = (st.today?.kcal || 0) > 0 || Object.values(st.meals || {}).some(arr => (arr || []).length > 0)
     if (tS.exists()) {
       const td = tS.data()
@@ -194,7 +176,6 @@ export async function cloudLoad(uid) {
           patch.meals = td.meals || st.meals
         }
       } else if (td.date && td.today && (td.today.kcal || 0) > 0) {
-        // Día distinto: archivar ayer en el historial
         const log = patch.log || st.log || []
         if (!log.some(l => l.date === td.date)) {
           patch.log = [...log, { date: td.date, ...td.today }].slice(-60)
@@ -213,7 +194,10 @@ export async function cloudLoad(uid) {
       }
     }
 
-    patch.onboarded = true
+    if (hasCloudProfile) {
+      patch.onboarded = true
+    }
+
     st.patch(patch)
     localStorage.setItem('zs_day', todayStr)
   } catch (e) {
@@ -221,9 +205,6 @@ export async function cloudLoad(uid) {
   }
 }
 
-// Sync inmediato al pasar la app a segundo plano: iOS congela los timers,
-// y el debounce de 800 ms dejaba sin subir los últimos cambios (p. ej. el
-// entrenamiento recién terminado se perdía al reabrir en otro momento).
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') cloudSave()

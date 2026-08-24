@@ -30,11 +30,11 @@ const TITLES = {
 }
 
 const TOUR_STEPS = [
-  { tab: 'calories', icon: Camera, title: 'Registra tu comida', text: 'Escanea el plato con foto, busca en el buscador o usa un atajo rápido — la IA calcula calorías y macros por ti.' },
-  { tab: 'train', icon: Dumbbell, title: 'Arma tu rutina', text: 'Elige una plantilla por categoría (tren superior, inferior, cardio...) o crea la tuya. Zestly recuerda tus pesos de la sesión anterior.' },
-  { tab: 'plan', icon: UtensilsCrossed, title: 'Genera tu plan semanal', text: 'La IA arma un menú de 7 días con lista de compras y la receta de cada plato.' },
-  { tab: 'progress', icon: BarChart3, title: 'Revisa tu progreso', text: 'Calendario, PRs, volumen por músculo, fotos y medidas — organizado por secciones.' },
-  { tab: 'coach', icon: Bot, title: 'Pregunta a tu Coach', text: 'Resuelve dudas de nutrición o entrenamiento y pídele que analice tu día o tu última sesión.' },
+  { tab: 'calories', target: 'tour-calories', icon: Camera, title: 'Registra tu comida', text: 'Escanea el plato con foto, busca en el buscador o usa un atajo rápido — la IA calcula calorías y macros por ti.' },
+  { tab: 'train', target: 'tour-train', icon: Dumbbell, title: 'Arma tu rutina', text: 'Elige una plantilla por categoría (tren superior, inferior, cardio...) o crea la tuya. Zestly recuerda tus pesos de la sesión anterior.' },
+  { tab: 'plan', target: 'tour-plan', icon: UtensilsCrossed, title: 'Genera tu plan semanal', text: 'La IA arma un menú de 7 días con lista de compras y la receta de cada plato.' },
+  { tab: 'progress', target: 'tour-progress', icon: BarChart3, title: 'Revisa tu progreso', text: 'Calendario, PRs, volumen por músculo, fotos y medidas — organizado por secciones.' },
+  { tab: 'coach', target: 'tour-coach', icon: Bot, title: 'Pregunta a tu Coach', text: 'Resuelve dudas de nutrición o entrenamiento y pídele que analice tu día o tu última sesión.' },
 ]
 
 export default function App() {
@@ -150,7 +150,10 @@ export default function App() {
 
       {tourStep === null && <SessionPill onResume={() => go({ tab: 'train' })} />}
       {tourStep !== null && (
-        <GuideTour step={tourStep} onNext={() => tourGo(tourStep + 1)} onBack={() => tourGo(tourStep - 1)} onSkip={() => tourGo(TOUR_STEPS.length)} />
+        <>
+          <TourSpotlight key={tourStep} target={TOUR_STEPS[tourStep].target} />
+          <GuideTour step={tourStep} onNext={() => tourGo(tourStep + 1)} onBack={() => tourGo(tourStep - 1)} onSkip={() => tourGo(TOUR_STEPS.length)} />
+        </>
       )}
     </div>
   )
@@ -192,6 +195,43 @@ function GuideTour({ step, onNext, onBack, onSkip }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// Recuadro que resalta el elemento real del que habla el paso del tour,
+// oscureciendo el resto de la pantalla — así "Arma tu rutina" señala de
+// verdad las plantillas, no solo lo describe en una tarjeta flotante.
+function TourSpotlight({ target }) {
+  const [rect, setRect] = useState(null)
+  const reduceMotion = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  useEffect(() => {
+    setRect(null)
+    let cancelled = false
+    const measure = () => {
+      const el = document.querySelector(`[data-tour="${target}"]`)
+      if (!el || cancelled) return
+      const r = el.getBoundingClientRect()
+      setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
+    }
+    const el = document.querySelector(`[data-tour="${target}"]`)
+    el?.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' })
+    const t = setTimeout(measure, reduceMotion ? 0 : 280)
+    window.addEventListener('resize', measure)
+    window.addEventListener('scroll', measure, true)
+    return () => { cancelled = true; clearTimeout(t); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
+  }, [target]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!rect) return null
+  return (
+    <div
+      aria-hidden
+      className={`pointer-events-none fixed z-[45] rounded-2xl ring-2 ring-accent-400 ${reduceMotion ? '' : 'transition-all duration-300'}`}
+      style={{
+        top: rect.top - 6, left: rect.left - 6, width: rect.width + 12, height: rect.height + 12,
+        boxShadow: '0 0 0 9999px rgb(0 0 0 / 0.62)',
+      }}
+    />
   )
 }
 

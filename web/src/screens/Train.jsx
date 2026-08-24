@@ -137,17 +137,19 @@ export default function Train({ initialAction }) {
         ))}
       </div>
 
-      <SectionTitle>Plantillas por nivel</SectionTitle>
-      <div className="mb-2 flex gap-1.5">
-        {Object.entries(TEMPLATE_LEVELS).map(([v, label]) => (
-          <Chip key={v} on={level === v} onClick={() => setLevel(v)}>{label}</Chip>
-        ))}
-      </div>
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        <Chip on={category === 'all'} onClick={() => setCategory('all')}>Todas</Chip>
-        {Object.entries(TEMPLATE_CATEGORIES).map(([v, label]) => (
-          <Chip key={v} on={category === v} onClick={() => setCategory(v)}>{label}</Chip>
-        ))}
+      <div data-tour="tour-train">
+        <SectionTitle>Plantillas por nivel</SectionTitle>
+        <div className="mb-2 flex gap-1.5">
+          {Object.entries(TEMPLATE_LEVELS).map(([v, label]) => (
+            <Chip key={v} on={level === v} onClick={() => setLevel(v)}>{label}</Chip>
+          ))}
+        </div>
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          <Chip on={category === 'all'} onClick={() => setCategory('all')}>Todas</Chip>
+          {Object.entries(TEMPLATE_CATEGORIES).map(([v, label]) => (
+            <Chip key={v} on={category === v} onClick={() => setCategory(v)}>{label}</Chip>
+          ))}
+        </div>
       </div>
       {(() => {
         const templates = ROUTINE_TEMPLATES.filter(t => t.level === level && (category === 'all' || t.category === category))

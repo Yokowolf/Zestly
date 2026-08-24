@@ -63,7 +63,7 @@ export default function Calories() {
       </div>
 
       </div>
-      <div>
+      <div data-tour="tour-calories">
       <SectionTitle>Comidas de hoy</SectionTitle>
       <div className="flex flex-col gap-2.5">
         {MEALS.map(({ key, name: mName, icon: Icon }) => {

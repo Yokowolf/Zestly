@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   Flame, Play, LogIn, Quote, Sparkles, Clock, Trophy,
-  ChevronRight, UtensilsCrossed, Dumbbell, Scale,
+  ChevronRight, UtensilsCrossed, Dumbbell, Scale, Droplets, Timer,
 } from 'lucide-react'
 import { useStore, fromKg, unitLbl } from '../store'
 import { Ring } from '../components/charts'
@@ -38,7 +38,7 @@ export default function Home({ go, onStartTour }) {
       </button>
 
       <DaySummary go={go} />
-      <MiniProgress go={go} />
+      <QuickStats go={go} />
       <CaloriesPreview go={go} />
       <TrainPreview go={go} />
       <PlanPreview go={go} />
@@ -54,15 +54,14 @@ function CaloriesPreview({ go }) {
   const rem = Math.max(0, n.kcal - t.kcal)
   const pct = Math.min(1, t.kcal / n.kcal)
   return (
-    <button onClick={() => go({ tab: 'calories' })} className="card card-tap mt-3 flex w-full items-center gap-4 p-4 text-left active:scale-[0.99]">
-      <Ring pct={pct} size={88} stroke={9}>
-        <span className="text-[9px] font-semibold text-brand-600">{t.kcal} kcal</span>
-        <span className="font-display text-xl font-bold leading-tight">{rem}</span>
-        <span className="text-[8px] text-ink3">restantes</span>
+    <button onClick={() => go({ tab: 'calories' })} className="card card-tap mt-3 flex w-full items-center gap-3.5 p-4 text-left active:scale-[0.99]">
+      <Ring pct={pct} size={72} stroke={7}>
+        <span className="font-display text-[15px] font-bold leading-tight">{rem}</span>
+        <span className="text-[7px] text-ink3">kcal libres</span>
       </Ring>
-      <div className="flex flex-1 flex-col gap-2">
+      <div className="flex flex-1 flex-col gap-2.5">
         <div className="flex items-center justify-between">
-          <span className="text-[12px] font-bold">Calorías</span>
+          <span className="text-[12px] font-bold">Macros de hoy</span>
           <ChevronRight size={14} className="text-ink3" />
         </div>
         <MacroRow label="Proteína" val={t.prot} goal={n.prot} color="bg-brand-500" />
@@ -75,8 +74,9 @@ function CaloriesPreview({ go }) {
 function MacroRow({ label, val, goal, color }) {
   return (
     <div>
-      <div className="mb-0.5 flex justify-between text-[9px] text-ink3">
-        <span>{label}</span><span>{round1(val)}/{goal}g</span>
+      <div className="mb-1 flex items-baseline justify-between">
+        <span className="text-[10px] font-medium text-ink2">{label}</span>
+        <span className="font-display text-[11px] font-semibold tabular-nums">{round1(val)}<span className="text-ink3">/{goal}g</span></span>
       </div>
       <Bar pct={(val / goal) * 100} className={color} />
     </div>
@@ -234,29 +234,34 @@ function DaySummary({ go }) {
   )
 }
 
-// ── Resumen rápido de progreso — vista previa del dashboard completo ──
-function MiniProgress({ go }) {
+// ── Tira horizontal de stats secundarios — se desliza en vez de competir
+// por espacio vertical con las tarjetas de detalle de cada módulo ──
+function QuickStats({ go }) {
   const s = useStore()
   const week = useMemo(() => {
     const cut = Date.now() - 7 * 86400000
     return (s.workoutLogs || []).filter(l => { const t = new Date(l.date).getTime(); return !isNaN(t) && t >= cut })
   }, [s.workoutLogs])
+  const fastingH = s.fastingActive && s.fastingStart ? Math.max(0, Math.floor((Date.now() - s.fastingStart) / 3600000)) : null
+
+  const chips = [
+    { icon: Droplets, color: 'text-sky-500', label: 'Agua', value: `${s.today.water || 0}/${s.waterGoal}`, tab: 'calories' },
+    ...(fastingH !== null ? [{ icon: Timer, color: 'text-violet-500', label: 'Ayuno', value: `${fastingH}h`, tab: 'calories' }] : []),
+    { icon: Flame, color: 'text-orange-500', label: 'Racha', value: `${s.streak}d`, tab: 'progress' },
+    { icon: Dumbbell, color: 'text-brand-600', label: 'Entrenos', value: week.length, tab: 'progress' },
+    { icon: Scale, color: 'text-accent-600', label: 'Peso', value: s.profile.weight ? `${s.profile.weight}kg` : '—', tab: 'progress' },
+  ]
 
   return (
-    <button onClick={() => go({ tab: 'progress' })} className="card card-tap mt-3 flex w-full items-center gap-3 p-3.5 text-left active:scale-[0.99]">
-      <MiniStat icon={Flame} color="text-orange-500" label="Racha" value={`${s.streak} d`} />
-      <MiniStat icon={Dumbbell} color="text-brand-600" label="Entrenos" value={week.length} />
-      <MiniStat icon={Scale} color="text-accent-600" label="Peso" value={s.profile.weight ? `${s.profile.weight}kg` : '—'} />
-      <ChevronRight size={16} className="ml-auto shrink-0 text-ink3" />
-    </button>
-  )
-}
-function MiniStat({ icon: Icon, color, label, value }) {
-  return (
-    <div className="flex flex-1 flex-col items-center gap-0.5">
-      <Icon size={15} className={color} />
-      <span className="text-[13px] font-bold leading-none">{value}</span>
-      <span className="text-[9px] text-ink3">{label}</span>
+    <div className="mt-3 -mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {chips.map((c, i) => (
+        <button key={i} onClick={() => go({ tab: c.tab })}
+          className="card card-tap flex shrink-0 flex-col items-center gap-1 px-4 py-2.5 active:scale-[0.97]">
+          <c.icon size={14} className={c.color} />
+          <span className="font-display text-[12px] font-bold leading-none tabular-nums">{c.value}</span>
+          <span className="text-[8px] uppercase tracking-wide text-ink3">{c.label}</span>
+        </button>
+      ))}
     </div>
   )
 }

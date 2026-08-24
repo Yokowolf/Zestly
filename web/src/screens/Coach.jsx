@@ -91,7 +91,7 @@ export default function Coach({ initialAction, go }) {
         {CHIPS.map((c, i) => <Chip key={i} onClick={() => send(c)} className="shrink-0">{c}</Chip>)}
       </div>
 
-      <div className="flex gap-2 border-t border-line py-3">
+      <div data-tour="tour-coach" className="flex gap-2 border-t border-line py-3">
         <input
           className="flex-1 rounded-xl border border-line bg-card px-3.5 py-3 text-[13px] outline-none placeholder:text-ink3 focus:border-accent-500"
           placeholder="Pregunta sobre nutrición o entrenamiento…"

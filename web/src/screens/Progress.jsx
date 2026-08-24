@@ -64,7 +64,7 @@ export default function Progress({ initialAction }) {
             <Stat i={2} icon={Beef} color="text-brand-600" label="Proteína hoy" value={`${round1(s.today.prot)}/${s.nutrition.prot}g`} />
             <Stat i={3} icon={Droplets} color="text-sky-500" label="Agua hoy" value={`${s.today.water}/${s.waterGoal || 8}`} />
           </div>
-          <div className="card mt-3 p-4">
+          <div data-tour="tour-progress" className="card mt-3 p-4">
             <MonthCalendar trainedDates={trainedDates} loggedDates={loggedDates} onDayClick={setDayView} selectedDate={dayView} />
           </div>
           <DayDetail date={dayView} onClose={() => setDayView(null)} />

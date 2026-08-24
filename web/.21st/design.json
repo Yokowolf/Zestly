@@ -1,0 +1,233 @@
+{
+  "version": 1,
+  "project": {
+    "name": "web",
+    "productType": null,
+    "stack": [
+      "react",
+      "tailwind-v4",
+      "vite"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "src/index.css"
+    ],
+    "components": [
+      "src/components/ui.jsx",
+      "src/components/charts.jsx",
+      "src/screens/Welcome.jsx",
+      "src/screens/Home.jsx"
+    ],
+    "assets": [],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "light-and-dark",
+    "colors": {
+      "--color-brand-50": {
+        "value": "#ecfeff",
+        "source": "src/index.css"
+      },
+      "--color-brand-100": {
+        "value": "#cffafe",
+        "source": "src/index.css"
+      },
+      "--color-brand-200": {
+        "value": "#a5f3fc",
+        "source": "src/index.css"
+      },
+      "--color-brand-300": {
+        "value": "#67e8f9",
+        "source": "src/index.css"
+      },
+      "--color-brand-400": {
+        "value": "#22d3ee",
+        "source": "src/index.css"
+      },
+      "--color-brand-500": {
+        "value": "#06b6d4",
+        "source": "src/index.css"
+      },
+      "--color-brand-600": {
+        "value": "#0891b2",
+        "source": "src/index.css"
+      },
+      "--color-brand-700": {
+        "value": "#0e7490",
+        "source": "src/index.css"
+      },
+      "--color-brand-800": {
+        "value": "#155e75",
+        "source": "src/index.css"
+      },
+      "--color-brand-900": {
+        "value": "#164e63",
+        "source": "src/index.css"
+      },
+      "--color-accent-50": {
+        "value": "#f5f3ff",
+        "source": "src/index.css"
+      },
+      "--color-accent-100": {
+        "value": "#ede9fe",
+        "source": "src/index.css"
+      },
+      "--color-accent-200": {
+        "value": "#ddd6fe",
+        "source": "src/index.css"
+      },
+      "--color-accent-300": {
+        "value": "#c4b5fd",
+        "source": "src/index.css"
+      },
+      "--color-accent-400": {
+        "value": "#a78bfa",
+        "source": "src/index.css"
+      },
+      "--color-accent-500": {
+        "value": "#8b5cf6",
+        "source": "src/index.css"
+      },
+      "--color-accent-600": {
+        "value": "#7c3aed",
+        "source": "src/index.css"
+      },
+      "--color-accent-700": {
+        "value": "#6d28d9",
+        "source": "src/index.css"
+      },
+      "--color-accent-800": {
+        "value": "#5b21b6",
+        "source": "src/index.css"
+      },
+      "--color-accent-900": {
+        "value": "#4c1d95",
+        "source": "src/index.css"
+      },
+      "--border": {
+        "value": "#344055",
+        "source": "src/index.css"
+      },
+      "--color-bg": {
+        "value": "var(--bg)",
+        "source": "src/index.css"
+      },
+      "--color-bg2": {
+        "value": "var(--bg-2)",
+        "source": "src/index.css"
+      },
+      "--color-card": {
+        "value": "var(--card)",
+        "source": "src/index.css"
+      },
+      "--color-card2": {
+        "value": "var(--card-2)",
+        "source": "src/index.css"
+      },
+      "--color-line": {
+        "value": "var(--border)",
+        "source": "src/index.css"
+      },
+      "--color-ink": {
+        "value": "var(--text)",
+        "source": "src/index.css"
+      },
+      "--color-ink2": {
+        "value": "var(--text-2)",
+        "source": "src/index.css"
+      },
+      "--color-ink3": {
+        "value": "var(--text-3)",
+        "source": "src/index.css"
+      }
+    },
+    "typography": {
+      "--font-sans": {
+        "value": "\"Inter\", ui-sans-serif, system-ui, sans-serif",
+        "source": "src/index.css"
+      },
+      "--font-display": {
+        "value": "\"Space Grotesk\", var(--font-sans)",
+        "source": "src/index.css"
+      },
+      "--text": {
+        "value": "#f1f5f9",
+        "source": "src/index.css"
+      },
+      "--text-2": {
+        "value": "#9aa7bd",
+        "source": "src/index.css"
+      },
+      "--text-3": {
+        "value": "#64748b",
+        "source": "src/index.css"
+      }
+    },
+    "spacing": {},
+    "radius": {},
+    "shadows": {
+      "--shadow": {
+        "value": "0 2px 4px rgb(0 0 0 / 0.5), 0 14px 34px rgb(0 0 0 / 0.5), inset 0 1px 0 0 rgb(255 255 255 / 0.07)",
+        "source": "src/index.css"
+      }
+    },
+    "motion": {},
+    "density": "unknown"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [
+      "Use only brand-* (cyan) and accent-* (violet) as hue sources — no new hues",
+      "Reuse existing tokens from src/index.css (--shadow, --card, --border, --ink*) instead of inventing new ones",
+      "Font-display for headings/numbers is Space Grotesk, body is Inter — keep both, do not introduce a new typeface",
+      "Respect prefers-reduced-motion for any decorative animation"
+    ],
+    "avoid": [
+      "Any green/sage/earthy palette — explicitly rejected by the client before, do not propose again",
+      "Generic 'gym bro' bold/red/black aesthetic",
+      "Overly soft spa aesthetic with pastel washed-out colors"
+    ]
+  },
+  "decisions": [
+    {
+      "screen": "Welcome.jsx",
+      "direction": "B - Ritual",
+      "note": "Carrusel de 3 tarjetas de feature antes del CTA, con indicador de puntos",
+      "decidedAt": "2026-08-24T02:08:43.524Z"
+    },
+    {
+      "screen": "Home.jsx",
+      "direction": "B - Resumen horizontal",
+      "note": "Fila de chips deslizable para stats secundarios (agua, ayuno, racha, peso), foco en macros individuales",
+      "decidedAt": "2026-08-24T02:08:43.525Z"
+    }
+  ],
+  "evidence": [
+    {
+      "fact": "design.colorMode:light-and-dark",
+      "source": "src/index.css"
+    },
+    {
+      "fact": "design.tokens",
+      "source": "src/index.css"
+    },
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:tailwind-v4",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:vite",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-08-24T02:02:06.829Z"
+}

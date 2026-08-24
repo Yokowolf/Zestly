@@ -1,24 +1,26 @@
-// Cliente de IA — un solo proveedor para todo (chat, coach, recetas, texto
-// y fotos). La clave se guarda en localStorage/Firestore del propio usuario
-// y NUNCA se expone en el código ni en git.
-export const getKey = () => localStorage.getItem('zs_gemini_key') || ''
-export const setKey = k => localStorage.setItem('zs_gemini_key', k.trim())
+// Cliente de IA — Groq (API compatible con OpenAI). Se volvió a Groq porque
+// Google AI Studio bloquea la creación de clave a cuentas sin proyecto de
+// Cloud propio (testers sin experiencia técnica quedaban sin poder usar la
+// app) — Groq permite crear clave con solo Gmail/GitHub, sin ese muro.
+// La clave se guarda en localStorage/Firestore del propio usuario y NUNCA
+// se expone en el código ni en git. Crear clave: https://console.groq.com/keys
+export const getKey = () => localStorage.getItem('zs_groq_key') || ''
+export const setKey = k => localStorage.setItem('zs_groq_key', k.trim())
 export const hasKey = () => !!getKey()
 
-// Cadena de modelos "flash" (nunca "pro" — en el nivel gratuito trae cuotas
-// mucho más bajas). Cada modelo tiene su PROPIA cuota en Google, separada
-// de los demás, así que si uno se satura (429) probamos el siguiente con
-// la misma clave — sin esto, el contador de calorías (la función que más
-// llamadas hace) se quedaba bloqueado apenas el modelo principal tocaba
-// su límite del día/minuto.
-const MODELS = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite']
+// Cadena de modelos de texto — cada uno tiene su PROPIA cuota en Groq
+// (por clave, no compartida entre usuarios), así que si uno se satura
+// (429) o fue decomisionado (400) probamos el siguiente con la misma
+// clave. Empieza por el de mayor cuota diaria.
+const TEXT_MODELS = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'openai/gpt-oss-120b']
+const VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 
 async function request(model, key, body) {
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model, ...body }),
     })
     return { res, data: await res.json() }
   } catch {
@@ -26,30 +28,36 @@ async function request(model, key, body) {
   }
 }
 
-// `jsonMode`: fuerza que Gemini devuelva JSON válido de verdad, en vez de
-// confiar en que el prompt "responde solo JSON" sea suficiente. Coach.jsx y
-// tips.js NO lo usan porque su respuesta es conversación libre, no JSON —
-// forzarlo ahí rompería el chat (Gemini intentaría meter la respuesta en
-// un objeto JSON en vez de responder texto normal).
+// Un modelo se salta al siguiente de la cadena si está saturado (429) o si
+// Groq lo decomisionó (400 con "decommissioned"/"does not exist") — este
+// segundo caso es la razón por la que Groq se había dejado antes: los
+// modelos se retiraban seguido y rompían la app hasta parchar el nombre a
+// mano. Con la cadena, mientras quede al menos un modelo vivo la app sigue
+// funcionando sola.
+function shouldTryNext(status, msg) {
+  if (status === 429) return true
+  if (status === 400 && /decommission|does not exist|not found/i.test(msg)) return true
+  return false
+}
+
 export async function callAI(systemPrompt, userMessage, maxTokens = 800, jsonMode = false) {
   const key = getKey()
   if (!key) throw new Error('Sin clave IA — configúrala en Perfil')
   const body = {
-    contents: [{ parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }],
-    generationConfig: {
-      maxOutputTokens: maxTokens, temperature: 0.7,
-      ...(jsonMode ? { responseMimeType: 'application/json' } : {}),
-    },
+    messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }],
+    max_tokens: maxTokens, temperature: 0.7,
+    ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
   }
   let lastErr
-  for (const model of MODELS) {
+  for (const model of TEXT_MODELS) {
     const { res, data } = await request(model, key, body)
     if (!res.ok) {
+      const msg = data?.error?.message || ''
       lastErr = new Error(friendlyError(res.status, data))
-      if (res.status === 429) continue // este modelo se saturó — probar el siguiente
-      throw lastErr // otro tipo de error (clave inválida, etc.) no se arregla cambiando de modelo
+      if (shouldTryNext(res.status, msg)) continue
+      throw lastErr
     }
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+    const text = data.choices?.[0]?.message?.content || ''
     if (!text) { lastErr = new Error('La IA no devolvió respuesta — intenta de nuevo'); continue }
     return text
   }
@@ -57,52 +65,43 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 800, jsonMod
 }
 
 // Analiza una foto con IA y devuelve el texto crudo. `validate` recibe el
-// texto y debe lanzar si no sirve. Misma cadena de modelos que callAI.
+// texto y debe lanzar si no sirve. Solo hay un modelo con visión en Groq
+// por ahora, así que no hay cadena — si se satura, se avisa directo.
 export async function callAIWithImage(prompt, imageBase64, validate) {
   const key = getKey()
   if (!key) throw new Error('Sin clave IA — configúrala en Perfil')
   const body = {
-    contents: [{
-      parts: [
-        { text: prompt },
-        { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } },
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
       ],
     }],
-    generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+    response_format: { type: 'json_object' }, temperature: 0.2,
   }
-  let lastErr
-  for (const model of MODELS) {
-    const { res, data } = await request(model, key, body)
-    if (!res.ok) {
-      lastErr = new Error(friendlyError(res.status, data))
-      if (res.status === 429) continue
-      throw lastErr
-    }
-    const cand = data.candidates?.[0]
-    const text = cand?.content?.parts?.[0]?.text || ''
-    if (!text) {
-      lastErr = new Error(cand?.finishReason === 'SAFETY'
-        ? 'La IA no pudo analizar esta imagen — intenta con otra foto'
-        : 'La IA no devolvió respuesta — intenta de nuevo')
-      continue
-    }
-    try {
-      validate?.(text)
-    } catch (e) {
-      lastErr = new Error(`${e.message} — IA dijo: "${text.slice(0, 120)}"`)
-      continue
-    }
-    return text
+  const { res, data } = await request(VISION_MODEL, key, body)
+  if (!res.ok) throw new Error(friendlyError(res.status, data))
+  const choice = data.choices?.[0]
+  const text = choice?.message?.content || ''
+  if (!text) {
+    throw new Error(choice?.finish_reason === 'content_filter'
+      ? 'La IA no pudo analizar esta imagen — intenta con otra foto'
+      : 'La IA no devolvió respuesta — intenta de nuevo')
   }
-  throw lastErr || new Error('Límite de uso alcanzado en IA — espera un minuto e intenta de nuevo')
+  try {
+    validate?.(text)
+  } catch (e) {
+    throw new Error(`${e.message} — IA dijo: "${text.slice(0, 120)}"`)
+  }
+  return text
 }
 
 // Traduce errores comunes de la API a mensajes accionables — nunca se nombra
 // el proveedor en el texto que ve el usuario, solo "IA" (pedido explícito).
 function friendlyError(status, data) {
   const msg = data?.error?.message || ''
-  if (status === 400 && /API key/i.test(msg)) return 'Clave IA inválida — revísala en Perfil'
-  if (status === 403) return 'Clave IA inválida o sin permisos — revísala en Perfil'
+  if (status === 401 || status === 403) return 'Clave IA inválida o sin permisos — revísala en Perfil'
   if (status === 429) return 'Límite de uso alcanzado en IA — espera un minuto e intenta de nuevo'
   return `IA ${status}: ${msg.slice(0, 80)}`
 }
@@ -139,7 +138,7 @@ export function parseAIJson(raw) {
       // JSON recortado con coma colgante antes del cierre — se repara antes
       // de rendirse, en vez de mostrarle al usuario el error crudo de
       // JSON.parse (ej. "Unexpected end of JSON input").
-      return JSON.parse(jsonStr.replace(/,\s*([\}\]])/g, '$1'))
+      return JSON.parse(jsonStr.replace(/,\s*([}\]])/g, '$1'))
     } catch {
       throw new Error('La IA no logró estructurar la respuesta — intenta de nuevo')
     }

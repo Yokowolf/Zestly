@@ -441,12 +441,12 @@ export function KeySetup({ onSaved }) {
   return (
     <div>
       <div className="card mb-3 p-3.5 text-xs leading-relaxed text-ink2">
-        1. Entra a <b>aistudio.google.com/apikey</b> con tu cuenta de Google (la misma con la que iniciaste sesión)<br />
+        1. Entra a <b>console.groq.com/keys</b> — inicia sesión con Google, GitHub o tu correo (no pide tarjeta)<br />
         2. Create API Key → copia la clave<br />
         <span className="text-ink3">Se guarda solo en tu dispositivo y en tu cuenta — nadie más la ve.</span>
       </div>
-      <Button variant="ghost" className="mb-2 flex items-center justify-center gap-1.5 !py-2.5" onClick={() => window.open('https://aistudio.google.com/apikey', '_blank')}>
-        <ExternalLink size={14} /> Abrir aistudio.google.com/apikey
+      <Button variant="ghost" className="mb-2 flex items-center justify-center gap-1.5 !py-2.5" onClick={() => window.open('https://console.groq.com/keys', '_blank')}>
+        <ExternalLink size={14} /> Abrir console.groq.com/keys
       </Button>
       <div className="flex gap-2">
         <Input className="flex-1" placeholder="Pega tu clave..." value={val} onChange={e => setVal(e.target.value.trim())} />

@@ -69,7 +69,7 @@ export async function cloudSave() {
       setDoc(doc(db, 'users', s.user.uid, 'd', 'profile'), {
         profile: d.profile, nutrition: d.nutrition, streak: d.streak,
         weightLog: d.weightLog, log: d.log,
-        ...(localStorage.getItem('zs_gemini_key') ? { aiKey: localStorage.getItem('zs_gemini_key') } : {}),
+        ...(localStorage.getItem('zs_groq_key') ? { aiKey: localStorage.getItem('zs_groq_key') } : {}),
         fastingActive: d.fastingActive, fastingStart: d.fastingStart,
         theme: d.theme, waterGoal: d.waterGoal, fastingHours: d.fastingHours || 16, foodFreq: d.foodFreq || {},
         recipes: d.recipes || [],
@@ -157,8 +157,8 @@ export async function cloudLoad(uid) {
           p => p.ts, 8,
         ).sort((a, b) => (a.ts || 0) - (b.ts || 0)),
       })
-      if (d.aiKey) localStorage.setItem('zs_gemini_key', d.aiKey)
-      else if (d.photoKey) localStorage.setItem('zs_gemini_key', d.photoKey)
+      if (d.aiKey) localStorage.setItem('zs_groq_key', d.aiKey)
+      else if (d.photoKey) localStorage.setItem('zs_groq_key', d.photoKey)
     }
 
     if (fS.exists()) {

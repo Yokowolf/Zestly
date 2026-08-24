@@ -6,3 +6,7 @@ index_orig_backup.html
 # React app
 web/node_modules/
 web/dist/
+
+# Cloud Functions (proxy de IA)
+functions/node_modules/
+firebase-debug.log

@@ -33,7 +33,7 @@ export default function Plan() {
         const day = cur.days[di]
         const list = day.meals.map((m, mi) => `${mi}. "${m.name}" (${m.kcal} kcal)`).join('\n')
         const prompt = `Recetas caseras colombianas (1 porción) para estos ${day.meals.length} platos:\n${list}\nResponde SOLO este JSON, en el MISMO orden:\n{"recipes":[{"ingredients":[{"item":"nombre","qty":"cantidad exacta ej. 150 g / 1 taza / 2 unidades"}],"steps":["paso 1 corto","paso 2..."],"time_min":numero}]}\nMáximo 6 ingredientes y 5 pasos cortos por plato.`
-        const parsed = parseAIJson(await callAI('Eres chef y nutricionista colombiano. Respondes únicamente JSON válido y completo.', prompt, 3000))
+        const parsed = parseAIJson(await callAI('Eres chef y nutricionista colombiano. Respondes únicamente JSON válido y completo.', prompt, 3000, true))
         const recs = parsed.recipes || []
         const fresh = useStore.getState().mealPlan
         if (!fresh || fresh.ts !== planTs) break
@@ -64,7 +64,7 @@ export default function Plan() {
 Responde SOLO este JSON, comidas con nombre corto:
 {"days":[{"day":"Lunes","kcal":${n.kcal},"meals":[{"time":"Desayuno","name":"...","kcal":500},{"time":"Almuerzo","name":"...","kcal":800},{"time":"Pre-entreno","name":"...","kcal":300},{"time":"Post-entreno","name":"...","kcal":400},{"time":"Cena","name":"...","kcal":600}]}],"shopping":["item1","item2"]}
 Incluye los 7 días. La lista shopping con máx 15 items.`
-      const parsed = parseAIJson(await callAI('Eres nutricionista deportivo colombiano. Respondes únicamente JSON válido y completo.', prompt, 3500))
+      const parsed = parseAIJson(await callAI('Eres nutricionista deportivo colombiano. Respondes únicamente JSON válido y completo.', prompt, 3500, true))
       if (!parsed.days?.length) throw new Error('Plan incompleto — intenta de nuevo')
       const ts = Date.now()
       s.patch({ mealPlan: { ts, days: parsed.days, shopping: parsed.shopping || [] } })
@@ -154,7 +154,7 @@ Incluye los 7 días. La lista shopping con máx 15 items.`
         </>
       )}
 
-      <Button variant="accent" className="mb-8 mt-3 flex items-center justify-center gap-2" onClick={generate} loading={busy}>
+      <Button data-tour="tour-plan" variant="accent" className="mb-8 mt-3 flex items-center justify-center gap-2" onClick={generate} loading={busy}>
         {!busy && <Sparkles size={15} />} {busy ? 'Generando plan…' : mp ? 'Regenerar plan' : 'Generar mi plan semanal'}
       </Button>
 
@@ -208,7 +208,7 @@ function RecipeSheet({ target, onClose }) {
 Responde SOLO este JSON:
 {"ingredients":[{"item":"nombre","qty":"cantidad exacta ej. 150 g / 1 taza / 2 unidades"}],"steps":["paso 1 corto","paso 2..."],"time_min":numero}
 Máximo 8 ingredientes y 6 pasos claros y cortos.`
-      const r = parseAIJson(await callAI('Eres chef y nutricionista colombiano. Respondes únicamente JSON válido.', prompt, 900))
+      const r = parseAIJson(await callAI('Eres chef y nutricionista colombiano. Respondes únicamente JSON válido.', prompt, 900, true))
       if (!r.ingredients?.length || !r.steps?.length) throw new Error('Receta incompleta — intenta de nuevo')
       updateMeal({ recipe: r }) // se guarda dentro del plan (queda para siempre y entra al PDF)
       s.toast('Receta lista — quedó guardada en el plan', 'ok')
@@ -228,7 +228,7 @@ Máximo 8 ingredientes y 6 pasos claros y cortos.`
 Responde SOLO este JSON:
 {"name":"nombre corto","kcal":numero,"recipe":{"ingredients":[{"item":"nombre","qty":"cantidad exacta"}],"steps":["paso 1 corto","paso 2..."],"time_min":numero}}
 Máximo 8 ingredientes y 6 pasos cortos.`
-      const p = parseAIJson(await callAI('Eres chef y nutricionista colombiano. Respondes únicamente JSON válido.', prompt, 1000))
+      const p = parseAIJson(await callAI('Eres chef y nutricionista colombiano. Respondes únicamente JSON válido.', prompt, 1000, true))
       if (!p.name || !p.recipe?.ingredients?.length || !p.recipe?.steps?.length) throw new Error('No se pudo generar el reemplazo — intenta de nuevo')
       updateMeal({ name: p.name, kcal: p.kcal || meal.kcal, recipe: p.recipe })
       s.toast(`Cambiado a "${p.name}"`, 'ok')

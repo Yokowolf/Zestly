@@ -43,7 +43,7 @@ Responde SOLO este JSON sin texto extra:
 {"name":"nombre corto de la rutina","days":["lun","mie"],"exercises":[{"id":"id_exacto","sets":4,"reps":"8-12","rest":90}]}
 Los days deben ser ${prefs.days} valores entre: lun,mar,mie,jue,vie,sab,dom.${condTxt}`
       const sys = `Eres entrenador personal experto en ${GOAL_TXT[prefs.goal]}${notes.trim() ? ', y en adaptar rutinas de forma segura ante lesiones o limitaciones de movilidad' : ''}. Respondes únicamente JSON válido.`
-      const parsed = parseAIJson(await callAI(sys, prompt, 1200))
+      const parsed = parseAIJson(await callAI(sys, prompt, 1200, true))
       const valid = (parsed.exercises || []).filter(e => EX_BY_ID[e.id])
       if (!valid.length) throw new Error('La IA no eligió ejercicios válidos — intenta de nuevo')
       const dayIds = DAYS.map(d => d[0])

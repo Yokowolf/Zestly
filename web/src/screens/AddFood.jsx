@@ -612,7 +612,7 @@ function TextTab({ meal, onDone }) {
     setBusy(true)
     try {
       const prompt = 'Devuelve SOLO JSON sin texto ni backticks:\n{"items":[{"name":"nombre en español","kcal":número,"prot":número,"carb":número,"fat":número}]}\n\nAlimentos:\n' + txt
-      const parsed = parseAIJson(await callAI('Eres nutricionista. Analiza los alimentos y devuelve SOLO el JSON pedido.', prompt))
+      const parsed = parseAIJson(await callAI('Eres nutricionista. Analiza los alimentos y devuelve SOLO el JSON pedido.', prompt, 800, true))
       if (!parsed.items?.length) throw new Error('No se encontraron alimentos')
       parsed.items.forEach(it => logFood(meal, {
         name: it.name, qty: 1, unit: 'porción', fromDB: false, portionGrams: it.grams || null,

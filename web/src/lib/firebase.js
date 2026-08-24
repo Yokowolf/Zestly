@@ -23,16 +23,25 @@ const db = getFirestore(app)
 const provider = new GoogleAuthProvider()
 setPersistence(auth, browserLocalPersistence).catch(() => {})
 
-// Usar signInWithPopup para evitar el error 404 de /__/firebase/init.json en GitHub Pages
+// Usar signInWithPopup para evitar el error 404 de /__/firebase/init.json en
+// GitHub Pages. Se protege con un flag de módulo porque el botón de Google
+// no tiene estado de carga propio: un doble clic disparaba dos popups a la
+// vez y Firebase cancelaba el primero con "auth/cancelled-popup-request",
+// obligando a reintentar varias veces para poder entrar.
+let signingIn = false
 export async function signIn() {
+  if (signingIn) return
+  signingIn = true
   try {
     await signInWithPopup(auth, provider)
   } catch (e) {
     if (e.code === 'auth/popup-blocked') {
       await signInWithRedirect(auth, provider)
-    } else if (e.code !== 'auth/popup-closed-by-user') {
+    } else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
       useStore.getState().toast('Error al iniciar sesión: ' + (e.message || ''), 'err')
     }
+  } finally {
+    signingIn = false
   }
 }
 

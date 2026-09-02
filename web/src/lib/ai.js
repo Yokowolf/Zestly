@@ -9,10 +9,10 @@ export const setKey = k => localStorage.setItem('zs_groq_key', k.trim())
 export const hasKey = () => !!getKey()
 
 // Cadena de modelos de texto — cada uno tiene su PROPIA cuota en Groq
-// (por clave, no compartida entre usuarios), así que si uno se satura
-// (429) o fue decomisionado (400) probamos el siguiente con la misma
+// (por clave, no compartida entre usuarios), así que si uno se satura,
+// fue decomisionado o renombrado probamos el siguiente con la misma
 // clave. Empieza por el de mayor cuota diaria.
-const TEXT_MODELS = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'openai/gpt-oss-120b']
+const TEXT_MODELS = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
 const VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 
 async function request(model, key, body) {
@@ -28,16 +28,17 @@ async function request(model, key, body) {
   }
 }
 
-// Un modelo se salta al siguiente de la cadena si está saturado (429) o si
-// Groq lo decomisionó (400 con "decommissioned"/"does not exist") — este
-// segundo caso es la razón por la que Groq se había dejado antes: los
-// modelos se retiraban seguido y rompían la app hasta parchar el nombre a
-// mano. Con la cadena, mientras quede al menos un modelo vivo la app sigue
-// funcionando sola.
-function shouldTryNext(status, msg) {
-  if (status === 429) return true
-  if (status === 400 && /decommission|does not exist|not found/i.test(msg)) return true
-  return false
+// Un modelo se salta al siguiente de la cadena ante CUALQUIER error salvo
+// clave inválida (401/403 — ningún otro modelo lo arregla). Groq decomisiona
+// modelos seguido y no siempre con el mismo código: a veces 400
+// "decommissioned", a veces 404 "does not exist" — en vez de intentar
+// adivinar cada variante de mensaje, se trata todo lo demás como señal de
+// "este modelo no sirve ahora mismo, prueba el siguiente". Es justo la
+// razón por la que Groq se había dejado antes (modelos retirados seguido
+// rompían la app); con esto, mientras quede un modelo vivo en la lista la
+// app sigue funcionando sola sin parchar nada a mano.
+function shouldTryNext(status) {
+  return status !== 401 && status !== 403
 }
 
 export async function callAI(systemPrompt, userMessage, maxTokens = 800, jsonMode = false) {
@@ -52,9 +53,8 @@ export async function callAI(systemPrompt, userMessage, maxTokens = 800, jsonMod
   for (const model of TEXT_MODELS) {
     const { res, data } = await request(model, key, body)
     if (!res.ok) {
-      const msg = data?.error?.message || ''
       lastErr = new Error(friendlyError(res.status, data))
-      if (shouldTryNext(res.status, msg)) continue
+      if (shouldTryNext(res.status)) continue
       throw lastErr
     }
     const text = data.choices?.[0]?.message?.content || ''

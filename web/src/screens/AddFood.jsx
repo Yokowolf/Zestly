@@ -17,6 +17,7 @@ import { Sheet, Input, Button, Chip } from '../components/ui'
 import { useStore } from '../store'
 import { FOOD_CATS, FOODS, QUICK } from '../data/foods'
 import { callAI, callAIWithImage, parseAIJson, hasKey } from '../lib/ai'
+import { useFakeProgress } from '../lib/progress'
 import { norm, round1 } from '../lib/calc'
 
 const TABS = [
@@ -491,6 +492,7 @@ function CamTab({ meal, onDone }) {
   const [preview, setPreview] = useState(null)
   const [items, setItems] = useState(null) // detectados para revisar
   const [busy, setBusy] = useState(false)
+  const progress = useFakeProgress(busy)
   const [cooldown, setCooldown] = useState(0) // segundos restantes tras un límite de uso de la IA
 
   useEffect(() => {
@@ -575,7 +577,7 @@ function CamTab({ meal, onDone }) {
       <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
       {!items && preview && (
         <Button onClick={analyze} loading={busy} disabled={cooldown > 0}>
-          {cooldown > 0 ? `Espera ${cooldown}s…` : busy ? 'Analizando…' : 'Analizar con IA'}
+          {cooldown > 0 ? `Espera ${cooldown}s…` : busy ? `Analizando… ${progress}%` : 'Analizar con IA'}
         </Button>
       )}
       {!preview && <p className="text-center text-xs text-ink3">Toca para abrir la cámara — asegúrate de que todos los ingredientes sean visibles</p>}
@@ -605,6 +607,7 @@ function TextTab({ meal, onDone }) {
   const s = useStore()
   const [txt, setTxt] = useState('')
   const [busy, setBusy] = useState(false)
+  const progress = useFakeProgress(busy)
 
   const analyze = async () => {
     if (!txt.trim()) return
@@ -637,7 +640,7 @@ function TextTab({ meal, onDone }) {
         placeholder={'Describe lo que comiste con porciones:\n\n4 huevos revueltos con cebolla y tomate\n2 arepas medianas\n1 vaso de jugo de naranja'}
         value={txt} onChange={e => setTxt(e.target.value)}
       />
-      <Button variant="accent" className="mt-3" onClick={analyze} loading={busy}>{busy ? 'Analizando…' : 'Analizar con IA'}</Button>
+      <Button variant="accent" className="mt-3" onClick={analyze} loading={busy}>{busy ? `Analizando… ${progress}%` : 'Analizar con IA'}</Button>
     </div>
   )
 }

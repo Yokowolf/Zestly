@@ -4,6 +4,7 @@ import { Sheet, Button, Chip, SectionTitle } from '../components/ui'
 import { useStore } from '../store'
 import { EXERCISES, EX_BY_ID, DAYS } from '../data/exercises'
 import { callAI, parseAIJson } from '../lib/ai'
+import { useFakeProgress } from '../lib/progress'
 
 const OPTS = {
   goal: [['hipertrofia', 'Hipertrofia'], ['fuerza', 'Fuerza'], ['definicion', 'Definición'], ['resistencia', 'Resistencia']],
@@ -19,6 +20,7 @@ export default function AiGen({ open, onClose, onGenerated }) {
   const [prefs, setPrefs] = useState({ goal: 'hipertrofia', days: 4, equip: 'gym', level: 'intermedio' })
   const [notes, setNotes] = useState('') // condiciones especiales, dolores o limitaciones de movilidad
   const [busy, setBusy] = useState(false)
+  const progress = useFakeProgress(busy)
 
   const bank = () => {
     const filters = {
@@ -86,7 +88,7 @@ Los days deben ser ${prefs.days} valores entre: lun,mar,mie,jue,vie,sab,dom.${co
       <p className="mt-1 text-[10px] text-ink3">La IA evita o adapta ejercicios que puedan agravar lo que cuentes aquí.</p>
 
       <Button variant="accent" className="mt-5 flex items-center justify-center gap-2" onClick={generate} loading={busy}>
-        {!busy && <Sparkles size={16} />} {busy ? 'Generando…' : 'Generar rutina'}
+        {!busy && <Sparkles size={16} />} {busy ? `Generando… ${progress}%` : 'Generar rutina'}
       </Button>
     </Sheet>
   )

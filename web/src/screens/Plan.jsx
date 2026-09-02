@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Sparkles, Share2, FileDown, ShoppingCart, ChefHat, ChevronRight, UtensilsCrossed, Pencil, Shuffle, Check } from 'lucide-react'
 import { useStore } from '../store'
 import { callAI, parseAIJson, hasKey } from '../lib/ai'
+import { useFakeProgress } from '../lib/progress'
 import { Sheet, Button, Empty, Input } from '../components/ui'
 
 // ── Plan alimenticio semanal — pantalla propia ───────────
@@ -11,6 +12,7 @@ import { Sheet, Button, Empty, Input } from '../components/ui'
 export default function Plan() {
   const s = useStore()
   const [busy, setBusy] = useState(false)
+  const progress = useFakeProgress(busy)
   const [recProgress, setRecProgress] = useState(null) // { done, total } mientras Groq llena recetas
   const [detail, setDetail] = useState(null) // { di, mi } → receta del plato
   const mp = s.mealPlan
@@ -155,7 +157,7 @@ Incluye los 7 días. La lista shopping con máx 15 items.`
       )}
 
       <Button data-tour="tour-plan" variant="accent" className="mb-8 mt-3 flex items-center justify-center gap-2" onClick={generate} loading={busy}>
-        {!busy && <Sparkles size={15} />} {busy ? 'Generando plan…' : mp ? 'Regenerar plan' : 'Generar mi plan semanal'}
+        {!busy && <Sparkles size={15} />} {busy ? `Generando plan… ${progress}%` : mp ? 'Regenerar plan' : 'Generar mi plan semanal'}
       </Button>
 
       <RecipeSheet target={detail} onClose={() => setDetail(null)} />
@@ -169,6 +171,7 @@ Incluye los 7 días. La lista shopping con máx 15 items.`
 function RecipeSheet({ target, onClose }) {
   const s = useStore()
   const [busy, setBusy] = useState(false)
+  const progress = useFakeProgress(busy)
   const [swapping, setSwapping] = useState(false)
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({ name: '', kcal: '' })
@@ -265,7 +268,7 @@ Máximo 8 ingredientes y 6 pasos cortos.`
         <>
           <Empty icon={ChefHat}>Genera la receta de este plato: ingredientes con cantidades exactas y preparación paso a paso.</Empty>
           <Button variant="accent" className="mt-3 flex items-center justify-center gap-2" onClick={getRecipe} loading={busy} disabled={swapping}>
-            {!busy && <Sparkles size={15} />} {busy ? 'Creando receta…' : 'Generar receta'}
+            {!busy && <Sparkles size={15} />} {busy ? `Creando receta… ${progress}%` : 'Generar receta'}
           </Button>
         </>
       ) : (
@@ -288,7 +291,7 @@ Máximo 8 ingredientes y 6 pasos cortos.`
             ))}
           </div>
           <Button variant="ghost" className="mt-4 !py-2.5" onClick={getRecipe} loading={busy} disabled={swapping}>
-            {busy ? 'Regenerando…' : 'Regenerar receta'}
+            {busy ? `Regenerando… ${progress}%` : 'Regenerar receta'}
           </Button>
         </>
       )}

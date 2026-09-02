@@ -300,6 +300,11 @@ export default function Workout({ open, onClose }) {
                           <Plus size={16} />
                         </button>
                       </div>
+                      {e.sets.length > 1 && (
+                        <button onClick={() => delSet(ei)} className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-ink3" aria-label="Quitar el último set">
+                          <Minus size={12} /> quitar set
+                        </button>
+                      )}
                     </div>
                   </div>
                 )

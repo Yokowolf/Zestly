@@ -2,8 +2,12 @@
 // img: GIF de FitnessProgramer.com (verificados) — null = sin imagen aún
 // weight: true = se registra peso | zone: para calentamiento/estiramiento
 // type: 'fuerza' | 'warmup' | 'stretch' | 'cardio'
+// Las entradas marcadas "free-exercise-db" usan fotos de ese dataset
+// (github.com/yuhonas/free-exercise-db, licencia Unlicense/dominio
+// público — uso comercial y redistribución sin restricción).
 
 const CDN = 'https://fitnessprogramer.com/wp-content/uploads/'
+const FEDB = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/'
 
 export const MUSCLES = {
   pecho: 'Pecho', espalda: 'Espalda', hombros: 'Hombros', biceps: 'Bíceps',
@@ -335,6 +339,16 @@ export const EXERCISES = [
   // ESPALDA — clásicos que faltaban
   { id: 'pendlay_row', name: 'Remo Pendlay', muscle: ['espalda', 'biceps', 'lumbares'], equipment: 'barra', type: 'fuerza', weight: true, sets: 4, reps: '6-10', rest: 120, img: null, desc: 'Remo con barra desde el piso en cada repetición, torso paralelo. Potencia y fuerza pura de espalda.' },
   { id: 'seal_row', name: 'Remo sello (pecho apoyado)', muscle: ['espalda', 'biceps'], equipment: 'mancuerna', type: 'fuerza', weight: true, sets: 3, reps: '8-12', rest: 90, img: null, desc: 'Acostado boca abajo en banco elevado, rema sin ayuda de impulso. Aislamiento total de la espalda.' },
+
+  // ── NUEVOS (free-exercise-db) — movimientos que no estaban cubiertos ──
+  { id: 'pallof_press', name: 'Pallof press', muscle: ['core'], equipment: 'polea', type: 'fuerza', weight: true, sets: 3, reps: '10-12', rest: 60, img: FEDB + 'Pallof_Press/0.jpg', desc: 'De costado a la polea, a la altura del pecho. Extiende los brazos al frente sin dejar que el cable te rote el torso, aguanta 1-2 segundos y regresa. Anti-rotación de core — trabaja por lado.' },
+  { id: 'renegade_row', name: 'Remo renegado', muscle: ['espalda', 'core'], equipment: 'mancuerna', type: 'fuerza', weight: true, sets: 3, reps: '8-10', rest: 90, img: FEDB + 'Alternating_Renegade_Row/0.jpg', desc: 'En posición de plancha con una mancuerna en cada mano, rema un lado sin dejar caer la cadera mientras el otro brazo sostiene el peso del cuerpo. Alterna lados.' },
+  { id: 'cuban_press', name: 'Press cubano', muscle: ['hombros', 'trapecio'], equipment: 'mancuerna', type: 'fuerza', weight: true, sets: 3, reps: '10-12', rest: 60, img: FEDB + 'Cuban_Press/0.jpg', desc: 'De pie, mancuernas a la altura de los codos (posición espantapájaros). Rota los antebrazos hasta quedar verticales y empuja overhead. Muy bueno para la salud del hombro.' },
+  { id: 'handstand_pushup', name: 'Flexión de pino (Handstand)', muscle: ['hombros', 'triceps'], equipment: 'corporal', type: 'fuerza', weight: false, sets: 3, reps: '5-10', rest: 120, img: FEDB + 'Handstand_Push-Ups/0.jpg', desc: 'De espaldas a la pared, sube a posición de pino con el cuerpo recto. Baja la cabeza casi hasta el piso con control y empuja de regreso. Avanzado — pide ayuda de un compañero al empezar.' },
+  { id: 'tate_press', name: 'Press Tate', muscle: ['triceps'], equipment: 'mancuerna', type: 'fuerza', weight: true, sets: 3, reps: '10-12', rest: 60, img: FEDB + 'Tate_Press/0.jpg', desc: 'Acostado en banco plano, mancuernas arriba con agarre pronado y codos apuntando hacia afuera. Baja en semicírculo hasta rozar el pecho y empuja de regreso con los tríceps.' },
+  { id: 'zercher_squat', name: 'Sentadilla Zercher', muscle: ['cuadriceps', 'core', 'gluteos'], equipment: 'barra', type: 'fuerza', weight: true, sets: 3, reps: '6-10', rest: 120, img: FEDB + 'Zercher_Squats/0.jpg', desc: 'La barra descansa en el pliegue de los codos con los brazos cruzados. Baja manteniendo el torso erguido — exige mucho core y espalda alta además de piernas.' },
+  { id: 'decline_bench_press', name: 'Press de banca declinado con barra', muscle: ['pecho', 'triceps'], equipment: 'barra', type: 'fuerza', weight: true, sets: 3, reps: '8-12', rest: 90, img: FEDB + 'Decline_Barbell_Bench_Press/0.jpg', desc: 'En banco declinado, baja la barra al pecho inferior con control y empuja hasta extender sin bloquear los codos. Enfoca la parte baja del pectoral.' },
+  { id: 'jump_squat', name: 'Sentadilla con salto', muscle: ['cuadriceps', 'gluteos', 'cardio'], equipment: 'corporal', type: 'cardio', weight: false, sets: 4, reps: '10-15', rest: 60, img: FEDB + 'Freehand_Jump_Squat/0.jpg', desc: 'Baja a sentadilla y salta explosivo lo más alto posible, aterrizando suave para encadenar la siguiente repetición. Potencia y cardio en un solo movimiento.' },
 ]
 
 export const EX_BY_ID = Object.fromEntries(EXERCISES.map(e => [e.id, e]))

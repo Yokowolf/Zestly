@@ -50,7 +50,14 @@ export default function Workout({ open, onClose }) {
     const num = val === '' ? null : parseFloat(val)
     patchWorkout(w.exercises.map((e, i) => i !== ei ? e : {
       ...e,
-      sets: e.sets.map((st, j) => j !== si ? st : { ...st, [field]: field === 'w' && num != null ? toKg(num) : num }),
+      sets: e.sets.map((st, j) => j !== si ? st : {
+        ...st,
+        [field]: field === 'w' && num != null ? toKg(num) : num,
+        // Corregir un valor después de marcar el set lo desmarca — el check
+        // quedaba bloqueado sin forma de volver a confirmar tras arreglar
+        // un número mal tecleado.
+        ...(st.done ? { done: false, doneAt: null } : {}),
+      }),
     }))
   }
 
@@ -174,14 +181,16 @@ export default function Workout({ open, onClose }) {
     return <SummarySheet summary={summary} onClose={() => { setSummary(null); onClose() }} />
   }
 
-  // Ejercicios completados y minimizados suben al tope de su bloque — en un
-  // gym lleno se van haciendo fuera de orden, y sin esto se pierden en medio
-  // de la lista (sort estable: no revuelve el resto entre sí).
-  const isDoneAndCollapsed = x => x.e.sets.length > 0 && x.e.sets.every(st => st.done) && collapsed.has(x.e.exerciseId)
+  // Ejercicios completados suben al tope de su bloque — en un gym lleno se
+  // van haciendo fuera de orden, y sin esto se pierden en medio de la lista
+  // (sort estable: no revuelve el resto entre sí). Se queda arriba tanto
+  // minimizado como expandido — antes dependía de estar minimizado y
+  // "saltaba" para abajo al reabrirlo para revisar los números.
+  const isDone = x => x.e.sets.length > 0 && x.e.sets.every(st => st.done)
   const grouped = BLOCKS.map(b => ({
     ...b,
     list: w.exercises.map((e, ei) => ({ e, ei })).filter(x => x.e.block === b.id)
-      .sort((a, b2) => (isDoneAndCollapsed(a) === isDoneAndCollapsed(b2)) ? 0 : isDoneAndCollapsed(a) ? -1 : 1),
+      .sort((a, b2) => (isDone(a) === isDone(b2)) ? 0 : isDone(a) ? -1 : 1),
   })).filter(b => b.list.length)
 
   return (

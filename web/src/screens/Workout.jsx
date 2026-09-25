@@ -55,8 +55,10 @@ export default function Workout({ open, onClose }) {
         [field]: field === 'w' && num != null ? toKg(num) : num,
         // Corregir un valor después de marcar el set lo desmarca — el check
         // quedaba bloqueado sin forma de volver a confirmar tras arreglar
-        // un número mal tecleado.
-        ...(st.done ? { done: false, doneAt: null } : {}),
+        // un número mal tecleado. doneAt NO se limpia aquí a propósito: al
+        // volver a marcar el check, que ya tenga un doneAt previo es la
+        // señal de que es una corrección, no la primera vez.
+        ...(st.done ? { done: false } : {}),
       }),
     }))
   }
@@ -123,15 +125,19 @@ export default function Workout({ open, onClose }) {
       s.toast(ex.weight === false ? 'Registra las reps antes de marcar el set' : 'Registra peso y reps antes de marcar el set', 'err')
       return
     }
+    const isCorrection = !!st.doneAt // ya se había completado antes de editar el valor
     patchWorkout(w.exercises.map((ex, i) => i !== ei ? ex : {
       ...ex,
       sets: ex.sets.map((x, j) => j !== si ? x : { ...x, done: true, doneAt: Date.now() }),
     }))
     // Confirmación explícita del valor guardado — antes marcar el check no
     // decía nada, y si te equivocabas con el número no había forma de saber
-    // si quedó grabado correctamente hasta revisar el historial.
+    // si quedó grabado correctamente hasta revisar el historial. Si ya
+    // estaba completado antes (se editó para corregir), dice "actualizada"
+    // en vez de "guardada" para que quede claro que no es la primera vez.
+    const verb = isCorrection ? 'actualizada' : 'guardada'
     s.toast(
-      ex.weight === false ? `Serie ${si + 1} guardada: ${st.r} reps` : `Serie ${si + 1} guardada: ${fromKg(st.w)}${unitLbl()} × ${st.r}`,
+      ex.weight === false ? `Serie ${si + 1} ${verb}: ${st.r} reps` : `Serie ${si + 1} ${verb}: ${fromKg(st.w)}${unitLbl()} × ${st.r}`,
       'ok',
     )
     if (e.rest > 0 && e.block === 'main') setRest({ end: Date.now() + e.rest * 1000, total: e.rest })

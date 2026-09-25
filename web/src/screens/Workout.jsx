@@ -120,6 +120,13 @@ export default function Workout({ open, onClose }) {
       ...ex,
       sets: ex.sets.map((x, j) => j !== si ? x : { ...x, done: true, doneAt: Date.now() }),
     }))
+    // Confirmación explícita del valor guardado — antes marcar el check no
+    // decía nada, y si te equivocabas con el número no había forma de saber
+    // si quedó grabado correctamente hasta revisar el historial.
+    s.toast(
+      ex.weight === false ? `Serie ${si + 1} guardada: ${st.r} reps` : `Serie ${si + 1} guardada: ${fromKg(st.w)}${unitLbl()} × ${st.r}`,
+      'ok',
+    )
     if (e.rest > 0 && e.block === 'main') setRest({ end: Date.now() + e.rest * 1000, total: e.rest })
   }
 

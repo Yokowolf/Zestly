@@ -20,12 +20,15 @@ import { callAI, callAIWithImage, parseAIJson, hasKey } from '../lib/ai'
 import { useFakeProgress } from '../lib/progress'
 import { norm, round1 } from '../lib/calc'
 
+// Orden por prioridad de uso: las dos vías de IA primero (las más rápidas),
+// luego búsqueda manual y atajos, y al final código de barras y recetas
+// guardadas (más específicos, se usan menos seguido).
 const TABS = [
-  { id: 'search', label: 'Buscar', icon: Search },
-  { id: 'scan', label: 'Código', icon: ScanBarcode },
   { id: 'cam', label: 'Foto IA', icon: Camera },
   { id: 'text', label: 'Texto IA', icon: PenLine },
+  { id: 'search', label: 'Buscar', icon: Search },
   { id: 'quick', label: 'Rápidos', icon: Zap },
+  { id: 'scan', label: 'Código', icon: ScanBarcode },
   { id: 'recipes', label: 'Recetas', icon: ChefHat },
 ]
 const MEAL_NAMES = { breakfast: 'Desayuno', lunch: 'Almuerzo', dinner: 'Cena', snack: 'Snack' }
@@ -494,6 +497,10 @@ function CamTab({ meal, onDone }) {
   const [busy, setBusy] = useState(false)
   const progress = useFakeProgress(busy)
   const [cooldown, setCooldown] = useState(0) // segundos restantes tras un límite de uso de la IA
+
+  // Abre la cámara sola al entrar a esta pestaña — antes había que tocar el
+  // ícono grande primero, un paso extra que no aportaba nada.
+  useEffect(() => { inputRef.current?.click() }, [])
 
   useEffect(() => {
     if (!cooldown) return

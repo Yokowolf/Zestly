@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Settings, Home as HomeIcon, Flame, Dumbbell, UtensilsCrossed, BarChart3, Bot,
-  Camera, ChevronLeft, ChevronRight, X,
+  Camera, ChevronLeft, ChevronRight, ChevronDown, X,
 } from 'lucide-react'
 import { useStore, rolloverIfNewDay } from './store'
 import { watchAuth } from './lib/firebase'
@@ -208,30 +208,49 @@ function TourSpotlight({ target }) {
   useEffect(() => {
     setRect(null)
     let cancelled = false
+    let scrolled = false
+    let tries = 0
+    let raf
+    // Reintenta en vez de medir una sola vez — en el celular real el
+    // elemento a veces tarda más que un timeout fijo en existir (layouts
+    // anchos, imágenes cargando) y antes se quedaba sin mostrar nada, sin
+    // ningún aviso de que algo falló.
     const measure = () => {
+      if (cancelled) return
       const el = document.querySelector(`[data-tour="${target}"]`)
-      if (!el || cancelled) return
+      if (!el) {
+        if (tries++ < 25) raf = setTimeout(measure, 100)
+        return
+      }
+      if (!scrolled) { scrolled = true; el.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' }) }
       const r = el.getBoundingClientRect()
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
     }
-    const el = document.querySelector(`[data-tour="${target}"]`)
-    el?.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' })
-    const t = setTimeout(measure, reduceMotion ? 0 : 280)
+    raf = setTimeout(measure, reduceMotion ? 0 : 150)
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
-    return () => { cancelled = true; clearTimeout(t); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
+    return () => { cancelled = true; clearTimeout(raf); window.removeEventListener('resize', measure); window.removeEventListener('scroll', measure, true) }
   }, [target]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!rect) return null
   return (
-    <div
-      aria-hidden
-      className={`pointer-events-none fixed z-[45] rounded-2xl ring-2 ring-accent-400 ${reduceMotion ? '' : 'transition-all duration-300'}`}
-      style={{
-        top: rect.top - 6, left: rect.left - 6, width: rect.width + 12, height: rect.height + 12,
-        boxShadow: '0 0 0 9999px rgb(0 0 0 / 0.62)',
-      }}
-    />
+    <>
+      <div
+        aria-hidden
+        className={`pointer-events-none fixed z-[45] rounded-2xl ring-[3px] ring-accent-400 ${reduceMotion ? '' : 'transition-all duration-300'}`}
+        style={{
+          top: rect.top - 6, left: rect.left - 6, width: rect.width + 12, height: rect.height + 12,
+          boxShadow: '0 0 0 9999px rgb(0 0 0 / 0.78)',
+        }}
+      />
+      <div
+        aria-hidden
+        className={`pointer-events-none fixed z-[45] flex justify-center text-accent-400 ${reduceMotion ? '' : 'animate-bounce'}`}
+        style={{ top: rect.top + rect.height + 8, left: rect.left, width: rect.width }}
+      >
+        <ChevronDown size={22} strokeWidth={3} />
+      </div>
+    </>
   )
 }
 

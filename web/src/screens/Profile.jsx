@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
   Moon, Sun, GlassWater, KeyRound, Download, FileSpreadsheet, LogOut, LogIn,
-  Pencil, Trash2, Scale, Timer, Upload, Info, Target, Eye, Lock, ExternalLink, Clipboard,
+  Pencil, Trash2, Scale, Timer, Upload, Info, Target, Eye, Lock, ExternalLink, Clipboard, Bell,
 } from 'lucide-react'
 import { getBadges } from '../lib/badges'
 import { ChevronDown } from 'lucide-react'
 import { useStore, serializable } from '../store'
 import { signIn, logOut } from '../lib/firebase'
+import { pushSupported, subscribeToPush, unsubscribeFromPush, isPushSubscribed } from '../lib/push'
 import { getKey, setKey } from '../lib/ai'
 import { calcNutrition, GOALS, ACTIVITIES } from '../lib/calc'
 import { Sheet, Button, Input, Chip } from '../components/ui'
@@ -100,6 +101,7 @@ export default function Profile() {
             <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${s.theme === 'dark' ? 'left-[22px]' : 'left-0.5'}`} />
           </button>
         </Row>
+        <NotificationsRow loggedIn={!!s.user} toast={s.toast} />
         <Row icon={GlassWater} label={`Meta de agua: ${s.waterGoal || 8} porciones`}>
           <div className="flex items-center gap-2">
             <button className="h-7 w-7 rounded-full border border-line text-ink2" onClick={() => s.patch({ waterGoal: Math.max(1, (s.waterGoal || 8) - 1) })}>−</button>
@@ -318,6 +320,42 @@ function ImportRow() {
       <span className="flex-1 text-[13px] font-medium">Importar respaldo (JSON)</span>
       <input type="file" accept="application/json,.json" className="hidden" onChange={onFile} />
     </label>
+  )
+}
+
+// Recordatorios diarios (frases motivadoras, datos curiosos, registrar
+// comida/entrenar) — requiere sesión de Google porque la suscripción se
+// guarda en Firestore (users sin cuenta no sincronizan, así que GitHub
+// Actions no tendría dónde encontrarla para enviar el push).
+function NotificationsRow({ loggedIn, toast }) {
+  const [on, setOn] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => { isPushSubscribed().then(setOn) }, [])
+
+  const toggle = async () => {
+    if (!loggedIn) { toast('Inicia sesión con Google primero', 'err'); return }
+    if (!pushSupported()) { toast('Tu navegador no soporta notificaciones', 'err'); return }
+    setBusy(true)
+    try {
+      if (on) { await unsubscribeFromPush(); setOn(false); toast('Notificaciones desactivadas', 'ok') }
+      else { await subscribeToPush(); setOn(true); toast('Notificaciones activadas', 'ok') }
+    } catch (e) {
+      toast(e.message.slice(0, 60), 'err')
+    }
+    setBusy(false)
+  }
+
+  return (
+    <Row icon={Bell} label="Recordatorios diarios">
+      <button
+        onClick={toggle} disabled={busy}
+        className={`relative h-6 w-11 rounded-full transition-colors disabled:opacity-50 ${on ? 'bg-brand-600' : 'bg-line'}`}
+        aria-label="Activar notificaciones"
+      >
+        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? 'left-[22px]' : 'left-0.5'}`} />
+      </button>
+    </Row>
   )
 }
 

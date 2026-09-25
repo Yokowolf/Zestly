@@ -3,7 +3,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut,
   onAuthStateChanged, setPersistence, browserLocalPersistence,
 } from 'firebase/auth'
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore'
+import { getFirestore, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore'
 import { useStore, serializable } from '../store'
 
 // Mismo proyecto y misma estructura de documentos que la app legacy:
@@ -212,6 +212,21 @@ export async function cloudLoad(uid) {
   } catch (e) {
     console.warn('Cloud load error:', e)
   }
+}
+
+// Colección aparte (no dentro de users/{uid}/d/*) porque el script de envío
+// en GitHub Actions necesita poder listar TODAS las suscripciones sin
+// conocer los uids de antemano — un collection() top-level se lee directo,
+// una subcolección anidada bajo cada usuario no.
+export async function savePushSubscription(sub) {
+  const s = useStore.getState()
+  if (!s.user) return
+  await setDoc(doc(db, 'pushSubscriptions', s.user.uid), { subscription: sub, updatedAt: Date.now() })
+}
+export async function removePushSubscription() {
+  const s = useStore.getState()
+  if (!s.user) return
+  await deleteDoc(doc(db, 'pushSubscriptions', s.user.uid))
 }
 
 if (typeof document !== 'undefined') {

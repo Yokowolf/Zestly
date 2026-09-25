@@ -1,0 +1,26 @@
+# Envía la notificación push diaria a todos los suscritos. Gratis (Actions
+# no cobra por cron), no necesita Firebase Blaze ni ningún backend corriendo
+# 24/7 — solo se ejecuta unos segundos, una vez al día.
+name: Send daily notification
+
+on:
+  schedule:
+    - cron: '0 13 * * *' # 8:00am Colombia (UTC-5)
+  workflow_dispatch: # permite dispararlo manual desde la pestaña Actions, para probar
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+        working-directory: notifications
+      - run: node send.js
+        working-directory: notifications
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}

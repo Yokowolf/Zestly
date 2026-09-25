@@ -10,3 +10,6 @@ web/dist/
 # Cloud Functions (proxy de IA)
 functions/node_modules/
 firebase-debug.log
+
+# Envío de notificaciones push (GitHub Actions)
+notifications/node_modules/

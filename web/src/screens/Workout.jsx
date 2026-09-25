@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, Plus, Minus, Search, Trash2, Timer, Flag, Flame, Trophy, Hash, Repeat2, Clock, ChevronDown, LayoutGrid, List, PersonStanding } from 'lucide-react'
+import { Check, Plus, Minus, Search, Trash2, Timer, Flag, Flame, Trophy, Hash, Repeat2, Clock, ChevronDown, LayoutGrid, List, PersonStanding, Volume2, VolumeX } from 'lucide-react'
 import { Sheet, Input, Button, Chip, SectionTitle, ExerciseImg, Empty } from '../components/ui'
 import { Bar } from '../components/ui'
 import { useStore, fromKg, toKg, unitLbl } from '../store'
@@ -230,6 +230,14 @@ export default function Workout({ open, onClose }) {
             <button onClick={() => setViewMode('list')} className={`flex items-center gap-1 px-2 py-1.5 ${viewMode === 'list' ? 'bg-brand-600 text-white' : 'text-ink3'}`} aria-label="Vista lista"><List size={12} /></button>
             <button onClick={() => setViewMode('grid')} className={`flex items-center gap-1 px-2 py-1.5 ${viewMode === 'grid' ? 'bg-brand-600 text-white' : 'text-ink3'}`} aria-label="Vista cuadrícula"><LayoutGrid size={12} /></button>
           </div>
+          <button
+            onClick={() => s.patch({ soundOn: !s.soundOn })}
+            className={`rounded-lg border border-line p-1.5 ${s.soundOn ? 'text-ink2' : 'text-ink3'}`}
+            aria-label={s.soundOn ? 'Silenciar avisos de descanso' : 'Activar avisos de descanso'}
+            title={s.soundOn ? 'Sonido de avisos: activado' : 'Sonido de avisos: silenciado'}
+          >
+            {s.soundOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+          </button>
           <span className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-ink2">
             <Clock size={14} />
             <span className="font-display text-xl font-bold text-brand-600">

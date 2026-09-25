@@ -50,9 +50,9 @@ export default function Train({ initialAction }) {
           <h1 className="font-display text-[22px] font-bold tracking-tight">Entrenamiento</h1>
           <p className="text-[11px] text-ink3">Rutinas, sesiones y récords</p>
         </div>
-        <button onClick={toggleUnit} className="flex overflow-hidden rounded-xl border border-line text-[11px] font-bold">
-          <span className={`px-2.5 py-1.5 ${s.unit !== 'lb' ? 'bg-brand-600 text-white' : 'text-ink3'}`}>KG</span>
-          <span className={`px-2.5 py-1.5 ${s.unit === 'lb' ? 'bg-brand-600 text-white' : 'text-ink3'}`}>LB</span>
+        <button onClick={toggleUnit} className="flex overflow-hidden rounded-xl border border-line text-[11px] font-bold transition-transform active:scale-95">
+          <span className={`px-2.5 py-1.5 transition-colors ${s.unit !== 'lb' ? 'bg-brand-600 text-white' : 'text-ink3'}`}>KG</span>
+          <span className={`px-2.5 py-1.5 transition-colors ${s.unit === 'lb' ? 'bg-brand-600 text-white' : 'text-ink3'}`}>LB</span>
         </button>
       </div>
 
@@ -116,7 +116,7 @@ export default function Train({ initialAction }) {
                 </div>
               </div>
               <button onClick={() => start(r)}
-                className="flex shrink-0 items-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-bold text-white">
+                className="flex shrink-0 items-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-bold text-white shadow-[0_2px_8px_-2px_rgb(8_145_178/0.5)] transition-all hover:bg-brand-500 active:scale-95 active:brightness-90">
                 <Play size={13} /> Iniciar
               </button>
             </div>

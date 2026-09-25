@@ -106,16 +106,16 @@ export default function App() {
 
       <header className="sticky top-0 z-40 border-b border-line bg-bg2/95 shadow-[0_4px_16px_rgb(0_0_0/0.05)] backdrop-blur-lg dark:shadow-[0_4px_16px_rgb(0_0_0/0.28)]">
         <div className="mx-auto flex w-full max-w-lg items-center gap-3 px-3 py-2.5 md:max-w-5xl">
-          <button onClick={() => go({ tab: 'home' })} className="flex items-center gap-2 pl-1">
-            <Logo size={24} />
-            <span className="font-display text-[16px] font-bold tracking-tight">Ze<span className="text-brand-600">stly</span></span>
+          <button onClick={() => go({ tab: 'home' })} className="flex items-center gap-1.5 pl-1 transition-transform active:scale-95">
+            <Logo size={32} />
+            <span className="font-display text-[18px] font-bold tracking-tight">Ze<span className="text-brand-600">stly</span></span>
           </button>
           <span className="ml-auto text-[11px] font-medium text-ink3">{TITLES[tab]}</span>
           <SyncDot />
           <NotificationBell go={go} tab={tab} />
           <button
             onClick={() => go({ tab: 'profile' })}
-            className={`rounded-xl border p-2 transition-colors ${tab === 'profile' ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/30' : 'border-line text-ink2'}`}
+            className={`icon-btn rounded-xl p-2 active:scale-90 ${tab === 'profile' ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/30' : ''}`}
             aria-label="Perfil y configuración"
           >
             <Settings size={18} />
@@ -301,12 +301,27 @@ function importSharedRoutine() {
 
 function Splash() {
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-bg">
-      <Logo size={64} />
-      <div className="font-display text-2xl font-bold tracking-tight">
+    <div className="relative flex min-h-dvh flex-col items-center justify-center gap-3 overflow-hidden bg-bg">
+      {/* Resplandor cian→violeta que respira detrás del logo — solo estas
+          dos marcas ya usadas en toda la app, nada de color nuevo. */}
+      <div
+        aria-hidden
+        className="splash-glow pointer-events-none absolute h-56 w-56 rounded-full bg-gradient-to-br from-brand-400 to-accent-500 blur-3xl dark:opacity-70"
+      />
+      <div className="splash-logo relative">
+        <Logo size={68} />
+      </div>
+      <div className="relative fade-up font-display text-2xl font-bold tracking-tight" style={{ animationDelay: '0.15s', animationFillMode: 'backwards' }}>
         Ze<span className="text-brand-600">stly</span>
       </div>
-      <div className="text-xs text-ink3">Cargando tu perfil...</div>
+      <div className="relative flex items-center gap-1.5 fade-up text-xs text-ink3" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
+        <span>Cargando tu perfil</span>
+        <span className="flex items-end gap-0.5">
+          <span className="splash-dot h-1 w-1 rounded-full bg-brand-500" style={{ animationDelay: '0s' }} />
+          <span className="splash-dot h-1 w-1 rounded-full bg-brand-500" style={{ animationDelay: '0.15s' }} />
+          <span className="splash-dot h-1 w-1 rounded-full bg-brand-500" style={{ animationDelay: '0.3s' }} />
+        </span>
+      </div>
     </div>
   )
 }
@@ -352,7 +367,7 @@ function NotificationBell({ go, tab }) {
     <div className="relative">
       <button
         onClick={() => setOpen(v => !v)}
-        className={`relative rounded-xl border p-2 transition-colors ${open ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/30' : 'border-line text-ink2'}`}
+        className={`icon-btn relative rounded-xl p-2 active:scale-90 ${open ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/30' : ''}`}
         aria-label="Recordatorios"
       >
         <Bell size={18} />

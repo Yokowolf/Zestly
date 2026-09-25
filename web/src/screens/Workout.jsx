@@ -111,6 +111,20 @@ export default function Workout({ open, onClose }) {
     setExTimer(null)
   }
 
+  // Tras agregar un ejercicio, lleva la vista de vuelta arriba a la lista
+  // con el ejercicio recién añadido a la vista (el usuario se queda
+  // desplazado abajo, en el buscador/mapa, y si no se hace scroll parece
+  // que no pasó nada). Va antes del "return null" de abajo — todo hook
+  // debe llamarse siempre, sin condición, en el mismo orden cada render.
+  useEffect(() => {
+    if (!justAdded) return
+    const t = setTimeout(() => {
+      document.querySelector(`[data-ex="${CSS.escape(justAdded)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 60)
+    const clear = setTimeout(() => setJustAdded(null), 1800)
+    return () => { clearTimeout(t); clearTimeout(clear) }
+  }, [justAdded])
+
   const results = useMemo(() => {
     if (!q.trim()) return []
     const qn = norm(q)
@@ -160,18 +174,6 @@ export default function Workout({ open, onClose }) {
     setJustAdded(ex.id)
     s.toast(`${ex.name} agregado`, 'ok')
   }
-
-  // Tras agregar, lleva la vista de vuelta arriba a la lista con el
-  // ejercicio recién añadido a la vista (el usuario se queda desplazado
-  // abajo, en el buscador/mapa, y si no se hace scroll parece que no pasó nada)
-  useEffect(() => {
-    if (!justAdded) return
-    const t = setTimeout(() => {
-      document.querySelector(`[data-ex="${CSS.escape(justAdded)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 60)
-    const clear = setTimeout(() => setJustAdded(null), 1800)
-    return () => { clearTimeout(t); clearTimeout(clear) }
-  }, [justAdded])
 
   const addBlock = blockDef => {
     const existing = new Set(w.exercises.map(e => e.exerciseId))
@@ -223,12 +225,12 @@ export default function Workout({ open, onClose }) {
       {/* Cabecera fija: minimizar + vista + tiempo + descanso */}
       <div className="sticky -top-4 z-10 -mx-1 mb-3 rounded-2xl border border-line bg-bg2/95 p-3 backdrop-blur">
         <div className="flex items-center justify-between gap-2">
-          <button onClick={onClose} className="flex items-center gap-1 rounded-lg border border-line px-2 py-1.5 text-[11px] font-semibold text-ink2" aria-label="Minimizar sesión">
+          <button onClick={onClose} className="icon-btn flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold active:scale-95" aria-label="Minimizar sesión">
             <ChevronDown size={14} /> Minimizar
           </button>
           <div className="flex overflow-hidden rounded-lg border border-line text-[10px] font-bold">
-            <button onClick={() => setViewMode('list')} className={`flex items-center gap-1 px-2 py-1.5 ${viewMode === 'list' ? 'bg-brand-600 text-white' : 'text-ink3'}`} aria-label="Vista lista"><List size={12} /></button>
-            <button onClick={() => setViewMode('grid')} className={`flex items-center gap-1 px-2 py-1.5 ${viewMode === 'grid' ? 'bg-brand-600 text-white' : 'text-ink3'}`} aria-label="Vista cuadrícula"><LayoutGrid size={12} /></button>
+            <button onClick={() => setViewMode('list')} className={`flex items-center gap-1 px-2 py-1.5 transition-colors ${viewMode === 'list' ? 'bg-brand-600 text-white' : 'text-ink3 hover:bg-card2'}`} aria-label="Vista lista"><List size={12} /></button>
+            <button onClick={() => setViewMode('grid')} className={`flex items-center gap-1 px-2 py-1.5 transition-colors ${viewMode === 'grid' ? 'bg-brand-600 text-white' : 'text-ink3 hover:bg-card2'}`} aria-label="Vista cuadrícula"><LayoutGrid size={12} /></button>
           </div>
           <button
             onClick={() => s.patch({ soundOn: !s.soundOn })}
@@ -315,8 +317,8 @@ export default function Workout({ open, onClose }) {
                             Objetivo {e.reps} · descanso {e.rest}s{best > 0 && <> · <Trophy size={9} className="inline text-amber-500" /> {fromKg(best)} {unitLbl()}</>}
                           </div>
                         </div>
-                        <button onClick={() => toggleCollapse(e.exerciseId)} className="shrink-0 p-2 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
-                        <button onClick={() => removeEx(ei)} className="shrink-0 p-2 text-ink3" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
+                        <button onClick={() => toggleCollapse(e.exerciseId)} className="shrink-0 rounded-lg p-2 text-ink3 transition-transform active:scale-90 active:bg-card2" aria-label="Comprimir"><ChevronDown size={15} /></button>
+                        <button onClick={() => removeEx(ei)} className="shrink-0 rounded-lg p-2 text-ink3 transition-transform active:scale-90 active:bg-card2" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
                       </div>
                       <div className="mt-2.5 grid grid-cols-4 gap-1.5">
                         {e.sets.map((st, si) => (
@@ -377,8 +379,8 @@ export default function Workout({ open, onClose }) {
                         Objetivo {e.reps} · descanso {e.rest}s{best > 0 && <> · <Trophy size={9} className="inline text-amber-500" /> {fromKg(best)} {unitLbl()}</>}
                       </div>
                     </div>
-                    <button onClick={() => toggleCollapse(e.exerciseId)} className="p-2 text-ink3" aria-label="Comprimir"><ChevronDown size={15} /></button>
-                    <button onClick={() => removeEx(ei)} className="p-2 text-ink3" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
+                    <button onClick={() => toggleCollapse(e.exerciseId)} className="rounded-lg p-2 text-ink3 transition-transform active:scale-90 active:bg-card2" aria-label="Comprimir"><ChevronDown size={15} /></button>
+                    <button onClick={() => removeEx(ei)} className="rounded-lg p-2 text-ink3 transition-transform active:scale-90 active:bg-card2" aria-label="Eliminar ejercicio"><Trash2 size={15} /></button>
                   </div>
 
                   <div className="mt-2.5 flex flex-col gap-1.5">
@@ -445,8 +447,8 @@ export default function Workout({ open, onClose }) {
 
       <SectionTitle right={
         <div className="flex overflow-hidden rounded-lg border border-line text-[10px] font-bold">
-          <button onClick={() => setPickMode('search')} className={`flex items-center gap-1 px-2.5 py-1.5 ${pickMode === 'search' ? 'bg-brand-600 text-white' : 'text-ink3'}`}><Search size={12} /> Buscar</button>
-          <button onClick={() => setPickMode('map')} className={`flex items-center gap-1 px-2.5 py-1.5 ${pickMode === 'map' ? 'bg-brand-600 text-white' : 'text-ink3'}`}><PersonStanding size={12} /> Mapa</button>
+          <button onClick={() => setPickMode('search')} className={`flex items-center gap-1 px-2.5 py-1.5 transition-colors ${pickMode === 'search' ? 'bg-brand-600 text-white' : 'text-ink3 hover:bg-card2'}`}><Search size={12} /> Buscar</button>
+          <button onClick={() => setPickMode('map')} className={`flex items-center gap-1 px-2.5 py-1.5 transition-colors ${pickMode === 'map' ? 'bg-brand-600 text-white' : 'text-ink3 hover:bg-card2'}`}><PersonStanding size={12} /> Mapa</button>
         </div>
       }>Agregar ejercicio</SectionTitle>
 

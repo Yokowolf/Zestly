@@ -77,7 +77,7 @@ export default function Calories({ initialAction }) {
             <div key={key} className="card overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-card2 text-ink2"><Icon size={17} /></div>
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-line/60 bg-card2 text-ink2"><Icon size={17} /></div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2 pr-2">
                       <span className="text-[13px] font-semibold">{mName}</span>
@@ -93,7 +93,7 @@ export default function Calories({ initialAction }) {
                 </div>
                 <button
                   onClick={() => setFoodMeal(key)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-brand-300 bg-brand-50 text-brand-600 dark:border-brand-800 dark:bg-brand-900/30"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-300 bg-brand-50 text-brand-600 transition-transform hover:bg-brand-100 active:scale-90 dark:border-brand-800 dark:bg-brand-900/30 dark:hover:bg-brand-900/50"
                   aria-label={'Añadir a ' + mName}
                 >
                   <Plus size={16} />
@@ -176,7 +176,7 @@ function EditPortionSheet({ target, onClose }) {
   return (
     <Sheet open onClose={onClose} title={baseName(item.name)} subtitle="Ajusta la cantidad — las calorías y macros se recalculan">
       <div className="mb-3 flex items-center justify-center gap-4">
-        <button className="h-10 w-10 rounded-full border border-line text-xl text-ink2" onClick={() => setQty(String(Math.max(step, round1(qtyNum - step))))}>−</button>
+        <button className="icon-btn h-10 w-10 rounded-full text-xl active:scale-90" onClick={() => setQty(String(Math.max(step, round1(qtyNum - step))))}>−</button>
         <div className="text-center">
           <input
             type="number" inputMode="decimal" value={qty}
@@ -188,7 +188,7 @@ function EditPortionSheet({ target, onClose }) {
             {!grams && pGrams ? <b className="text-brand-600"> · ≈ {Math.round(pGrams * qtyNum)} g</b> : ''}
           </span>
         </div>
-        <button className="h-10 w-10 rounded-full bg-brand-600 text-xl text-white" onClick={() => setQty(String(round1(qtyNum + step)))}>+</button>
+        <button className="h-10 w-10 rounded-full bg-brand-600 text-xl text-white shadow-[0_2px_8px_-2px_rgb(8_145_178/0.5)] transition-all hover:bg-brand-500 active:scale-90 active:brightness-90" onClick={() => setQty(String(round1(qtyNum + step)))}>+</button>
       </div>
       <div className="mb-3 flex flex-wrap justify-center gap-1.5">
         {presets.map(v => <Chip key={v} on={qtyNum === v} onClick={() => setQty(String(v))}>{v}{grams ? item.unit : 'x'}{!grams && pGrams ? ` (${Math.round(pGrams * v)}g)` : ''}</Chip>)}
@@ -254,10 +254,10 @@ function WaterCard() {
       <Bar pct={(water / goal) * 100} />
       <div className="mt-1 text-center text-[10px] text-ink3">+{fmtMl(glassMl)} por toque</div>
       <div className="mt-1.5 flex gap-2">
-        <button onClick={() => setWater(water - 1)} className="flex h-9 flex-1 items-center justify-center rounded-lg border border-line text-ink2" aria-label="Quitar porción">
+        <button onClick={() => setWater(water - 1)} className="icon-btn flex h-9 flex-1 items-center justify-center rounded-lg active:scale-95" aria-label="Quitar porción">
           <Minus size={15} />
         </button>
-        <button onClick={() => setWater(water + 1)} className="flex h-9 flex-1 items-center justify-center rounded-lg bg-brand-600 text-white" aria-label="Agregar porción">
+        <button onClick={() => setWater(water + 1)} className="flex h-9 flex-1 items-center justify-center rounded-lg bg-brand-600 text-white shadow-[0_2px_8px_-2px_rgb(8_145_178/0.5)] transition-all hover:bg-brand-500 active:scale-95 active:brightness-90" aria-label="Agregar porción">
           <Plus size={15} />
         </button>
       </div>
@@ -294,7 +294,7 @@ function FastingCard() {
       )}
       <button
         onClick={() => s.patch({ fastingActive: !active, fastingStart: !active ? Date.now() : null })}
-        className={`mt-2.5 h-9 w-full rounded-lg text-xs font-semibold ${active ? 'border border-line text-ink2' : 'bg-accent-600 text-white'}`}
+        className={`mt-2.5 h-9 w-full rounded-lg text-xs font-semibold transition-all active:scale-[0.97] ${active ? 'icon-btn' : 'bg-accent-600 text-white shadow-[0_2px_8px_-2px_rgb(124_58_237/0.5)] hover:bg-accent-500 active:brightness-90'}`}
       >
         {active ? 'Terminar ayuno' : 'Iniciar ayuno'}
       </button>

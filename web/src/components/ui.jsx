@@ -20,11 +20,13 @@ export function Spinner({ className = 'h-4 w-4' }) {
 // `loading`: muestra un spinner y bloquea el botón — para procesos con IA o
 // red que tardan varios segundos, en vez de solo cambiar el texto.
 export function Button({ children, variant = 'primary', className = '', loading = false, disabled, ...props }) {
+  // Tailwind ya limita "hover:" a dispositivos con puntero real
+  // (@media (hover: hover)) — en touch no se queda "pegado" tras tocar.
   const styles = {
-    primary: 'bg-brand-600 text-white shadow-[0_2px_10px_-2px_rgb(8_145_178/0.45)] active:bg-brand-700 active:brightness-90 active:shadow-none disabled:opacity-50 disabled:shadow-none',
-    ghost: 'border border-line text-ink2 bg-card active:bg-card2',
-    accent: 'bg-accent-600 text-white shadow-[0_2px_10px_-2px_rgb(124_58_237/0.45)] active:bg-accent-500 active:brightness-90 active:shadow-none disabled:opacity-50 disabled:shadow-none',
-    danger: 'border border-red-300 text-red-500 bg-transparent active:bg-red-50 dark:border-red-900 dark:active:bg-red-950/40',
+    primary: 'bg-brand-600 text-white shadow-[0_2px_10px_-2px_rgb(8_145_178/0.45)] hover:bg-brand-500 active:bg-brand-700 active:brightness-90 active:shadow-none disabled:opacity-50 disabled:shadow-none disabled:hover:bg-brand-600',
+    ghost: 'border border-line text-ink2 bg-card hover:bg-card2 hover:border-brand-300 active:bg-card2 dark:hover:border-brand-800',
+    accent: 'bg-accent-600 text-white shadow-[0_2px_10px_-2px_rgb(124_58_237/0.45)] hover:bg-accent-500 active:bg-accent-500 active:brightness-90 active:shadow-none disabled:opacity-50 disabled:shadow-none disabled:hover:bg-accent-600',
+    danger: 'border border-red-300 text-red-500 bg-transparent hover:bg-red-50 active:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40 dark:active:bg-red-950/40',
   }
   return (
     <button
@@ -47,7 +49,7 @@ export function Chip({ on, children, className = '', ...props }) {
       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-100 active:scale-[0.94] ${
         on
           ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300'
-          : 'border-line bg-card text-ink2 active:bg-card2'
+          : 'border-line bg-card text-ink2 hover:border-brand-300 hover:bg-card2 active:bg-card2'
       } ${className}`}
       {...props}
     >
@@ -152,7 +154,7 @@ export function Bar({ pct, className = 'bg-brand-500' }) {
 export function Input({ className = '', ...props }) {
   return (
     <input
-      className={`w-full rounded-xl border border-line bg-card px-3.5 py-3 text-sm text-ink outline-none placeholder:text-ink3 focus:border-brand-500 ${className}`}
+      className={`w-full rounded-xl border border-line bg-card px-3.5 py-3 text-sm text-ink outline-none transition-shadow placeholder:text-ink3 focus:border-brand-500 focus:shadow-[0_0_0_3px_rgb(6_182_212/0.12)] ${className}`}
       {...props}
     />
   )

@@ -111,7 +111,7 @@ function TrainPreview({ go }) {
 }
 function TrainStat({ icon: Icon, color, label, value }) {
   return (
-    <div className="flex flex-col items-center gap-0.5 rounded-xl bg-card2 py-2.5">
+    <div className="flex flex-col items-center gap-0.5 rounded-xl border border-line/60 bg-card2 py-2.5">
       <Icon size={14} className={color} />
       <span className="text-[12px] font-bold leading-none">{value}</span>
       <span className="text-[8px] text-ink3">{label}</span>

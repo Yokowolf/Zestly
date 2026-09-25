@@ -19,20 +19,20 @@ export function getActiveReminders(s) {
     const logged = (s.meals?.[key] || []).length > 0
     if (!logged && hour >= w.endHour + GRACE_H) {
       // action "add:<comida>" abre AddFood ya en esa comida, no solo la pestaña
-      reminders.push({ id: `meal-${key}`, kind: 'food', text: `Aún no registras ${w.label} — toca para agregarlo`, tab: w.tab, action: `add:${key}` })
+      reminders.push({ id: `meal-${key}`, kind: 'food', text: `Aún no registras ${w.label}`, hint: 'Toca para agregarlo', tab: w.tab, action: `add:${key}` })
     }
   }
 
   const water = s.today?.water || 0
   const waterGoal = s.waterGoal || 8
   if (hour >= 14 && water < waterGoal * 0.5) {
-    reminders.push({ id: 'water', kind: 'water', text: `Vas ${water}/${waterGoal} vasos de agua hoy`, tab: 'calories' })
+    reminders.push({ id: 'water', kind: 'water', text: 'Te falta tomar agua hoy', hint: `Vas ${water}/${waterGoal} vasos`, tab: 'calories' })
   }
 
   const trainedToday = (s.workoutLogs || []).some(l => l.date === now.toDateString())
   if (hour >= 18 && !trainedToday && !s.activeWorkout) {
     // action "start" abre directo el selector de rutina, no solo la pestaña
-    reminders.push({ id: 'train', kind: 'train', text: 'Aún no has entrenado hoy — elige tu rutina', tab: 'train', action: 'start' })
+    reminders.push({ id: 'train', kind: 'train', text: 'Aún no has entrenado hoy', hint: 'Toca para elegir tu rutina', tab: 'train', action: 'start' })
   }
 
   return reminders

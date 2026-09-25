@@ -6,6 +6,7 @@ import { useStore, fromKg, toKg, unitLbl } from '../store'
 import { EXERCISES, EX_BY_ID, MUSCLES, WARMUP_BLOCKS } from '../data/exercises'
 import { bestWeight, exerciseHistory, buildSessionExercises, finishSession, discardSession, sessionVolume } from '../lib/train'
 import { norm } from '../lib/calc'
+import { playChime } from '../lib/sound'
 import ExerciseSheet from './ExerciseSheet'
 import BodyMap from '../components/BodyMap'
 
@@ -27,6 +28,7 @@ export default function Workout({ open, onClose }) {
   const [collapsed, setCollapsed] = useState(() => new Set()) // exerciseId comprimidos a una línea
   const [pickMode, setPickMode] = useState('search') // 'search' | 'map' — atajo por mapa muscular
   const [muscleSel, setMuscleSel] = useState(null)
+  const [justAdded, setJustAdded] = useState(null) // exerciseId recién agregado — para hacer scroll y resaltarlo
   const [, tick] = useState(0)
 
   const toggleCollapse = id => setCollapsed(prev => {
@@ -77,6 +79,8 @@ export default function Workout({ open, onClose }) {
     if (rest && restLeft === 0) {
       setRest(null)
       s.toast('Descanso terminado — siguiente set', 'ok')
+      playChime()
+      try { navigator.vibrate?.(200) } catch {}
     }
   }, [restLeft]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -96,6 +100,7 @@ export default function Workout({ open, onClose }) {
       setField(exTimer.ei, exTimer.si, 'r', String(exTimer.target))
       setExTimer(null)
       s.toast('¡Tiempo cumplido!', 'ok')
+      playChime()
       try { navigator.vibrate?.(200) } catch {}
     }
   }, [timerLeft]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -152,8 +157,21 @@ export default function Workout({ open, onClose }) {
   const addExercise = (ex, block = 'main') => {
     patchWorkout([...w.exercises, ...buildSessionExercises([{ exerciseId: ex.id, block }])])
     setQ('')
+    setJustAdded(ex.id)
     s.toast(`${ex.name} agregado`, 'ok')
   }
+
+  // Tras agregar, lleva la vista de vuelta arriba a la lista con el
+  // ejercicio recién añadido a la vista (el usuario se queda desplazado
+  // abajo, en el buscador/mapa, y si no se hace scroll parece que no pasó nada)
+  useEffect(() => {
+    if (!justAdded) return
+    const t = setTimeout(() => {
+      document.querySelector(`[data-ex="${CSS.escape(justAdded)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 60)
+    const clear = setTimeout(() => setJustAdded(null), 1800)
+    return () => { clearTimeout(t); clearTimeout(clear) }
+  }, [justAdded])
 
   const addBlock = blockDef => {
     const existing = new Set(w.exercises.map(e => e.exerciseId))
@@ -257,10 +275,12 @@ export default function Workout({ open, onClose }) {
               const isCollapsed = collapsed.has(e.exerciseId)
 
               // ── Comprimida a una línea (manual o al completarse) ──
+              const justAddedRing = justAdded === e.exerciseId ? 'ring-2 ring-accent-400' : ''
+
               if (isCollapsed) {
                 return (
-                  <button key={ei} onClick={() => toggleCollapse(e.exerciseId)}
-                    className={`card flex w-full items-center gap-3 p-3 text-left transition-colors duration-300 active:scale-[0.99] ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
+                  <button key={ei} data-ex={e.exerciseId} onClick={() => toggleCollapse(e.exerciseId)}
+                    className={`card flex w-full items-center gap-3 p-3 text-left transition-colors duration-300 active:scale-[0.99] ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''} ${justAddedRing}`}>
                     <ExerciseImg exercise={ex} size="h-9 w-9" />
                     <div className="min-w-0 flex-1">
                       <div className={`truncate text-[13px] font-semibold ${allDone ? 'text-ink3 line-through' : ''}`}>{ex.name || e.exerciseId}</div>
@@ -275,7 +295,7 @@ export default function Workout({ open, onClose }) {
               // ── Vista cuadrícula: el GIF protagonista + celdas de sets ──
               if (viewMode === 'grid') {
                 return (
-                  <div key={ei} className={`card overflow-hidden transition-colors duration-300 ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
+                  <div key={ei} data-ex={e.exerciseId} className={`card overflow-hidden transition-colors duration-300 ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''} ${justAddedRing}`}>
                     <button onClick={() => setDetail(ex)} className="block w-full bg-white">
                       <ExerciseHero ex={ex} />
                     </button>
@@ -340,7 +360,7 @@ export default function Workout({ open, onClose }) {
               }
 
               return (
-                <div key={ei} className={`card p-3.5 transition-colors duration-300 ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
+                <div key={ei} data-ex={e.exerciseId} className={`card p-3.5 transition-colors duration-300 ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''} ${justAddedRing}`}>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setDetail(ex)}><ExerciseImg exercise={ex} size="h-12 w-12" /></button>
                     <div className="min-w-0 flex-1">

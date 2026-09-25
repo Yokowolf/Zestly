@@ -342,6 +342,11 @@ function NotificationBell({ go, tab }) {
   useEffect(() => { setOpen(false) }, [tab])
   const reminders = getActiveReminders(s)
   const ICONS = { food: Utensils, water: Droplets, train: Dumbbell }
+  const CHIP = {
+    food: 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300',
+    water: 'bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300',
+    train: 'bg-accent-50 text-accent-600 dark:bg-accent-500/15 dark:text-accent-300',
+  }
 
   return (
     <div className="relative">
@@ -352,7 +357,7 @@ function NotificationBell({ go, tab }) {
       >
         <Bell size={18} />
         {reminders.length > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent-500 text-[9px] font-bold text-white">
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent-500 text-[9px] font-bold text-white ring-2 ring-bg2">
             {reminders.length}
           </span>
         )}
@@ -360,24 +365,35 @@ function NotificationBell({ go, tab }) {
       {open && (
         <>
           <button aria-hidden tabIndex={-1} onClick={() => setOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-          <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-line bg-card p-1.5 shadow-xl">
+          <div className="absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-2xl border border-line bg-card shadow-2xl">
+            <div className="flex items-center justify-between border-b border-line bg-card2/60 px-3.5 py-2.5">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-ink3">Recordatorios</h3>
+              {reminders.length > 0 && <span className="text-[10px] font-semibold text-ink3">{reminders.length} pendiente{reminders.length > 1 ? 's' : ''}</span>}
+            </div>
             {reminders.length === 0 ? (
-              <p className="p-3 text-center text-[11px] text-ink3">Sin pendientes por ahora</p>
+              <p className="px-4 py-6 text-center text-[11px] leading-relaxed text-ink3">Todo al día por ahora ✓<br />Sin pendientes que avisarte</p>
             ) : (
-              reminders.map(r => {
-                const Icon = ICONS[r.kind]
-                return (
-                  <button
-                    key={r.id}
-                    onClick={() => { setOpen(false); go({ tab: r.tab, action: r.action }) }}
-                    className="flex w-full items-center gap-2.5 rounded-xl p-2.5 text-left transition-colors active:bg-card2"
-                  >
-                    <Icon size={14} className="shrink-0 text-accent-500" />
-                    <span className="flex-1 text-[12px] leading-snug">{r.text}</span>
-                    <ChevronRight size={13} className="shrink-0 text-ink3" />
-                  </button>
-                )
-              })
+              <div className="flex flex-col p-1.5">
+                {reminders.map((r, i) => {
+                  const Icon = ICONS[r.kind]
+                  return (
+                    <button
+                      key={r.id}
+                      onClick={() => { setOpen(false); go({ tab: r.tab, action: r.action }) }}
+                      className={`flex w-full items-center gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-card2 active:bg-card2 ${i > 0 ? 'mt-0.5' : ''}`}
+                    >
+                      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${CHIP[r.kind]}`}>
+                        <Icon size={16} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[12.5px] font-semibold text-ink1">{r.text}</span>
+                        {r.hint && <span className="block truncate text-[10.5px] text-ink3">{r.hint}</span>}
+                      </span>
+                      <ChevronRight size={14} className="shrink-0 text-ink3" />
+                    </button>
+                  )
+                })}
+              </div>
             )}
           </div>
         </>

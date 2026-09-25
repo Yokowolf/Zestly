@@ -13,9 +13,9 @@ const MEALS = [
   { key: 'snack', name: 'Snack', icon: Apple },
 ]
 
-export default function Calories() {
+export default function Calories({ initialAction }) {
   const s = useStore()
-  const [foodMeal, setFoodMeal] = useState(null)
+  const [foodMeal, setFoodMeal] = useState(initialAction?.startsWith('add:') ? initialAction.slice(4) : null)
   const [editing, setEditing] = useState(null) // { meal, idx } → editar porción
   const n = s.nutrition, t = s.today
   const rem = Math.max(0, n.kcal - t.kcal)

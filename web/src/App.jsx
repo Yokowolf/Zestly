@@ -112,7 +112,7 @@ export default function App() {
           </button>
           <span className="ml-auto text-[11px] font-medium text-ink3">{TITLES[tab]}</span>
           <SyncDot />
-          <NotificationBell go={go} />
+          <NotificationBell go={go} tab={tab} />
           <button
             onClick={() => go({ tab: 'profile' })}
             className={`rounded-xl border p-2 transition-colors ${tab === 'profile' ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/30' : 'border-line text-ink2'}`}
@@ -125,7 +125,7 @@ export default function App() {
 
       <main key={tab} className="flex-1 pb-24 fade-up">
         {tab === 'home' && <HomeScreen go={go} onStartTour={startTour} />}
-        {tab === 'calories' && <Calories />}
+        {tab === 'calories' && <Calories key={ts} initialAction={action} />}
         {tab === 'progress' && <Progress key={ts} initialAction={action} />}
         {tab === 'train' && <Train key={ts} initialAction={action} />}
         {tab === 'coach' && <Coach key={ts} initialAction={action} go={go} />}
@@ -331,7 +331,7 @@ export function Logo({ size = 80 }) {
 // son push ni popups, solo se acumulan acá para revisar cuando el usuario
 // quiera. Se recalculan cada 5 min (los umbrales son por hora del día, no
 // reaccionan a cambios de estado solos).
-function NotificationBell({ go }) {
+function NotificationBell({ go, tab }) {
   const s = useStore()
   const [open, setOpen] = useState(false)
   const [, tick] = useState(0)
@@ -339,6 +339,7 @@ function NotificationBell({ go }) {
     const t = setInterval(() => tick(x => x + 1), 5 * 60 * 1000)
     return () => clearInterval(t)
   }, [])
+  useEffect(() => { setOpen(false) }, [tab])
   const reminders = getActiveReminders(s)
   const ICONS = { food: Utensils, water: Droplets, train: Dumbbell }
 
@@ -368,11 +369,12 @@ function NotificationBell({ go }) {
                 return (
                   <button
                     key={r.id}
-                    onClick={() => { setOpen(false); go({ tab: r.tab }) }}
+                    onClick={() => { setOpen(false); go({ tab: r.tab, action: r.action }) }}
                     className="flex w-full items-center gap-2.5 rounded-xl p-2.5 text-left transition-colors active:bg-card2"
                   >
                     <Icon size={14} className="shrink-0 text-accent-500" />
-                    <span className="text-[12px] leading-snug">{r.text}</span>
+                    <span className="flex-1 text-[12px] leading-snug">{r.text}</span>
+                    <ChevronRight size={13} className="shrink-0 text-ink3" />
                   </button>
                 )
               })

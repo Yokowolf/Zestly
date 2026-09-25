@@ -174,8 +174,15 @@ export default function Workout({ open, onClose }) {
     return <SummarySheet summary={summary} onClose={() => { setSummary(null); onClose() }} />
   }
 
-  const grouped = BLOCKS.map(b => ({ ...b, list: w.exercises.map((e, ei) => ({ e, ei })).filter(x => x.e.block === b.id) }))
-    .filter(b => b.list.length)
+  // Ejercicios completados y minimizados suben al tope de su bloque — en un
+  // gym lleno se van haciendo fuera de orden, y sin esto se pierden en medio
+  // de la lista (sort estable: no revuelve el resto entre sí).
+  const isDoneAndCollapsed = x => x.e.sets.length > 0 && x.e.sets.every(st => st.done) && collapsed.has(x.e.exerciseId)
+  const grouped = BLOCKS.map(b => ({
+    ...b,
+    list: w.exercises.map((e, ei) => ({ e, ei })).filter(x => x.e.block === b.id)
+      .sort((a, b2) => (isDoneAndCollapsed(a) === isDoneAndCollapsed(b2)) ? 0 : isDoneAndCollapsed(a) ? -1 : 1),
+  })).filter(b => b.list.length)
 
   return (
     <Sheet open={open} onClose={() => onClose()} title={w.name} locked
@@ -238,11 +245,11 @@ export default function Workout({ open, onClose }) {
               if (isCollapsed) {
                 return (
                   <button key={ei} onClick={() => toggleCollapse(e.exerciseId)}
-                    className={`card flex w-full items-center gap-3 p-3 text-left active:scale-[0.99] ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
+                    className={`card flex w-full items-center gap-3 p-3 text-left transition-colors duration-300 active:scale-[0.99] ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
                     <ExerciseImg exercise={ex} size="h-9 w-9" />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-[13px] font-semibold">{ex.name || e.exerciseId}</div>
-                      <div className="text-[10px] text-ink3">{doneCount}/{e.sets.length} sets{allDone && ' · completado'}</div>
+                      <div className={`truncate text-[13px] font-semibold ${allDone ? 'text-ink3 line-through' : ''}`}>{ex.name || e.exerciseId}</div>
+                      <div className={`text-[10px] ${allDone ? 'font-semibold text-brand-500' : 'text-ink3'}`}>{allDone ? 'Completado' : `${doneCount}/${e.sets.length} sets`}</div>
                     </div>
                     {allDone && <Check size={16} className="shrink-0 text-brand-500" />}
                     <ChevronDown size={16} className="shrink-0 -rotate-90 text-ink3" />
@@ -253,7 +260,7 @@ export default function Workout({ open, onClose }) {
               // ── Vista cuadrícula: el GIF protagonista + celdas de sets ──
               if (viewMode === 'grid') {
                 return (
-                  <div key={ei} className={`card overflow-hidden ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
+                  <div key={ei} className={`card overflow-hidden transition-colors duration-300 ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
                     <button onClick={() => setDetail(ex)} className="block w-full bg-white">
                       <ExerciseHero ex={ex} />
                     </button>
@@ -270,7 +277,7 @@ export default function Workout({ open, onClose }) {
                       </div>
                       <div className="mt-2.5 grid grid-cols-4 gap-1.5">
                         {e.sets.map((st, si) => (
-                          <div key={si} className={`rounded-xl border p-1.5 text-center ${st.done ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'border-line bg-card2'}`}>
+                          <div key={si} className={`rounded-xl border p-1.5 text-center transition-colors duration-300 ${st.done ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'border-line bg-card2'}`}>
                             <input
                               type="number" inputMode="decimal" placeholder={ghostW(si)}
                               disabled={ex.weight === false}
@@ -318,7 +325,7 @@ export default function Workout({ open, onClose }) {
               }
 
               return (
-                <div key={ei} className={`card p-3.5 ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
+                <div key={ei} className={`card p-3.5 transition-colors duration-300 ${allDone ? 'border-brand-400 bg-brand-50 dark:border-brand-500/60 dark:bg-brand-500/15' : ''}`}>
                   <div className="flex items-center gap-3">
                     <button onClick={() => setDetail(ex)}><ExerciseImg exercise={ex} size="h-12 w-12" /></button>
                     <div className="min-w-0 flex-1">
@@ -333,7 +340,7 @@ export default function Workout({ open, onClose }) {
 
                   <div className="mt-2.5 flex flex-col gap-1.5">
                     {e.sets.map((st, si) => (
-                      <div key={si} className={`flex items-center gap-2 ${st.done ? 'opacity-60' : ''}`}>
+                      <div key={si} className={`flex items-center gap-2 transition-opacity duration-300 ${st.done ? 'opacity-60' : ''}`}>
                         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-card2 text-[10px] font-bold text-ink3">{si + 1}</span>
                         <input
                           type="number" inputMode="decimal" placeholder={ghostW(si)}

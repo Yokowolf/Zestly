@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import {
   Settings, Home as HomeIcon, Flame, Dumbbell, UtensilsCrossed, BarChart3, Bot,
-  Camera, ChevronLeft, ChevronRight, ChevronDown, X,
+  Camera, ChevronLeft, ChevronRight, ChevronDown, X, Bell, Droplets, Utensils,
 } from 'lucide-react'
 import { useStore, rolloverIfNewDay } from './store'
+import { getActiveReminders } from './lib/reminders'
 import { watchAuth } from './lib/firebase'
 import { Toasts } from './components/ui'
 import Welcome from './screens/Welcome'
@@ -111,6 +112,7 @@ export default function App() {
           </button>
           <span className="ml-auto text-[11px] font-medium text-ink3">{TITLES[tab]}</span>
           <SyncDot />
+          <NotificationBell go={go} />
           <button
             onClick={() => go({ tab: 'profile' })}
             className={`rounded-xl border p-2 transition-colors ${tab === 'profile' ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/30' : 'border-line text-ink2'}`}
@@ -322,6 +324,63 @@ export function Logo({ size = 80 }) {
       <path d="M50 10 L44 26 L52 26 L46 42" stroke="#06b6d4" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="50" cy="10" r="4.5" fill="#06b6d4" />
     </svg>
+  )
+}
+
+// Recordatorios dentro de la app (comidas atrasadas, agua, entrenar) — no
+// son push ni popups, solo se acumulan acá para revisar cuando el usuario
+// quiera. Se recalculan cada 5 min (los umbrales son por hora del día, no
+// reaccionan a cambios de estado solos).
+function NotificationBell({ go }) {
+  const s = useStore()
+  const [open, setOpen] = useState(false)
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => tick(x => x + 1), 5 * 60 * 1000)
+    return () => clearInterval(t)
+  }, [])
+  const reminders = getActiveReminders(s)
+  const ICONS = { food: Utensils, water: Droplets, train: Dumbbell }
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={`relative rounded-xl border p-2 transition-colors ${open ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-900/30' : 'border-line text-ink2'}`}
+        aria-label="Recordatorios"
+      >
+        <Bell size={18} />
+        {reminders.length > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent-500 text-[9px] font-bold text-white">
+            {reminders.length}
+          </span>
+        )}
+      </button>
+      {open && (
+        <>
+          <button aria-hidden tabIndex={-1} onClick={() => setOpen(false)} className="fixed inset-0 z-40 cursor-default" />
+          <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-2xl border border-line bg-card p-1.5 shadow-xl">
+            {reminders.length === 0 ? (
+              <p className="p-3 text-center text-[11px] text-ink3">Sin pendientes por ahora</p>
+            ) : (
+              reminders.map(r => {
+                const Icon = ICONS[r.kind]
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => { setOpen(false); go({ tab: r.tab }) }}
+                    className="flex w-full items-center gap-2.5 rounded-xl p-2.5 text-left transition-colors active:bg-card2"
+                  >
+                    <Icon size={14} className="shrink-0 text-accent-500" />
+                    <span className="text-[12px] leading-snug">{r.text}</span>
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </>
+      )}
+    </div>
   )
 }
 

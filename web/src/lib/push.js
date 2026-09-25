@@ -4,7 +4,7 @@
 // (ver notifications/send.js).
 import { savePushSubscription, removePushSubscription } from './firebase'
 
-const VAPID_PUBLIC_KEY = 'BE9_jNFS0uB39ksEHbcFXurBpBrRIs_GKlkiA5vz_8rT1Q7DWB6LOkzIEG7iJguRRkxz5Bh6U2LOBMpaFe7Iaqg'
+const VAPID_PUBLIC_KEY = 'BKYd2y_f8AU5F2Duy5SoNFUAIg9EdqBcwyML8Cx_-u_oskVMGeIlDBoBA-1qjAnQf0-ULP4322Je31aXrQt4zPs'
 
 // pushManager.subscribe pide la clave como Uint8Array, no como el string
 // base64url que entrega `web-push generate-vapid-keys`.

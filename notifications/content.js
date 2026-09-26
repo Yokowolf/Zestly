@@ -44,5 +44,8 @@ const CATEGORIES = [
 export function todaysNotification() {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000)
   const cat = CATEGORIES[dayOfYear % CATEGORIES.length]
-  return { title: `Zestly — ${cat.title}`, body: cat.list[dayOfYear % cat.list.length] }
+  // Sin el prefijo "Zestly —": el navegador ya antepone el nombre de la app
+  // a la notificación push (para que quede claro de dónde viene), así que
+  // ponerlo también en el título duplicaba el nombre dos veces.
+  return { title: cat.title, body: cat.list[dayOfYear % cat.list.length] }
 }

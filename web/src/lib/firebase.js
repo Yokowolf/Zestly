@@ -64,28 +64,53 @@ export async function cloudSave() {
   const s = useStore.getState()
   if (!s.user) return
   const d = serializable(s)
+  const uid = s.user.uid
   try {
+    // Antes esto escribía los arrays de historial (log, weightLog, rutinas,
+    // entrenos, recetas, logros...) directo desde el estado local, sin
+    // mirar qué había en la nube — si un cloudLoad anterior había fallado
+    // parcialmente (red, timing) y el local quedó incompleto, este guardado
+    // sobreescribía el respaldo bueno de la nube con el incompleto. Ahora
+    // se lee lo que ya hay en la nube primero y se COMBINA (mismo merge
+    // que ya usa cloudLoad) — un guardado nunca puede achicar el historial,
+    // solo agregarle o actualizarlo.
+    const [pSnap, fSnap] = await Promise.all([
+      getDoc(doc(db, 'users', uid, 'd', 'profile')),
+      getDoc(doc(db, 'users', uid, 'd', 'fitness')),
+    ])
+    const pCloud = pSnap.exists() ? pSnap.data() : {}
+    const fCloud = fSnap.exists() ? fSnap.data() : {}
+
+    const badgeUnlocks = { ...(pCloud.badgeUnlocks || {}), ...(d.badgeUnlocks || {}) }
+    Object.keys(pCloud.badgeUnlocks || {}).forEach(k => {
+      if (d.badgeUnlocks?.[k]) badgeUnlocks[k] = Math.min(pCloud.badgeUnlocks[k], d.badgeUnlocks[k])
+    })
+
     await Promise.all([
-      setDoc(doc(db, 'users', s.user.uid, 'd', 'profile'), {
-        profile: d.profile, nutrition: d.nutrition, streak: d.streak,
-        weightLog: d.weightLog, log: d.log,
+      setDoc(doc(db, 'users', uid, 'd', 'profile'), {
+        profile: d.profile, nutrition: d.nutrition, streak: Math.max(d.streak || 1, pCloud.streak || 1),
+        weightLog: mergeByKey(d.weightLog, pCloud.weightLog, byDate, 30),
+        log: mergeByKey(d.log, pCloud.log, byDate),
         ...(localStorage.getItem('zs_groq_key') ? { aiKey: localStorage.getItem('zs_groq_key') } : {}),
         fastingActive: d.fastingActive, fastingStart: d.fastingStart,
         theme: d.theme, waterGoal: d.waterGoal, fastingHours: d.fastingHours || 16, foodFreq: d.foodFreq || {},
-        recipes: d.recipes || [],
-        customFoods: d.customFoods || [],
+        recipes: mergeByKey(d.recipes, pCloud.recipes, r => r.createdAt || r.name),
+        customFoods: mergeByKey(d.customFoods, pCloud.customFoods, f => f.name),
         mealSplit: d.mealSplit || { breakfast: 25, lunch: 35, dinner: 25, snack: 15 },
-        badgeUnlocks: d.badgeUnlocks || {},
-        progressPhotos: (d.progressPhotos || []).slice(-8),
+        badgeUnlocks,
+        progressPhotos: mergeByKey(d.progressPhotos, pCloud.progressPhotos, p => p.ts, 8),
         ts: Date.now(),
       }, { merge: true }),
-      setDoc(doc(db, 'users', s.user.uid, 'd', 'today'), {
+      setDoc(doc(db, 'users', uid, 'd', 'today'), {
         date: new Date().toDateString(),
         today: d.today, meals: d.meals, ts: Date.now(),
       }, { merge: true }),
-      setDoc(doc(db, 'users', s.user.uid, 'd', 'fitness'), {
-        unit: d.unit, routines: d.routines, workoutLogs: d.workoutLogs,
-        activeWorkout: d.activeWorkout ?? null, anthro: d.anthro,
+      setDoc(doc(db, 'users', uid, 'd', 'fitness'), {
+        unit: d.unit,
+        routines: mergeByKey(d.routines, fCloud.routines, r => r.createdAt || r.name, 200),
+        workoutLogs: mergeByKey(d.workoutLogs, fCloud.workoutLogs, byStart),
+        activeWorkout: d.activeWorkout ?? null,
+        anthro: mergeByKey(d.anthro, fCloud.anthro, byDate),
         mealPlan: d.mealPlan ?? null, ts: Date.now(),
       }, { merge: true }),
     ])

@@ -1,7 +1,8 @@
-// Contenido de las notificaciones diarias — rota por categoría y día del
-// año (mismo patrón determinista que ya usa web/src/data/quotes.js), así
-// todos reciben el mismo mensaje ese día sin tener que leer datos de cada
-// usuario individualmente (eso queda para una fase con personalización).
+// Frase del día / dato curioso — rota por categoría y por fecha (misma
+// lógica determinista que ya usa web/src/data/quotes.js), así todos
+// reciben el mismo mensaje ese día sin guardar estado en ningún lado.
+// Los "recordatorios" YA NO viven acá como lista fija — ahora se arman
+// dinámicamente en personalize.js según los datos reales de cada usuario.
 import { QUOTES } from '../web/src/data/quotes.js'
 
 const FACTS = [
@@ -22,30 +23,21 @@ const FACTS = [
   'El café antes de entrenar no solo da energía: también puede aumentar el rendimiento de fuerza medible.',
 ]
 
-const REMINDERS = [
-  '¿Ya registraste tu comida de hoy? Un minuto y listo.',
-  '¿Cómo va el agua hoy? Un vaso ahora no te cuesta nada.',
-  '¿Entrenaste hoy? Revisa tu rutina en Zestly.',
-  'Llevas la racha activa — no la rompas hoy, registra tu comida.',
-  'Un check rápido: ¿anotaste el desayuno de hoy?',
-  'Tu plan semanal te está esperando — dale un vistazo.',
-  'Pequeño recordatorio: hidratarte también cuenta como progreso.',
-  '¿Ya pesaste hoy o esta semana? Llevar el registro ayuda a ver tendencias.',
-  'Si vas a entrenar hoy, este es tu empujón.',
-  'Constancia > intensidad. Registra aunque sea poco, pero registra.',
-]
-
 const CATEGORIES = [
   { title: 'Frase del día', list: QUOTES },
   { title: 'Dato curioso', list: FACTS },
-  { title: 'Recordatorio', list: REMINDERS },
 ]
 
-export function todaysNotification() {
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000)
+function dayOfYearFrom(dateStr) {
+  const d = new Date(dateStr)
+  return Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000)
+}
+
+// dateStr: fecha "de pared" ya calculada (ver personalize.js#bogotaDateString)
+// — no se usa Date.now() acá directo para no depender del huso horario del
+// runner de GitHub Actions (corre en UTC, no en hora Colombia).
+export function todaysQuoteOrFact(dateStr) {
+  const dayOfYear = dayOfYearFrom(dateStr)
   const cat = CATEGORIES[dayOfYear % CATEGORIES.length]
-  // Sin el prefijo "Zestly —": el navegador ya antepone el nombre de la app
-  // a la notificación push (para que quede claro de dónde viene), así que
-  // ponerlo también en el título duplicaba el nombre dos veces.
   return { title: cat.title, body: cat.list[dayOfYear % cat.list.length] }
 }

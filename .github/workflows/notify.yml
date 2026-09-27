@@ -1,12 +1,23 @@
-# Envía la notificación push diaria a todos los suscritos. Gratis (Actions
-# no cobra por cron), no necesita Firebase Blaze ni ningún backend corriendo
-# 24/7 — solo se ejecuta unos segundos, una vez al día.
+# Envía la notificación push, personalizada según los datos reales de
+# cada usuario (comidas, agua, entrenamiento) — 3 franjas al día en vez
+# de una sola genérica. Gratis (Actions no cobra por cron), no necesita
+# Firebase Blaze ni ningún backend corriendo 24/7 — cada corrida dura
+# unos segundos.
 name: Send daily notification
 
 on:
   schedule:
-    - cron: '0 13 * * *' # 8:00am Colombia (UTC-5)
-  workflow_dispatch: # permite dispararlo manual desde la pestaña Actions, para probar
+    - cron: '0 13 * * *'  # 8:00am Colombia — frase/dato + estado de entreno (siempre se envía)
+    - cron: '30 21 * * *' # 4:30pm Colombia — desayuno/almuerzo/agua pendientes (solo si falta algo)
+    - cron: '30 3 * * *'  # 10:30pm Colombia (03:30 UTC del día siguiente) — cena/entreno pendientes (solo si falta algo)
+  workflow_dispatch: # permite elegir una franja y dispararla manual, para probar sin esperar al cron
+    inputs:
+      slot:
+        description: 'Franja a enviar'
+        required: true
+        type: choice
+        options: [morning, afternoon, evening]
+        default: morning
 
 jobs:
   send:
@@ -18,9 +29,19 @@ jobs:
           node-version: 22
       - run: npm install
         working-directory: notifications
+      - name: Resolver franja según el cron que disparó (o el input manual)
+        id: slot
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 13 * * *") echo "slot=morning" >> "$GITHUB_OUTPUT" ;;
+            "30 21 * * *") echo "slot=afternoon" >> "$GITHUB_OUTPUT" ;;
+            "30 3 * * *") echo "slot=evening" >> "$GITHUB_OUTPUT" ;;
+            *) echo "slot=${{ github.event.inputs.slot || 'morning' }}" >> "$GITHUB_OUTPUT" ;;
+          esac
       - run: node send.js
         working-directory: notifications
         env:
+          SLOT: ${{ steps.slot.outputs.slot }}
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}

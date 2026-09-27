@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Moon, Sun, GlassWater, KeyRound, Download, FileSpreadsheet, LogOut, LogIn,
-  Pencil, Trash2, Scale, Timer, Upload, Info, Target, Eye, Lock, ExternalLink, Clipboard, Bell,
+  Pencil, Trash2, Scale, Timer, Upload, Info, Target, Eye, Lock, ExternalLink, Clipboard, Bell, Trophy,
 } from 'lucide-react'
 import { getBadges } from '../lib/badges'
 import { ChevronDown } from 'lucide-react'
@@ -52,6 +52,7 @@ export default function Profile() {
   const s = useStore()
   const [editOpen, setEditOpen] = useState(false)
   const [keyOpen, setKeyOpen] = useState(false)
+  const [selectedBadge, setSelectedBadge] = useState(null)
   const name = s.profile.name || s.user?.displayName?.split(' ')[0] || 'Zestly'
 
   const badges = getBadges(s)
@@ -60,7 +61,7 @@ export default function Profile() {
     <div className="mx-auto w-full max-w-xl px-4 pt-4">
       {/* Hero con arco de logros sobre el avatar */}
       <div className="flex flex-col items-center text-center">
-        <BadgeArc badges={badges} unlocks={s.badgeUnlocks || {}} onTap={b => s.toast(b.on ? `${b.label} — desbloqueado` : `${b.label} — aún bloqueado`)} >
+        <BadgeArc badges={badges} unlocks={s.badgeUnlocks || {}} onTap={setSelectedBadge}>
           <div className="flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-brand-500 to-accent-600 font-display text-2xl font-bold text-white" style={{ width: 72, height: 72 }}>
             <UserAvatar url={s.user?.photoURL} fallback={name[0].toUpperCase()} />
           </div>
@@ -216,6 +217,7 @@ export default function Profile() {
 
       <EditProfileSheet open={editOpen} onClose={() => setEditOpen(false)} />
       <KeySheet open={keyOpen} onClose={() => setKeyOpen(false)} />
+      <BadgeSheet badge={selectedBadge} unlocks={s.badgeUnlocks || {}} onClose={() => setSelectedBadge(null)} />
     </div>
   )
 }
@@ -255,6 +257,54 @@ function MealSplitEditor() {
   )
 }
 
+// ── Medalla de logro ──────────────────────────────────────
+// Compartida entre el arco del avatar (36px) y el modal de detalle
+// (grande) — desbloqueada: bisel de oro/ámbar con relieve metálico
+// (sombras internas + un brillo diagonal) sobre el mismo ámbar que ya
+// usa la app para logros; bloqueada: el MISMO relieve pero en metal
+// apagado/desaturado, con un pequeño candado superpuesto — se reconoce
+// que es la misma medalla, solo que sin "encender", para que
+// desbloquearla se sienta un premio real y no solo un cambio de color.
+function Medal({ icon: Icon, on, size = 36 }) {
+  const iconSize = Math.round(size * 0.42)
+  const lockSize = Math.max(12, Math.round(size * 0.4))
+  return (
+    <span className="relative inline-flex shrink-0 items-center justify-center rounded-full" style={{ width: size, height: size }}>
+      {/* cuerpo metálico */}
+      <span
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: on
+            ? 'linear-gradient(145deg, #fde68a 0%, #f59e0b 55%, #b45309 100%)'
+            : 'linear-gradient(145deg, #cbd5e1 0%, #94a3b8 55%, #64748b 100%)',
+          boxShadow: on
+            ? 'inset 0 1.5px 2px rgb(255 255 255 / 0.7), inset 0 -3px 4px rgb(120 53 15 / 0.45), 0 2px 8px -2px rgb(180 83 9 / 0.5)'
+            : 'inset 0 1.5px 2px rgb(255 255 255 / 0.35), inset 0 -3px 4px rgb(30 41 59 / 0.35)',
+        }}
+      />
+      {/* aros del bisel, imitan el borde grabado de una medalla real */}
+      <span className="absolute rounded-full" style={{ inset: Math.max(1, size * 0.08), border: `1px solid ${on ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.3)'}` }} />
+      <span className="absolute rounded-full" style={{ inset: Math.max(2, size * 0.18), border: `1px solid ${on ? 'rgba(120,53,15,0.35)' : 'rgba(30,41,59,0.2)'}` }} />
+      {/* brillo diagonal fijo — sugiere superficie pulida sin animar nada */}
+      <span className="absolute inset-0 overflow-hidden rounded-full" aria-hidden="true">
+        <span
+          className="absolute"
+          style={{ width: '38%', height: '160%', left: '-6%', top: '-30%', transform: 'rotate(20deg)', background: on ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.22)' }}
+        />
+      </span>
+      <Icon size={iconSize} strokeWidth={on ? 2.1 : 1.6} className={`relative ${on ? 'text-amber-950' : 'text-slate-600 dark:text-slate-300'}`} />
+      {!on && (
+        <span
+          className="absolute flex items-center justify-center rounded-full border border-line bg-card2 text-ink3 shadow-sm"
+          style={{ width: lockSize, height: lockSize, right: -lockSize * 0.12, bottom: -lockSize * 0.12 }}
+        >
+          <Lock size={Math.round(lockSize * 0.56)} />
+        </span>
+      )}
+    </span>
+  )
+}
+
 // ── Arco de logros sobre el avatar ───────────────────────
 // 9 sockets en semicírculo; las medallas se incrustan desde el centro
 // hacia afuera en el orden en que se desbloquean.
@@ -277,19 +327,52 @@ function BadgeArc({ badges, unlocks, onTap, children }) {
             onClick={() => onTap(b)}
             title={b.label}
             aria-label={b.label}
-            className={`absolute flex h-9 w-9 items-center justify-center rounded-full transition-transform active:scale-90 ${
-              b.on
-                ? 'border-2 border-amber-300 bg-gradient-to-br from-amber-300 to-amber-500 text-white shadow-md'
-                : 'border-2 border-dashed border-line bg-card2 text-ink3/50'
-            }`}
+            className="absolute flex h-9 w-9 items-center justify-center transition-transform active:scale-90"
             style={{ left: x - 18, top: y - 18 }}
           >
-            {b.on ? <b.icon size={16} /> : <Lock size={12} />}
+            <Medal icon={b.icon} on={b.on} size={36} />
           </button>
         )
       })}
       <div className="absolute left-1/2 top-[118px] -translate-x-1/2 -translate-y-1/4">{children}</div>
     </div>
+  )
+}
+
+// ── Modal de detalle de un logro ─────────────────────────
+// Reutiliza el Sheet compartido (mismo patrón de backdrop + cierre +
+// comportamiento mobile/desktop que el resto de la app) — la "ceremonia"
+// se logra con lo de adentro: la medalla grande con un resplandor ámbar
+// detrás (solo si está desbloqueada) y una pequeña animación de aparición.
+function BadgeSheet({ badge, unlocks, onClose }) {
+  if (!badge) return null
+  const ts = unlocks[badge.label]
+  const unlockedDate = ts ? new Date(ts).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }) : null
+
+  return (
+    <Sheet open={!!badge} onClose={onClose} title={badge.label}>
+      <div className="flex flex-col items-center pb-1 pt-1 text-center">
+        <div className="relative mb-4 flex h-28 w-28 items-center justify-center">
+          {badge.on && <span className="medal-glow absolute inset-0 rounded-full bg-amber-400/30 blur-xl" aria-hidden="true" />}
+          <span className="medal-pop relative">
+            <Medal icon={badge.icon} on={badge.on} size={96} />
+          </span>
+        </div>
+
+        <p className="max-w-[280px] text-[13px] leading-relaxed text-ink2">
+          {badge.on ? badge.desc : <>Cómo desbloquearlo: <span className="text-ink">{badge.desc}</span></>}
+        </p>
+
+        <div className={`mt-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold ${
+          badge.on
+            ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400'
+            : 'border-line bg-card2 text-ink3'
+        }`}>
+          {badge.on ? <Trophy size={13} /> : <Lock size={12} />}
+          {badge.on ? `Desbloqueado${unlockedDate ? ' · ' + unlockedDate : ''}` : 'Aún no desbloqueado'}
+        </div>
+      </div>
+    </Sheet>
   )
 }
 

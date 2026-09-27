@@ -4,15 +4,15 @@ import { Trophy, Flame, Dumbbell, CalendarCheck, Ruler, ClipboardList, Sprout, Z
 export function getBadges(s) {
   const wl = s.workoutLogs || []
   return [
-    { icon: Sprout, label: 'Primer día', on: (s.log || []).length >= 1 || s.today.kcal > 0 },
-    { icon: Flame, label: 'Racha 7 días', on: s.streak >= 7 },
-    { icon: CalendarCheck, label: '30 días registro', on: (s.log || []).length >= 30 },
-    { icon: Dumbbell, label: 'Primer entreno', on: wl.length >= 1 },
-    { icon: Medal, label: '10 entrenos', on: wl.length >= 10 },
-    { icon: Zap, label: '25 entrenos', on: wl.length >= 25 },
-    { icon: Trophy, label: 'Primer PR', on: wl.some(l => l.exercises.some(e => e.pr)) },
-    { icon: ClipboardList, label: 'Primera rutina', on: (s.routines || []).length >= 1 },
-    { icon: Ruler, label: 'Medidas al día', on: (s.anthro || []).length >= 1 },
+    { icon: Sprout, label: 'Primer día', desc: 'Registraste tu primera comida o entrada del día.', on: (s.log || []).length >= 1 || s.today.kcal > 0 },
+    { icon: Flame, label: 'Racha 7 días', desc: 'Mantuviste el registro activo 7 días seguidos.', on: s.streak >= 7 },
+    { icon: CalendarCheck, label: '30 días registro', desc: 'Acumulaste 30 días de registro en total.', on: (s.log || []).length >= 30 },
+    { icon: Dumbbell, label: 'Primer entreno', desc: 'Completaste tu primera sesión de entrenamiento.', on: wl.length >= 1 },
+    { icon: Medal, label: '10 entrenos', desc: 'Completaste 10 sesiones de entrenamiento.', on: wl.length >= 10 },
+    { icon: Zap, label: '25 entrenos', desc: 'Completaste 25 sesiones de entrenamiento.', on: wl.length >= 25 },
+    { icon: Trophy, label: 'Primer PR', desc: 'Superaste tu propio récord en algún ejercicio.', on: wl.some(l => l.exercises.some(e => e.pr)) },
+    { icon: ClipboardList, label: 'Primera rutina', desc: 'Creaste tu primera rutina de entrenamiento.', on: (s.routines || []).length >= 1 },
+    { icon: Ruler, label: 'Medidas al día', desc: 'Registraste tus medidas corporales.', on: (s.anthro || []).length >= 1 },
   ]
 }
 

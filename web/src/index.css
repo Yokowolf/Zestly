@@ -171,6 +171,22 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .splash-dot { animation: splashDot 1.1s ease-in-out infinite; }
 
+/* Modal de detalle de un logro (Perfil) — resplandor ámbar que respira
+   detrás de la medalla desbloqueada (mismo patrón que splashGlow, pero
+   sin acoplarse a esa clase porque aquí el tamaño/posicionamiento es
+   distinto) + una pequeña aparición con rebote al abrir el modal. */
+@keyframes medalGlow {
+  0%, 100% { opacity: 0.35; transform: scale(0.92); }
+  50% { opacity: 0.65; transform: scale(1.06); }
+}
+.medal-glow { animation: medalGlow 2.4s ease-in-out infinite; }
+
+@keyframes medalPop {
+  from { opacity: 0; transform: scale(0.6) rotate(-6deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.medal-pop { animation: medalPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
 /* Respeta la preferencia del sistema: recorta toda animación/transición a
    casi cero en vez de quitarla (evita saltos bruscos por display:none). */
 @media (prefers-reduced-motion: reduce) {

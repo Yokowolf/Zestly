@@ -8,6 +8,14 @@ import { CacheFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
+// Sin esto, un service worker nuevo se queda "esperando" a que se cierren
+// TODAS las pestañas/instancias abiertas antes de tomar control — mientras
+// tanto el navegador puede quedar sirviendo una mezcla de archivos viejos
+// y nuevos a medio actualizar. skipWaiting + clients.claim fuerza que la
+// version nueva tome control de inmediato en cuanto termina de instalar.
+self.skipWaiting()
+self.addEventListener('activate', () => self.clients.claim())
+
 precacheAndRoute(self.__WB_MANIFEST)
 
 registerRoute(

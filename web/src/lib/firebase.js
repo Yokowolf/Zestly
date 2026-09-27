@@ -211,6 +211,10 @@ export async function cloudLoad(uid) {
     localStorage.setItem('zs_day', todayStr)
   } catch (e) {
     console.warn('Cloud load error:', e)
+    // Antes fallaba en silencio — si esto explota (red, permisos, etc.) el
+    // usuario veía la app "vacía" sin ninguna pista de que en realidad sus
+    // datos reales en la nube nunca llegaron a cargarse.
+    st.toast('No se pudieron cargar tus datos guardados — revisa tu conexión y reabre la app', 'err')
   }
 }
 

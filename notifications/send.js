@@ -9,7 +9,7 @@
 import webpush from 'web-push'
 import { initializeApp, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
-import { buildMessage, bogotaDateString } from './personalize.js'
+import { buildMessage, bogotaDateString, bogotaHour, inQuietHours } from './personalize.js'
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
 initializeApp({ credential: cert(serviceAccount) })
@@ -24,6 +24,16 @@ webpush.setVapidDetails(
 const SLOT = process.env.SLOT || 'morning' // 'morning' | 'afternoon' | 'evening'
 
 async function main() {
+  const hour = bogotaHour()
+  // Red de seguridad real: GitHub Actions puede atrasar un cron programado
+  // varias horas en workflows gratuitos (ya pasó — una franja de las 9pm
+  // llegó a las 4:26am) — sin esto, un atraso así manda una notificación
+  // en plena madrugada. No basta con solo programar el cron a buena hora.
+  if (inQuietHours(hour)) {
+    console.log(`Silencio nocturno (hora Bogotá: ${hour.toFixed(1)}) — no se envía nada.`)
+    return
+  }
+
   const todayStr = bogotaDateString()
   const subsSnap = await db.collection('pushSubscriptions').get()
   console.log(`Franja: ${SLOT} — ${subsSnap.size} suscripciones a evaluar (fecha Bogotá: ${todayStr})`)
@@ -39,7 +49,7 @@ async function main() {
       db.doc(`users/${uid}/d/fitness`).get(),
     ])
     const user = { profile: profileSnap.data(), today: todaySnap.data(), fitness: fitnessSnap.data() }
-    const msg = buildMessage(SLOT, user, todayStr)
+    const msg = buildMessage(SLOT, user, todayStr, hour)
     if (!msg) { skipped++; return }
 
     try {

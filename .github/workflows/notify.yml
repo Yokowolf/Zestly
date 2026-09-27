@@ -7,9 +7,9 @@ name: Send daily notification
 
 on:
   schedule:
-    - cron: '0 13 * * *'  # 8:00am Colombia — frase/dato + estado de entreno (siempre se envía)
-    - cron: '30 21 * * *' # 4:30pm Colombia — desayuno/almuerzo/agua pendientes (solo si falta algo)
-    - cron: '30 3 * * *'  # 10:30pm Colombia (03:30 UTC del día siguiente) — cena/entreno pendientes (solo si falta algo)
+    - cron: '0 14 * * *' # 9:00am Colombia — frase/dato + desayuno (6-9am) + entreno de hoy (siempre se envía)
+    - cron: '0 20 * * *' # 3:00pm Colombia — almuerzo (12-3pm) + agua si va atrasada (solo si falta algo)
+    - cron: '0 2 * * *'  # 9:00pm Colombia (02:00 UTC del día siguiente) — cena (7-9pm) + entreno si aún no (solo si falta algo)
   workflow_dispatch: # permite elegir una franja y dispararla manual, para probar sin esperar al cron
     inputs:
       slot:
@@ -33,9 +33,9 @@ jobs:
         id: slot
         run: |
           case "${{ github.event.schedule }}" in
-            "0 13 * * *") echo "slot=morning" >> "$GITHUB_OUTPUT" ;;
-            "30 21 * * *") echo "slot=afternoon" >> "$GITHUB_OUTPUT" ;;
-            "30 3 * * *") echo "slot=evening" >> "$GITHUB_OUTPUT" ;;
+            "0 14 * * *") echo "slot=morning" >> "$GITHUB_OUTPUT" ;;
+            "0 20 * * *") echo "slot=afternoon" >> "$GITHUB_OUTPUT" ;;
+            "0 2 * * *") echo "slot=evening" >> "$GITHUB_OUTPUT" ;;
             *) echo "slot=${{ github.event.inputs.slot || 'morning' }}" >> "$GITHUB_OUTPUT" ;;
           esac
       - run: node send.js

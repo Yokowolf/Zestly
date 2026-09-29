@@ -12,7 +12,11 @@ export const hasKey = () => !!getKey()
 // (por clave, no compartida entre usuarios), así que si uno se satura,
 // fue decomisionado o renombrado probamos el siguiente con la misma
 // clave. Empieza por el de mayor cuota diaria.
-const TEXT_MODELS = ['llama-3.1-8b-instant', 'llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b']
+// 2026-09-28: llama-3.1-8b-instant y llama-3.3-70b-versatile quedaron
+// descontinuados por Groq (console.groq.com/docs/deprecations) — daban
+// error 400 en cada llamada. Reemplazados por los sucesores que Groq
+// mismo recomienda en esa misma página.
+const TEXT_MODELS = ['openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'qwen/qwen3.6-27b']
 const VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct'
 
 async function request(model, key, body) {

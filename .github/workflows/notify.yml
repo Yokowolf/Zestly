@@ -19,6 +19,10 @@ on:
         options: [morning, afternoon, evening]
         default: morning
 
+# El token del workflow solo necesita leer el repo — nada de escribir.
+permissions:
+  contents: read
+
 jobs:
   send:
     runs-on: ubuntu-latest
@@ -27,7 +31,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+      # npm ci instala EXACTAMENTE lo del package-lock — con `npm install` una
+      # versión nueva (y potencialmente comprometida) de cualquier dependencia
+      # correría con la cuenta de servicio de Firebase en las variables.
+      - run: npm ci
         working-directory: notifications
       - name: Resolver franja según el cron que disparó (o el input manual)
         id: slot

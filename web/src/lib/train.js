@@ -59,6 +59,10 @@ export function startSession({ routine = null, name = 'Entreno libre' } = {}) {
       routineName: routine?.name || null,
       name: routine?.name || name,
       startTs: Date.now(),
+      // Tono/volumen del aviso de descanso configurado en la rutina — se
+      // copia a la sesión para que no cambie a mitad de entreno si editan
+      // la rutina, y para que "Entreno libre" use el predeterminado.
+      restAlert: routine?.restAlert || null,
       exercises: buildSessionExercises(routine?.exercises || []),
     },
   })

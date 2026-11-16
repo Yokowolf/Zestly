@@ -319,19 +319,24 @@ async function sharePlan(mp, nutrition, toast) {
   toast('Abriendo WhatsApp…')
 }
 
+// El plan lo escribe la IA — todo lo que va al HTML de impresión se escapa
+// para que una respuesta con "<script>" (o un prompt malicioso) no se
+// ejecute en la ventana de impresión.
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+
 // PDF: incluye las recetas generadas (ingredientes + preparación)
 function printPlan(mp, nutrition) {
   const rows = mp.days.map(d => `
-    <h3>${d.day} — <span class="k">${d.kcal} kcal</span></h3>
+    <h3>${esc(d.day)} — <span class="k">${esc(d.kcal)} kcal</span></h3>
     ${(d.meals || []).map(m => `
-      <table><tr><td class="t">${m.time}</td><td>${m.name}</td><td class="k">${m.kcal}</td></tr></table>
+      <table><tr><td class="t">${esc(m.time)}</td><td>${esc(m.name)}</td><td class="k">${esc(m.kcal)}</td></tr></table>
       ${m.recipe ? `<div class="rec">
-        <b>Ingredientes:</b> ${m.recipe.ingredients.map(i => `${i.item} (${i.qty})`).join(' · ')}<br>
-        <b>Preparación:</b> ${m.recipe.steps.map((st, i) => `${i + 1}. ${st}`).join(' ')}
+        <b>Ingredientes:</b> ${(m.recipe.ingredients || []).map(i => `${esc(i.item)} (${esc(i.qty)})`).join(' · ')}<br>
+        <b>Preparación:</b> ${(m.recipe.steps || []).map((st, i) => `${i + 1}. ${esc(st)}`).join(' ')}
       </div>` : ''}
     `).join('')}
   `).join('')
-  const shop = mp.shopping?.length ? `<h3>Lista de compras</h3><p>${mp.shopping.join(' · ')}</p>` : ''
+  const shop = mp.shopping?.length ? `<h3>Lista de compras</h3><p>${mp.shopping.map(esc).join(' · ')}</p>` : ''
   const w = window.open('', '_blank')
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Plan semanal Zestly</title><style>
     body{font-family:system-ui,sans-serif;max-width:640px;margin:24px auto;color:#0f172a;font-size:13px}
@@ -343,7 +348,7 @@ function printPlan(mp, nutrition) {
     .rec{margin:2px 6px 10px 116px;padding:8px 10px;background:#f8fafc;border-left:3px solid #0891b2;font-size:11px;line-height:1.7;color:#334155}
   </style></head><body>
     <h1>Plan alimenticio semanal — Zestly</h1>
-    <h2>Meta: ${nutrition.kcal} kcal · ${nutrition.prot}g proteína/día · generado ${new Date(mp.ts).toLocaleDateString('es')}</h2>
+    <h2>Meta: ${esc(nutrition.kcal)} kcal · ${esc(nutrition.prot)}g proteína/día · generado ${esc(new Date(mp.ts).toLocaleDateString('es'))}</h2>
     ${rows}${shop}
   </body></html>`)
   w.document.close()

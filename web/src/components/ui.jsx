@@ -46,7 +46,8 @@ export function Button({ children, variant = 'primary', className = '', loading 
 export function Chip({ on, children, className = '', ...props }) {
   return (
     <button
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-100 active:scale-[0.94] ${
+      {...(on !== undefined ? { 'aria-pressed': !!on } : {})}
+      className={`min-h-9 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-100 active:scale-[0.94] ${
         on
           ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300'
           : 'border-line bg-card text-ink2 hover:border-brand-300 hover:bg-card2 active:bg-card2'
@@ -65,11 +66,34 @@ export function Chip({ on, children, className = '', ...props }) {
 // el navegador YA lo recalcula solo cuando aparece el teclado, sin JS) y
 // vive fijo arriba de la pantalla con su contenido en un scroll propio —
 // el teclado nunca tapa nada porque el panel se encoge para dejarle espacio.
+// Varios sheets pueden estar abiertos a la vez (detalle de ejercicio dentro
+// de la sesión, porción dentro de calorías) — el bloqueo del scroll se
+// cuenta por referencia para que cerrar el interno no destrabe el fondo
+// mientras el externo sigue abierto.
+let openSheets = 0
+let sheetSeq = 0
+
 export function Sheet({ open, onClose, title, subtitle, children, locked = false }) {
+  const [id] = useState(() => `sheet-${++sheetSeq}`)
+
   useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [open])
+    if (!open) return
+    openSheets++
+    document.body.style.overflow = 'hidden'
+    // Foco: entra al título al abrir y vuelve a donde estaba al cerrar
+    // (sin esto, un lector de pantalla se queda "detrás" del panel).
+    const prevFocus = document.activeElement
+    const t = setTimeout(() => document.getElementById(`${id}-title`)?.focus(), 30)
+    const onKey = e => { if (e.key === 'Escape' && !locked) onClose?.() }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('keydown', onKey)
+      openSheets = Math.max(0, openSheets - 1)
+      if (openSheets === 0) document.body.style.overflow = ''
+      if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus()
+    }
+  }, [open, locked]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null
   return (
@@ -77,17 +101,20 @@ export function Sheet({ open, onClose, title, subtitle, children, locked = false
       className="fixed inset-0 z-50 flex flex-col bg-black/45 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget && !locked) onClose?.() }}
     >
-      <div className="mx-auto flex h-[100dvh] w-full max-w-xl flex-col overflow-hidden bg-bg2 fade-up md:my-6 md:h-auto md:max-h-[85dvh] md:rounded-3xl md:border md:border-line md:shadow-2xl">
+      <div
+        role="dialog" aria-modal="true" aria-labelledby={title ? `${id}-title` : undefined}
+        className="mx-auto flex h-[100dvh] w-full max-w-xl flex-col overflow-hidden bg-bg2 fade-up md:my-6 md:h-auto md:max-h-[85dvh] md:rounded-3xl md:border md:border-line md:shadow-2xl"
+      >
         <div className="shrink-0 border-b border-line px-5 pb-3 pt-4">
           <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-line md:hidden" />
           <div className="flex items-start justify-between gap-3">
-            <div>
-              {title && <h2 className="font-display text-lg font-bold">{title}</h2>}
+            <div className="min-w-0">
+              {title && <h2 id={`${id}-title`} tabIndex={-1} className="font-display text-lg font-bold outline-none">{title}</h2>}
               {subtitle && <p className="mt-0.5 text-xs text-ink2">{subtitle}</p>}
             </div>
             {!locked && (
-              <button onClick={onClose} className="shrink-0 rounded-full border border-line p-1.5 text-ink3 active:scale-90" aria-label="Cerrar">
-                <X size={16} />
+              <button onClick={onClose} className="icon-btn flex h-11 w-11 shrink-0 items-center justify-center rounded-full active:scale-90" aria-label="Cerrar">
+                <X size={20} />
               </button>
             )}
           </div>
@@ -124,10 +151,11 @@ export function Empty({ icon: Icon, children }) {
 export function Toasts() {
   const toasts = useStore(s => s.toasts)
   return (
-    <div className="pointer-events-none fixed left-1/2 top-4 z-[100] flex w-[92%] max-w-sm -translate-x-1/2 flex-col items-center gap-2">
+    <div role="status" aria-live="polite" className="pointer-events-none fixed left-1/2 top-4 z-[100] flex w-[92%] max-w-sm -translate-x-1/2 flex-col items-center gap-2">
       {toasts.map(t => (
         <div
           key={t.id}
+          role={t.type === 'err' ? 'alert' : undefined}
           className={`fade-up rounded-xl border bg-card px-4 py-2.5 text-[13px] font-medium shadow-lg ${
             t.type === 'err' ? 'border-red-300 text-red-500 dark:border-red-900'
             : t.type === 'ok' ? 'border-emerald-300 text-emerald-600 dark:border-emerald-900 dark:text-emerald-400'

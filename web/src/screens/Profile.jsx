@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { getBadges } from '../lib/badges'
 import { ChevronDown } from 'lucide-react'
-import { useStore, serializable } from '../store'
+import { useStore, serializable, sanitizeBackup } from '../store'
 import { signIn, logOut } from '../lib/firebase'
 import { pushSupported, subscribeToPush, unsubscribeFromPush, isPushSubscribed } from '../lib/push'
 import { getKey, setKey } from '../lib/ai'
@@ -387,8 +387,9 @@ function ImportRow() {
         const data = JSON.parse(ev.target.result)
         if (!data.profile || !data.nutrition) throw new Error()
         if (!confirm('¿Restaurar este respaldo? Reemplazará tus datos actuales.')) return
-        const { user, syncedAt, toasts, ...clean } = data
-        s.patch(clean)
+        // Solo claves conocidas y del tipo correcto — un archivo editado a
+        // mano no puede inyectar campos arbitrarios en el estado.
+        s.patch(sanitizeBackup(data))
         s.toast('Respaldo restaurado', 'ok')
       } catch {
         s.toast('El archivo no es un respaldo válido de Zestly', 'err')

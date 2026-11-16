@@ -4,7 +4,7 @@ import {
   onAuthStateChanged, setPersistence, browserLocalPersistence,
 } from 'firebase/auth'
 import { getFirestore, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore'
-import { useStore, serializable } from '../store'
+import { useStore, serializable, resetLocal } from '../store'
 
 // Mismo proyecto y misma estructura de documentos que la app legacy:
 // users/{uid}/d/profile · users/{uid}/d/today · users/{uid}/d/fitness
@@ -45,15 +45,30 @@ export async function signIn() {
   }
 }
 
+// Al cerrar sesión se borra el estado local: los datos ya están en la nube
+// bajo esa cuenta, y dejarlos en el dispositivo hacía que la siguiente
+// cuenta que entrara los "heredara" (cloudLoad combina lo local con lo de
+// la nube) y los guardara bajo su propio uid.
 export async function logOut() {
   await signOut(auth)
+  resetLocal()
 }
 
 export function watchAuth(onReady) {
-  getRedirectResult(auth).catch(e => {
+  getRedirectResult(auth).catch(() => {
     // Ignorar si no hubo redirección previa
   })
   return onAuthStateChanged(auth, async user => {
+    if (user) {
+      // Misma protección para el caso "entró otra cuenta sin cerrar la
+      // anterior": si el uid recordado es distinto, se limpia lo local antes
+      // de cargar. Si no hay uid recordado (primer login tras usar la app sin
+      // cuenta) se conserva lo local para que no pierda lo que ya registró.
+      let prev = null
+      try { prev = localStorage.getItem('zs_uid') } catch { /* sin localStorage */ }
+      if (prev && prev !== user.uid) resetLocal()
+      try { localStorage.setItem('zs_uid', user.uid) } catch { /* sin localStorage */ }
+    }
     useStore.getState().setUser(user)
     if (user) await cloudLoad(user.uid)
     onReady?.(user)
@@ -115,10 +130,19 @@ export async function cloudSave() {
       }, { merge: true }),
     ])
     useStore.setState({ syncedAt: Date.now() })
+    saveFailNotified = false
   } catch (e) {
     console.warn('Cloud save error:', e)
+    // Antes fallaba en silencio: el usuario creía que estaba sincronizado y
+    // no lo estaba. Un solo aviso por racha de fallos (no uno por cada
+    // reintento del debounce).
+    if (!saveFailNotified) {
+      saveFailNotified = true
+      useStore.getState().toast('No se pudo guardar en la nube — revisa tu conexión', 'err')
+    }
   }
 }
+let saveFailNotified = false
 
 function mergeByKey(local = [], cloud = [], keyFn, max = 60) {
   const map = new Map()

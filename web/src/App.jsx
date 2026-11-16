@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { useStore, rolloverIfNewDay } from './store'
 import { getActiveReminders } from './lib/reminders'
+import { EX_BY_ID } from './data/exercises'
 import { watchAuth } from './lib/firebase'
 import { Toasts } from './components/ui'
 import Welcome from './screens/Welcome'
@@ -288,12 +289,30 @@ function importSharedRoutine() {
   if (!data) return
   history.replaceState(null, '', location.pathname)
   try {
+    // El link lo arma cualquiera: se valida forma y tamaño antes de guardar
+    // nada (un ejercicio inexistente o un payload enorme rompía las
+    // pantallas de Entrenar/Sesión para ese usuario).
+    if (data.length > 20000) throw new Error()
     const r = JSON.parse(decodeURIComponent(escape(atob(data))))
-    if (!r.name || !Array.isArray(r.exercises) || !r.exercises.length) throw new Error()
+    if (typeof r.name !== 'string' || !Array.isArray(r.exercises) || !r.exercises.length || r.exercises.length > 40) throw new Error()
+    const name = r.name.replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 60)
+    const VALID_DAYS = new Set(['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'])
+    const days = Array.isArray(r.days) ? r.days.filter(d => VALID_DAYS.has(d)) : []
+    const num = (v, lo, hi, d) => { const n = parseInt(v, 10); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d }
+    const exercises = r.exercises
+      .filter(e => e && typeof e.exerciseId === 'string' && EX_BY_ID[e.exerciseId])
+      .map(e => ({
+        exerciseId: e.exerciseId,
+        sets: num(e.sets, 1, 10, 3),
+        reps: typeof e.reps === 'string' || typeof e.reps === 'number' ? String(e.reps).slice(0, 12) : '10',
+        rest: num(e.rest, 0, 600, 60),
+        ...(e.block === 'warmup' || e.block === 'stretch' ? { block: e.block } : {}),
+      }))
+    if (!name || !exercises.length) throw new Error()
     const s = useStore.getState()
-    if (!confirm(`¿Importar la rutina compartida "${r.name}" (${r.exercises.length} ejercicios)?`)) return
-    s.patch({ routines: [...(s.routines || []), { name: r.name, days: r.days || [], exercises: r.exercises, createdAt: Date.now() }] })
-    s.toast(`Rutina "${r.name}" importada`, 'ok')
+    if (!confirm(`¿Importar la rutina compartida "${name}" (${exercises.length} ejercicios)?`)) return
+    s.patch({ routines: [...(s.routines || []), { name, days, exercises, createdAt: Date.now() }] })
+    s.toast(`Rutina "${name}" importada`, 'ok')
   } catch {
     useStore.getState().toast('El link de rutina no es válido', 'err')
   }

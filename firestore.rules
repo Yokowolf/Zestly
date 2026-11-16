@@ -1,0 +1,42 @@
+// Reglas de seguridad de Firestore — Zestly
+//
+// Hoy las reglas viven SOLO en la consola de Firebase y permiten que
+// cualquier usuario autenticado lea y escriba CUALQUIER documento (incluidos
+// los perfiles, comidas, medidas, fotos y la clave de IA de otros usuarios).
+// Eso era tolerable con un solo usuario; para un producto multiusuario es
+// crítico. Estas reglas aíslan cada cuenta a sus propios documentos y niegan
+// todo lo demás.
+//
+// Cómo aplicarlas (hasta que haya `firebase deploy --only firestore:rules`):
+//   Firebase Console → Firestore Database → Reglas → reemplazar todo el
+//   contenido por este archivo → Publicar.
+//
+// El script de notificaciones (GitHub Actions) usa el Admin SDK, que ignora
+// estas reglas — no necesita ningún permiso adicional aquí.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Datos de cada usuario: users/{uid}/d/{profile|today|fitness}
+    match /users/{uid}/{document=**} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Suscripción a notificaciones push — un documento por usuario
+    match /pushSubscriptions/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // Todo lo demás: denegado
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

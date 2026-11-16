@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Bot, SendHorizontal, UtensilsCrossed } from 'lucide-react'
+import { Bot, SendHorizontal, UtensilsCrossed, RotateCcw } from 'lucide-react'
 import { useStore } from '../store'
 import { callAI } from '../lib/ai'
 import { Chip, Spinner } from '../components/ui'
@@ -13,18 +13,27 @@ const CHIPS = [
   '¿Cómo romper el estancamiento?',
 ]
 
+const GREETING = { role: 'bot', text: 'Hola, soy tu coach de nutrición y entrenamiento. Puedo analizar tus comidas, revisar tus sesiones y crear tu plan semanal. ¿En qué te ayudo?' }
+
 export default function Coach({ initialAction, go }) {
   const s = useStore()
-  const [msgs, setMsgs] = useState([{ role: 'bot', text: 'Hola, soy tu coach de nutrición y entrenamiento. Puedo analizar tus comidas, revisar tus sesiones y crear tu plan semanal. ¿En qué te ayudo?' }])
+  const [msgs, setMsgs] = useState([GREETING])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
-  
+
   const chatRef = useRef()
 
   const send = async text => {
     const msg = (text ?? input).trim()
     if (!msg || busy) return
     setInput('')
+    // Historial de la conversación — antes cada mensaje iba solo con el
+    // system prompt, así que la IA no recordaba nada de lo anterior y las
+    // preguntas de seguimiento ("¿y cuánta proteína?") salían sin contexto.
+    const history = msgs
+      .filter(m => m !== GREETING && !m.error)
+      .slice(-8)
+      .map(m => ({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text }))
     setMsgs(m => [...m, { role: 'user', text: msg }])
     setBusy(true)
     setTimeout(() => chatRef.current?.scrollTo(0, 1e6), 50)
@@ -46,10 +55,10 @@ export default function Coach({ initialAction, go }) {
         }
       }
       const system = `Eres Zestly AI, coach nutricional y de entrenamiento personal. El usuario quiere ${goal}. Meta: ${s.nutrition.kcal} kcal, proteína ${s.nutrition.prot}g. Hoy lleva ${s.today.kcal} kcal y ${s.today.prot}g de proteína.${fit} Responde en español, amigable, máximo 3 párrafos cortos, sin asteriscos ni markdown.`
-      const reply = await callAI(system, msg)
+      const reply = await callAI(system, msg, 700, false, { history })
       setMsgs(m => [...m, { role: 'bot', text: reply }])
     } catch (e) {
-      setMsgs(m => [...m, { role: 'bot', text: e.message }])
+      setMsgs(m => [...m, { role: 'bot', text: e.message, error: true }])
     }
     setBusy(false)
     setTimeout(() => chatRef.current?.scrollTo(0, 1e6), 50)
@@ -61,10 +70,19 @@ export default function Coach({ initialAction, go }) {
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-accent-600 to-brand-500 text-white">
           <Bot size={20} />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="font-display text-lg font-bold">Zestly AI</h1>
-          <p className="text-[10px] text-ink3">Coach de nutrición y entrenamiento</p>
+          <p className="text-xs text-ink2">Coach de nutrición y entrenamiento</p>
         </div>
+        {msgs.length > 1 && (
+          <button
+            onClick={() => { if (!busy) setMsgs([GREETING]) }}
+            className="icon-btn flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold"
+            aria-label="Nueva conversación"
+          >
+            <RotateCcw size={14} /> Nueva
+          </button>
+        )}
       </div>
 
       <div ref={chatRef} className="mt-4 flex flex-1 flex-col gap-2.5 overflow-y-auto pb-3">

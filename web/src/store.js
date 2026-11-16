@@ -85,6 +85,33 @@ export function serializable(s) {
   return data
 }
 
+// Solo las claves conocidas del estado, con el tipo esperado — un respaldo
+// JSON (o cualquier objeto externo) no puede meter claves arbitrarias,
+// __proto__, ni reemplazar un arreglo por un string.
+const DANGEROUS = new Set(['__proto__', 'constructor', 'prototype'])
+export function sanitizeBackup(data) {
+  const out = {}
+  for (const k of Object.keys(DEFAULTS)) {
+    if (DANGEROUS.has(k) || !(k in data)) continue
+    const v = data[k], d = DEFAULTS[k]
+    if (Array.isArray(d)) { if (Array.isArray(v)) out[k] = v.slice(0, 500) }
+    else if (d !== null && typeof d === 'object') { if (v && typeof v === 'object' && !Array.isArray(v)) out[k] = v }
+    else if (d === null) out[k] = v
+    else if (typeof v === typeof d) out[k] = v
+  }
+  return out
+}
+
+// Borra todo rastro local (estado + claves sueltas) y vuelve al estado
+// inicial — al cerrar sesión o al entrar con OTRA cuenta en el mismo
+// dispositivo, para que los datos de una cuenta nunca se mezclen con la otra.
+export function resetLocal() {
+  try {
+    ;['zs2', 'zs_groq_key', 'zs_day', 'zs_uid'].forEach(k => localStorage.removeItem(k))
+  } catch { /* sin localStorage */ }
+  useStore.setState({ ...DEFAULTS, user: null, syncedAt: null, toasts: [] })
+}
+
 // Migración: la foto única de progreso pasa a la galería
 {
   const st0 = useStore.getState()

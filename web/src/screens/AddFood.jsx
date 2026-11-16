@@ -497,6 +497,7 @@ function CamTab({ meal, onDone }) {
   const [busy, setBusy] = useState(false)
   const progress = useFakeProgress(busy)
   const [cooldown, setCooldown] = useState(0) // segundos restantes tras un límite de uso de la IA
+  const [err, setErr] = useState('')
 
   // Abre la cámara sola al entrar a esta pestaña — antes había que tocar el
   // ícono grande primero, un paso extra que no aportaba nada.
@@ -541,8 +542,11 @@ function CamTab({ meal, onDone }) {
       const parsed = parseAIJson(raw)
       if (!parsed.items?.length) throw new Error('No se detectaron alimentos en la foto')
       setItems(parsed.items)
+      setErr('')
     } catch (e) {
-      s.toast(e.message.slice(0, 60), 'err')
+      // El mensaje completo queda visible en una tarjeta (antes era un toast
+      // recortado a 60 caracteres que desaparecía antes de poder leerlo).
+      setErr(e.message)
       // Si fue el límite de uso de la IA, bloquea el botón un rato — reintentar
       // de inmediato solo vuelve a chocar con el mismo límite.
       if (e.message.includes('Límite de uso')) setCooldown(45)
@@ -587,7 +591,12 @@ function CamTab({ meal, onDone }) {
           {cooldown > 0 ? `Espera ${cooldown}s…` : busy ? `Analizando… ${progress}%` : 'Analizar con IA'}
         </Button>
       )}
-      {!preview && <p className="text-center text-xs text-ink3">Toca para abrir la cámara — asegúrate de que todos los ingredientes sean visibles</p>}
+      {!preview && <p className="text-center text-xs text-ink2">Toca para abrir la cámara — asegúrate de que todos los ingredientes sean visibles</p>}
+      {err && (
+        <div role="alert" className="w-full rounded-xl border border-orange-300 bg-orange-50 px-3.5 py-3 text-[13px] leading-relaxed text-orange-700 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-300">
+          {err}
+        </div>
+      )}
       {items && (
         <div className="w-full">
           <p className="mb-2 text-xs font-semibold text-brand-600">Detectado — revisa y confirma:</p>
@@ -610,31 +619,47 @@ function CamTab({ meal, onDone }) {
 }
 
 // ── Tab: Texto IA ────────────────────────────────────────
+const chunk = (arr, n) => Array.from({ length: Math.ceil(arr.length / n) }, (_, i) => arr.slice(i * n, i * n + n))
+
 function TextTab({ meal, onDone }) {
   const s = useStore()
   const [txt, setTxt] = useState('')
   const [busy, setBusy] = useState(false)
+  const [stage, setStage] = useState('')
   const progress = useFakeProgress(busy)
 
   const analyze = async () => {
     if (!txt.trim()) return
     if (!hasKey()) { s.toast('Configura tu clave IA en Perfil primero', 'err'); return }
     setBusy(true)
+    setStage('')
     try {
-      const prompt = 'Devuelve SOLO JSON sin texto ni backticks:\n{"items":[{"name":"nombre en español","kcal":número,"prot":número,"carb":número,"fat":número}]}\n\nAlimentos:\n' + txt
-      const parsed = parseAIJson(await callAI('Eres nutricionista. Analiza los alimentos y devuelve SOLO el JSON pedido.', prompt, 800, true))
-      if (!parsed.items?.length) throw new Error('No se encontraron alimentos')
-      parsed.items.forEach(it => logFood(meal, {
+      // Listas largas: antes iba todo en UNA llamada con tope de 800 tokens —
+      // la respuesta JSON se cortaba a la mitad y "crasheaba" el parseo, o
+      // la IA tardaba tanto que parecía colgada. Ahora se parte en lotes de
+      // hasta 6 alimentos, cada lote con tokens de sobra, y se van sumando.
+      const parts = txt.split(/\n|;|,\s*(?=[A-Za-zÁ-ú])/).map(x => x.trim()).filter(Boolean)
+      const batches = parts.length > 6 ? chunk(parts, 6) : [parts.length ? parts : [txt]]
+      const items = []
+      for (let b = 0; b < batches.length; b++) {
+        if (batches.length > 1) setStage(`lote ${b + 1}/${batches.length}`)
+        const prompt = 'Devuelve SOLO JSON sin texto ni backticks:\n{"items":[{"name":"nombre en español","kcal":número,"prot":número,"carb":número,"fat":número,"grams":número}]}\nUn item por alimento, con la porción indicada (o una porción típica si no se indica).\n\nAlimentos:\n' + batches[b].join('\n')
+        const parsed = parseAIJson(await callAI('Eres nutricionista. Analiza los alimentos y devuelve SOLO el JSON pedido.', prompt, 300 + batches[b].length * 160, true))
+        ;(parsed.items || []).forEach(it => { if (it && it.name) items.push(it) })
+      }
+      if (!items.length) throw new Error('No se encontraron alimentos')
+      items.forEach(it => logFood(meal, {
         name: it.name, qty: 1, unit: 'porción', fromDB: false, portionGrams: it.grams || null,
         baseKcal: it.kcal || 0, baseProt: it.prot || 0, baseCarb: it.carb || 0, baseFat: it.fat || 0,
         kcal: Math.round(it.kcal || 0), prot: round1(it.prot || 0), carb: round1(it.carb || 0), fat: round1(it.fat || 0),
       }))
-      s.toast(`${parsed.items.length} alimento(s) añadidos`, 'ok')
+      s.toast(`${items.length} alimento(s) añadidos`, 'ok')
       onDone()
     } catch (e) {
-      s.toast(e.message.slice(0, 60), 'err')
+      s.toast(e.message.slice(0, 90), 'err')
     }
     setBusy(false)
+    setStage('')
   }
 
   return (
@@ -647,7 +672,7 @@ function TextTab({ meal, onDone }) {
         placeholder={'Describe lo que comiste con porciones:\n\n4 huevos revueltos con cebolla y tomate\n2 arepas medianas\n1 vaso de jugo de naranja'}
         value={txt} onChange={e => setTxt(e.target.value)}
       />
-      <Button variant="accent" className="mt-3" onClick={analyze} loading={busy}>{busy ? `Analizando… ${progress}%` : 'Analizar con IA'}</Button>
+      <Button variant="accent" className="mt-3" onClick={analyze} loading={busy}>{busy ? `Analizando${stage ? ` ${stage}` : ''}… ${progress}%` : 'Analizar con IA'}</Button>
     </div>
   )
 }

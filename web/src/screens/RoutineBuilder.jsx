@@ -41,7 +41,7 @@ export function DragHandle(props) {
   return (
     <button
       type="button" {...props}
-      className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-ink3 active:cursor-grabbing active:bg-card2"
+      className="flex h-11 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-ink2 active:cursor-grabbing active:bg-card2"
       aria-label="Arrastrar para reordenar"
     >
       <GripVertical size={18} />
@@ -119,23 +119,25 @@ export default function RoutineBuilder({ draft, onClose }) {
 
   return (
     <Sheet open={!!draft} onClose={onClose} title="Rutina" subtitle="Nombre, días de la semana y ejercicios">
-      <label className="block text-xs font-semibold text-ink2">
+      <div className="card p-3.5">
+      <label className="block text-xs font-bold uppercase tracking-wider text-ink2">
         Nombre
-        <Input className="mt-1" placeholder="ej. Push A: Pecho y Tríceps" value={r.name} onChange={e => upd({ name: e.target.value })} />
+        <Input className="mt-1.5 font-display font-semibold normal-case tracking-normal" placeholder="ej. Push A: Pecho y Tríceps" value={r.name} onChange={e => upd({ name: e.target.value })} />
       </label>
 
-      <p className="mt-3 text-xs font-semibold text-ink2">Días de la semana</p>
+      <p className="mt-3.5 text-xs font-bold uppercase tracking-wider text-ink2">Días de la semana</p>
       <div className="mt-1.5 flex justify-between gap-1.5" role="group" aria-label="Días de la semana">
         {DAYS.map(([id, letter]) => (
           <button key={id} type="button"
             aria-pressed={r.days.includes(id)} aria-label={DAY_NAMES[id]}
             onClick={() => upd({ days: r.days.includes(id) ? r.days.filter(d => d !== id) : [...r.days, id] })}
-            className={`h-11 flex-1 rounded-xl border text-sm font-bold transition-colors ${
-              r.days.includes(id) ? 'border-brand-500 bg-brand-600 text-white' : 'border-line bg-card text-ink2'
+            className={`h-11 flex-1 rounded-full border text-sm font-bold transition-all active:scale-90 ${
+              r.days.includes(id) ? 'border-brand-700 bg-brand-700 text-white shadow-sm' : 'border-line bg-card2 text-ink2'
             }`}>
             {letter}
           </button>
         ))}
+      </div>
       </div>
 
       <SectionTitle>Ejercicios de la rutina ({r.exercises.length})</SectionTitle>
@@ -169,11 +171,11 @@ export default function RoutineBuilder({ draft, onClose }) {
                         <button type="button" onClick={() => setDetail(ex)} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={`Ver detalle de ${ex?.name || e.exerciseId}`}>
                           <ExerciseImg exercise={ex} size="h-12 w-12" />
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-[13px] font-semibold">{ex?.name || e.exerciseId}</div>
+                            <div className="truncate text-sm font-bold">{ex?.name || e.exerciseId}</div>
                             <div className="truncate text-[11px] text-ink2">{ex?.muscle.map(m => MUSCLES[m]).join(' · ')}</div>
                           </div>
                         </button>
-                        <button type="button" onClick={() => upd({ exercises: r.exercises.filter((_, j) => j !== i) })} className="flex h-11 w-11 items-center justify-center rounded-lg text-ink3 active:bg-card2" aria-label={`Quitar ${ex?.name || 'ejercicio'}`}>
+                        <button type="button" onClick={() => upd({ exercises: r.exercises.filter((_, j) => j !== i) })} className="flex h-11 w-11 items-center justify-center rounded-lg text-ink2 active:bg-card2" aria-label={`Quitar ${ex?.name || 'ejercicio'}`}>
                           <Trash2 size={17} />
                         </button>
                       </div>
@@ -197,6 +199,7 @@ export default function RoutineBuilder({ draft, onClose }) {
       {/* ── Aviso de descanso: tono + volumen (se oye en la sesión) ── */}
       <SectionTitle>Aviso de fin de descanso</SectionTitle>
       <div className="card p-3.5">
+        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-ink2">Tono</p>
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Tono del aviso">
           {Object.entries(TONES).map(([id, t]) => (
             <Chip key={id} on={alert.tone === id} onClick={() => { upd({ restAlert: { ...alert, tone: id } }); previewTone(id, alert.volume) }} title={t.hint}>
@@ -205,7 +208,7 @@ export default function RoutineBuilder({ draft, onClose }) {
           ))}
         </div>
         <label className="mt-3 flex items-center gap-3 text-xs font-semibold text-ink2">
-          <Volume2 size={16} className="shrink-0 text-ink3" />
+          <Volume2 size={16} className="shrink-0 text-ink2" aria-hidden="true" />
           <span className="w-16 shrink-0">Volumen</span>
           <input
             type="range" min={0} max={100} step={5} value={Math.round((alert.volume ?? DEFAULT_ALERT.volume) * 100)}
@@ -218,20 +221,20 @@ export default function RoutineBuilder({ draft, onClose }) {
           <span className="w-10 text-right tabular-nums">{Math.round((alert.volume ?? DEFAULT_ALERT.volume) * 100)}%</span>
         </label>
         <button type="button" onClick={() => previewTone(alert.tone, alert.volume)} disabled={alert.tone === 'none'}
-          className="mt-2 flex min-h-11 items-center gap-2 rounded-xl border border-line px-3 text-xs font-semibold text-ink2 disabled:opacity-50">
+          className="mt-2 flex min-h-11 items-center gap-2 rounded-xl border border-accent-300 bg-accent-50 px-3 text-xs font-bold text-accent-800 disabled:opacity-50 dark:border-accent-800 dark:bg-accent-900/30 dark:text-accent-200">
           <Play size={14} /> Escuchar
         </button>
         <p className="mt-2 text-[11px] text-ink2">El botón de sonido en la sesión silencia todos los avisos sin cambiar esta configuración.</p>
       </div>
 
       <SectionTitle right={
-        <div className="flex overflow-hidden rounded-lg border border-line text-[11px] font-bold" role="group" aria-label="Modo del banco">
-          <button type="button" aria-pressed={bankMode === 'map'} onClick={() => setBankMode('map')} className={`flex min-h-9 items-center gap-1 px-3 ${bankMode === 'map' ? 'bg-brand-600 text-white' : 'text-ink2'}`}><PersonStanding size={13} /> Mapa</button>
-          <button type="button" aria-pressed={bankMode === 'list'} onClick={() => setBankMode('list')} className={`flex min-h-9 items-center gap-1 px-3 ${bankMode === 'list' ? 'bg-brand-600 text-white' : 'text-ink2'}`}><List size={13} /> Lista</button>
+        <div className="flex overflow-hidden rounded-lg border border-line text-xs font-bold" role="group" aria-label="Modo del banco">
+          <button type="button" aria-pressed={bankMode === 'map'} onClick={() => setBankMode('map')} className={`flex min-h-9 items-center gap-1 px-3 ${bankMode === 'map' ? 'bg-brand-700 text-white' : 'text-ink2'}`}><PersonStanding size={13} /> Mapa</button>
+          <button type="button" aria-pressed={bankMode === 'list'} onClick={() => setBankMode('list')} className={`flex min-h-9 items-center gap-1 px-3 ${bankMode === 'list' ? 'bg-brand-700 text-white' : 'text-ink2'}`}><List size={13} /> Lista</button>
         </div>
       }>Agregar del banco</SectionTitle>
       <div className="relative mb-2">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink3" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink2" aria-hidden="true" />
         <Input className="pl-10" placeholder="Press, sentadilla, espalda..." value={q} onChange={e => setQ(e.target.value)} aria-label="Buscar ejercicio" />
       </div>
 
@@ -286,7 +289,7 @@ export default function RoutineBuilder({ draft, onClose }) {
 
       {/* Guardar siempre a la vista — antes quedaba debajo de todo el banco */}
       <div className="sticky bottom-0 -mx-5 mt-4 border-t border-line bg-bg2/95 px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-        <Button onClick={save}>Guardar rutina</Button>
+        <Button onClick={save}>Guardar rutina{r.exercises.length ? ` · ${r.exercises.length} ejercicios` : ''}</Button>
       </div>
       <ExerciseSheet exercise={detail} onClose={() => setDetail(null)} />
     </Sheet>
@@ -332,7 +335,7 @@ function StepField({ label, value, onCommit, min = 0, max = 999, step = 1 }) {
           onKeyDown={e => e.key === 'Enter' && e.target.blur()}
           className="w-0 flex-1 bg-transparent text-center text-base font-semibold text-ink outline-none"
         />
-        <button type="button" onClick={() => nudge(step)} className="w-9 shrink-0 bg-brand-600 text-lg text-white active:bg-brand-700" aria-label={`Más ${label}`}>+</button>
+        <button type="button" onClick={() => nudge(step)} className="w-9 shrink-0 bg-brand-700 text-lg text-white active:bg-brand-800" aria-label={`Más ${label}`}>+</button>
       </div>
     </div>
   )
@@ -348,9 +351,9 @@ export function BankRow({ ex, onAdd, onInfo }) {
           <div className="truncate text-[11px] text-ink2">{ex.muscle.map(m => MUSCLES[m] || m).join(' · ')} · {EQUIP[ex.equipment]}</div>
         </div>
       </button>
-      <button type="button" onClick={onInfo} className="flex h-11 w-9 items-center justify-center text-ink3" aria-label="Ver detalle"><Info size={16} /></button>
+      <button type="button" onClick={onInfo} className="flex h-11 w-9 items-center justify-center text-ink2" aria-label="Ver detalle"><Info size={16} /></button>
       {onAdd && (
-        <button type="button" onClick={onAdd} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-600 text-white active:scale-90" aria-label={`Agregar ${ex.name}`}>
+        <button type="button" onClick={onAdd} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-700 text-white active:scale-90" aria-label={`Agregar ${ex.name}`}>
           <Plus size={18} />
         </button>
       )}

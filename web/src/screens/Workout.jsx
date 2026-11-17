@@ -37,6 +37,7 @@ export default function Workout({ open, onClose }) {
   const [pickMode, setPickMode] = useState('search') // 'search' | 'map' — atajo por mapa muscular
   const [muscleSel, setMuscleSel] = useState(null)
   const [focusId, setFocusId] = useState(null) // exerciseId a enfocar (recién agregado o "siguiente")
+  const [sweepId, setSweepId] = useState(null) // exerciseId recién completado: barrido de luz (solo visual)
   const [, tick] = useState(0)
   const sensors = useDragSensors()
 
@@ -134,6 +135,12 @@ export default function Workout({ open, onClose }) {
   // tras completar uno) y lo resalta un momento. Va antes del "return null"
   // — todo hook debe llamarse siempre, en el mismo orden cada render.
   useEffect(() => {
+    if (!sweepId) return
+    const t = setTimeout(() => setSweepId(null), 1000)
+    return () => clearTimeout(t)
+  }, [sweepId])
+
+  useEffect(() => {
     if (!focusId) return
     const t = setTimeout(() => {
       document.querySelector(`[data-ex="${CSS.escape(focusId)}"]`)?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' })
@@ -201,6 +208,7 @@ export default function Workout({ open, onClose }) {
         return n
       })
       if (next) setFocusId(next.exerciseId)
+      setSweepId(e.exerciseId)
       s.toast(next ? `${ex.name || 'Ejercicio'} completado — sigue ${EX_BY_ID[next.exerciseId]?.name || 'el siguiente'}` : `${ex.name || 'Ejercicio'} completado`, 'ok')
     }
   }
@@ -286,14 +294,14 @@ export default function Workout({ open, onClose }) {
       subtitle={pendingEx === 0 && totalSets > 0 ? '¡Todo completado! Termina cuando quieras' : `${doneSets}/${totalSets} series · ${pendingEx} ejercicio${pendingEx === 1 ? '' : 's'} pendiente${pendingEx === 1 ? '' : 's'}`}>
 
       {/* ── Cabecera fija: progreso + reloj; en descanso, el contador manda ── */}
-      <div className="sticky -top-4 z-10 -mx-1 mb-3 rounded-2xl border border-line bg-bg2/95 p-3 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <button onClick={onClose} className="icon-btn flex min-h-11 items-center gap-1 rounded-xl px-3 text-xs font-semibold active:scale-95" aria-label="Minimizar sesión">
-            <ChevronDown size={16} /> Minimizar
+      <div className="sticky -top-4 z-10 -mx-1 mb-3 rounded-2xl border border-line bg-bg2/95 p-2.5 backdrop-blur">
+        <div className="flex items-center gap-1.5">
+          <button onClick={onClose} className="icon-btn flex items-center gap-1 rounded-xl px-2.5 text-xs font-semibold active:scale-95" aria-label="Minimizar sesión">
+            <ChevronDown size={16} aria-hidden /> <span className="hidden sm:inline">Minimizar</span>
           </button>
           <div className="flex overflow-hidden rounded-xl border border-line" role="group" aria-label="Vista">
-            <button onClick={() => setViewMode('list')} aria-pressed={viewMode === 'list'} className={`flex h-11 w-11 items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-brand-600 text-white' : 'text-ink2 hover:bg-card2'}`} aria-label="Vista lista"><List size={16} /></button>
-            <button onClick={() => setViewMode('grid')} aria-pressed={viewMode === 'grid'} className={`flex h-11 w-11 items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-brand-600 text-white' : 'text-ink2 hover:bg-card2'}`} aria-label="Vista cuadrícula"><LayoutGrid size={16} /></button>
+            <button onClick={() => setViewMode('list')} aria-pressed={viewMode === 'list'} className={`flex h-11 w-11 items-center justify-center transition-colors ${viewMode === 'list' ? 'bg-brand-700 text-white' : 'text-ink2 hover:bg-card2'}`} aria-label="Vista lista"><List size={16} /></button>
+            <button onClick={() => setViewMode('grid')} aria-pressed={viewMode === 'grid'} className={`flex h-11 w-11 items-center justify-center transition-colors ${viewMode === 'grid' ? 'bg-brand-700 text-white' : 'text-ink2 hover:bg-card2'}`} aria-label="Vista cuadrícula"><LayoutGrid size={16} /></button>
           </div>
           <button
             onClick={() => s.patch({ soundOn: !s.soundOn })}
@@ -304,37 +312,48 @@ export default function Workout({ open, onClose }) {
           >
             {s.soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
-          <span className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-ink2" aria-label={`Tiempo de sesión ${fmtClock(elapsed)}`}>
-            <Clock size={14} />
-            <span className="font-display text-xl font-bold tabular-nums text-brand-700 dark:text-brand-300">{fmtClock(elapsed)}</span>
+          <span className="ml-auto flex flex-col items-end leading-none" aria-label={`Tiempo de sesión ${fmtClock(elapsed)}`}>
+            <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-ink2"><Clock size={11} aria-hidden /> Sesión</span>
+            <span className="font-display text-2xl font-bold tabular-nums text-brand-700 dark:text-brand-300">{fmtClock(elapsed)}</span>
           </span>
         </div>
         <div className="mt-2.5 flex items-center gap-2.5">
-          <div className="flex-1"><Bar pct={totalSets ? (doneSets / totalSets) * 100 : 0} /></div>
-          <span className="text-[11px] font-semibold tabular-nums text-ink2">{doneSets}/{totalSets}</span>
+          <div className="flex-1"><Bar pct={totalSets ? (doneSets / totalSets) * 100 : 0} className={pendingEx === 0 && totalSets > 0 ? 'bg-emerald-500' : 'bg-brand-500'} /></div>
+          <span className="text-xs font-bold tabular-nums text-ink2">{doneSets}<span className="font-medium text-ink3">/{totalSets}</span></span>
         </div>
         {rest && (
-          <div className="mt-3 rounded-xl border border-accent-400/40 bg-accent-500/10 p-3" role="timer" aria-live="off">
-            <div className="flex items-center gap-3">
-              <Timer size={18} className="shrink-0 text-accent-600 dark:text-accent-400" />
+          <div className="relative mt-3 overflow-hidden rounded-2xl border border-accent-400/50 bg-accent-500/10 p-3.5 dark:bg-accent-500/15" role="timer" aria-live="off">
+            <div className="rest-glow pointer-events-none absolute left-1/2 top-1/2 h-32 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500/25 blur-2xl" aria-hidden />
+            <div className="relative flex items-center gap-3">
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-accent-700 dark:text-accent-300">Descanso{rest.next ? ` · luego serie ${rest.next}` : ''}</div>
-                <div className="font-display text-4xl font-bold leading-none tabular-nums text-accent-700 dark:text-accent-300">{fmtClock(restLeft)}</div>
+                <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-accent-800 dark:text-accent-200">
+                  <Timer size={13} aria-hidden /> Descanso{rest.next ? ` · luego serie ${rest.next}` : ''}
+                </div>
+                <div className="mt-0.5 font-display text-5xl font-bold leading-none tabular-nums text-accent-800 dark:text-accent-200">{fmtClock(restLeft)}</div>
               </div>
-              <button onClick={() => patchW({ rest: { ...rest, end: rest.end - 15000 } })} className="icon-btn flex h-11 min-w-11 items-center justify-center rounded-xl px-2 text-xs font-bold" aria-label="Quitar 15 segundos de descanso">−15</button>
-              <button onClick={() => patchW({ rest: { ...rest, end: rest.end + 15000, total: rest.total + 15 } })} className="icon-btn flex h-11 min-w-11 items-center justify-center rounded-xl px-2 text-xs font-bold" aria-label="Agregar 15 segundos de descanso">+15</button>
-              <button onClick={() => patchW({ rest: null })} className="flex h-11 items-center rounded-xl bg-accent-600 px-3 text-xs font-bold text-white active:scale-95" aria-label="Saltar descanso">Saltar</button>
+              <div className="flex shrink-0 flex-col gap-1.5">
+                <div className="flex gap-1.5">
+                  <button onClick={() => patchW({ rest: { ...rest, end: rest.end - 15000 } })} className="icon-btn flex items-center justify-center rounded-xl px-2 text-xs font-bold" aria-label="Quitar 15 segundos de descanso">−15</button>
+                  <button onClick={() => patchW({ rest: { ...rest, end: rest.end + 15000, total: rest.total + 15 } })} className="icon-btn flex items-center justify-center rounded-xl px-2 text-xs font-bold" aria-label="Agregar 15 segundos de descanso">+15</button>
+                </div>
+                <button onClick={() => patchW({ rest: null })} className="flex h-11 items-center justify-center gap-1 rounded-xl bg-accent-700 px-3 text-sm font-bold text-white shadow-[0_2px_10px_-2px_rgb(124_58_237/0.5)] active:scale-95" aria-label="Saltar descanso">Saltar <ArrowRight size={14} aria-hidden /></button>
+              </div>
             </div>
-            <div className="mt-2"><Bar pct={(restLeft / rest.total) * 100} className="bg-accent-500" /></div>
+            <div className="relative mt-2.5"><Bar pct={(restLeft / rest.total) * 100} className="bg-accent-500" /></div>
           </div>
         )}
       </div>
 
       {w.exercises.length === 0 && <Empty icon={Search}>Agrega ejercicios o un bloque de calentamiento con el botón de abajo</Empty>}
 
-      {grouped.map(block => (
-        <div key={block.id} className="mb-3">
-          <p className={`mb-2 text-[11px] font-bold uppercase tracking-wider ${block.color}`}>{block.label}</p>
+      {grouped.map(block => {
+        const blockDone = block.list.filter(x => exDone(x.e)).length
+        return (
+        <div key={block.id} className="mb-4">
+          <div className="mb-2 flex items-center justify-between">
+            <p className={`text-[11px] font-bold uppercase tracking-wider ${block.color}`}>{block.label}</p>
+            <span className="text-[11px] font-semibold tabular-nums text-ink2">{blockDone}/{block.list.length}</span>
+          </div>
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd(block.id)}>
             <SortableContext items={block.list.map(x => `${x.e.exerciseId}::${x.ei}`)} strategy={verticalListSortingStrategy}>
               <div className="flex flex-col gap-2.5">
@@ -353,9 +372,18 @@ export default function Workout({ open, onClose }) {
                   const allDone = exDone(e)
                   const doneCount = e.sets.filter(st => st.done).length
                   const isCollapsed = collapsed.has(e.exerciseId)
-                  const focusRing = focusId === e.exerciseId ? 'ring-2 ring-accent-400' : ''
+                  const focusRing = focusId === e.exerciseId ? 'ring-2 ring-accent-400 ring-offset-2 ring-offset-bg2' : ''
                   const doneCard = allDone ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-500/60 dark:bg-emerald-500/10' : ''
+                  const sweep = sweepId === e.exerciseId ? 'card-sweep' : ''
+                  const stage = !allDone && !isCollapsed ? 'stage-card' : ''
                   const sortId = `${e.exerciseId}::${ei}`
+                  // Texto de ayuda con la serie de la última vez ("ant. 22.5 × 10")
+                  const ghostTxt = si => {
+                    const gw = ghostW(si), gr = ghostR(si)
+                    if (gr == null && gw == null) return null
+                    if (ex.weight === false || gw == null) return `ant. ${gr}${timed ? 's' : ' reps'}`
+                    return `ant. ${gw} × ${gr ?? '—'}`
+                  }
 
                   const checkBtn = (st, si, cls) => {
                     const ready = setReady(ex, st) || (ex.weight === false ? ghostR(si) != null : ghostW(si) != null && ghostR(si) != null)
@@ -363,12 +391,12 @@ export default function Workout({ open, onClose }) {
                       <button
                         onClick={() => toggleSet(ei, si)} aria-pressed={st.done}
                         aria-label={st.done ? `Serie ${si + 1} completada` : ready ? `Marcar serie ${si + 1} como completada` : `Serie ${si + 1}: registra peso y reps`}
-                        className={`flex h-11 shrink-0 items-center justify-center rounded-xl border transition-all active:scale-90 ${cls} ${
-                          st.done ? 'border-emerald-500 bg-emerald-500 text-white'
-                            : ready ? 'border-brand-500 bg-brand-600/10 text-brand-700 dark:text-brand-300' : 'border-line bg-card2 text-ink3'
+                        className={`flex h-12 shrink-0 items-center justify-center rounded-xl border transition-all active:scale-90 ${cls} ${
+                          st.done ? 'set-pop border-emerald-500 bg-emerald-500 text-white shadow-[0_2px_8px_-2px_rgb(16_185_129/0.6)]'
+                            : ready ? 'border-brand-500 bg-brand-50 text-brand-800 dark:bg-brand-900/40 dark:text-brand-200' : 'border-line bg-card2 text-ink3'
                         }`}
                       >
-                        {st.done ? <Check size={18} strokeWidth={3} /> : ready ? <Check size={18} /> : <Circle size={16} />}
+                        {st.done ? <Check size={20} strokeWidth={3} /> : ready ? <Check size={20} /> : <Circle size={16} />}
                       </button>
                     )
                   }
@@ -378,17 +406,18 @@ export default function Workout({ open, onClose }) {
                     return (
                       <SortableRow key={sortId} id={sortId}>
                         {handleProps => (
-                          <div data-ex={e.exerciseId} className={`card flex w-full items-center gap-2 p-2 pr-3 transition-colors duration-300 ${doneCard} ${focusRing}`}>
+                          <div data-ex={e.exerciseId} className={`card flex w-full items-center gap-1.5 p-1.5 pr-2.5 transition-colors duration-300 ${doneCard} ${focusRing} ${sweep}`}>
                             <DragHandle {...handleProps} />
                             <button onClick={() => toggleCollapse(e.exerciseId)} aria-expanded={false}
-                              className="flex min-h-11 min-w-0 flex-1 items-center gap-3 text-left active:scale-[0.99]">
-                              <ExerciseImg exercise={ex} size="h-10 w-10" />
+                              className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 text-left active:scale-[0.99]">
+                              <ExerciseImg exercise={ex} size="h-10 w-10" rounded="rounded-lg" />
                               <div className="min-w-0 flex-1">
-                                <div className={`truncate text-[13px] font-semibold ${allDone ? 'text-ink2 line-through' : ''}`}>{ex.name || e.exerciseId}</div>
-                                <div className={`text-[11px] ${allDone ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-ink2'}`}>{allDone ? 'Completado' : `${doneCount}/${e.sets.length} series`}</div>
+                                <div className={`truncate text-[13px] font-semibold ${allDone ? 'text-ink2 line-through decoration-emerald-500/70' : ''}`}>{ex.name || e.exerciseId}</div>
+                                <div className={`text-[11px] ${allDone ? 'font-semibold text-emerald-700 dark:text-emerald-400' : 'text-ink2'}`}>{allDone ? 'Completado' : `${doneCount}/${e.sets.length} series · ${e.reps}`}</div>
                               </div>
-                              {allDone && <Check size={18} className="shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />}
-                              <ChevronDown size={18} className="shrink-0 text-ink3" aria-hidden />
+                              {allDone
+                                ? <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white" aria-hidden><Check size={15} strokeWidth={3} /></span>
+                                : <ChevronDown size={18} className="shrink-0 text-ink3" aria-hidden />}
                             </button>
                           </div>
                         )}
@@ -397,29 +426,31 @@ export default function Workout({ open, onClose }) {
                   }
 
                   const head = handleProps => (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <DragHandle {...handleProps} />
                       <button onClick={() => setDetail(ex)} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={`Ver detalle de ${ex.name || e.exerciseId}`}>
-                        {viewMode === 'list' && <ExerciseImg exercise={ex} size="h-12 w-12" />}
+                        {viewMode === 'list' && <ExerciseImg exercise={ex} size="h-16 w-16" rounded="rounded-xl" />}
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-[14px] font-semibold">{ex.name || e.exerciseId}</div>
-                          <div className="text-[11px] text-ink2">
-                            Objetivo {e.reps} · descanso {e.rest}s{best > 0 && <> · <Trophy size={10} className="inline text-amber-600" aria-hidden /> {fromKg(best)} {unitLbl()}</>}
+                          <div className="truncate font-display text-base font-bold leading-tight">{ex.name || e.exerciseId}</div>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold">
+                            <span className="rounded-md bg-card2 px-1.5 py-0.5 text-ink2">{e.sets.length} × {e.reps}</span>
+                            <span className="rounded-md bg-card2 px-1.5 py-0.5 text-ink2">{e.rest}s</span>
+                            {best > 0 && <span className="flex items-center gap-0.5 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-amber-700 dark:text-amber-400"><Trophy size={10} aria-hidden /> {fromKg(best)} {unitLbl()}</span>}
                           </div>
                         </div>
                       </button>
-                      <button onClick={() => toggleCollapse(e.exerciseId)} aria-expanded className="flex h-11 w-11 items-center justify-center rounded-lg text-ink2 active:bg-card2" aria-label="Comprimir ejercicio"><ChevronUp size={18} /></button>
-                      <button onClick={() => removeEx(ei)} className="flex h-11 w-11 items-center justify-center rounded-lg text-ink3 active:bg-card2" aria-label={`Quitar ${ex.name || 'ejercicio'} de la sesión`}><Trash2 size={17} /></button>
+                      <button onClick={() => toggleCollapse(e.exerciseId)} aria-expanded className="flex h-11 w-10 items-center justify-center rounded-lg text-ink2 active:bg-card2" aria-label="Comprimir ejercicio"><ChevronUp size={18} /></button>
+                      <button onClick={() => removeEx(ei)} className="flex h-11 w-10 items-center justify-center rounded-lg text-ink3 active:bg-card2" aria-label={`Quitar ${ex.name || 'ejercicio'} de la sesión`}><Trash2 size={17} /></button>
                     </div>
                   )
 
                   const timerBtn = (st, si, cls) => timed && (
                     exTimer?.ei === ei && exTimer?.si === si ? (
-                      <button onClick={stopTimer} className={`flex h-11 items-center justify-center gap-1 rounded-xl bg-red-500/15 font-display text-sm font-bold text-red-600 ${cls}`} aria-label="Detener cronómetro">
+                      <button onClick={stopTimer} className={`flex h-12 items-center justify-center gap-1 rounded-xl bg-red-500/15 font-display text-sm font-bold text-red-600 dark:text-red-400 ${cls}`} aria-label="Detener cronómetro">
                         {fmtSec(timerLeft)} ■
                       </button>
                     ) : (
-                      <button onClick={() => startTimer(ei, si, timed.max)} className={`flex h-11 items-center justify-center gap-1 rounded-xl border border-accent-400 text-xs font-semibold text-accent-700 dark:text-accent-300 ${cls}`} aria-label={`Iniciar cronómetro de ${fmtSec(timed.max)}`}>
+                      <button onClick={() => startTimer(ei, si, timed.max)} className={`flex h-12 items-center justify-center gap-1 rounded-xl border border-accent-400 text-xs font-semibold text-accent-700 dark:text-accent-300 ${cls}`} aria-label={`Iniciar cronómetro de ${fmtSec(timed.max)}`}>
                         <Timer size={14} /> {fmtSec(timed.max)}
                       </button>
                     )
@@ -430,16 +461,16 @@ export default function Workout({ open, onClose }) {
                     return (
                       <SortableRow key={sortId} id={sortId}>
                         {handleProps => (
-                          <div data-ex={e.exerciseId} className={`card overflow-hidden transition-colors duration-300 ${doneCard} ${focusRing}`}>
+                          <div data-ex={e.exerciseId} className={`card overflow-hidden transition-colors duration-300 ${doneCard} ${focusRing} ${stage} ${sweep}`}>
                             <button onClick={() => setDetail(ex)} className="block w-full bg-white" aria-label={`Ver detalle de ${ex.name || e.exerciseId}`}>
                               <ExerciseHero ex={ex} />
                             </button>
                             <div className="p-3">
                               {head(handleProps)}
-                              <div className="mt-2.5 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                              <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
                                 {e.sets.map((st, si) => (
                                   <div key={si} className={`rounded-xl border p-1.5 text-center transition-colors duration-300 ${st.done ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'border-line bg-card2'}`}>
-                                    <div className="text-[10px] font-bold text-ink2">S{si + 1}</div>
+                                    <div className="text-[11px] font-bold text-ink2">S{si + 1}</div>
                                     <input
                                       type="number" inputMode="decimal" placeholder={ghostW(si) != null ? String(ghostW(si)) : unitLbl()} aria-label={`Peso serie ${si + 1} (${unitLbl()})`}
                                       disabled={ex.weight === false}
@@ -457,8 +488,8 @@ export default function Workout({ open, onClose }) {
                                     {checkBtn(st, si, 'mt-1 w-full')}
                                   </div>
                                 ))}
-                                <button onClick={() => addSet(ei)} className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-line text-ink2" aria-label="Agregar serie">
-                                  <Plus size={18} />
+                                <button onClick={() => addSet(ei)} className="flex min-h-24 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-line text-xs font-semibold text-ink2 active:bg-card2" aria-label="Agregar serie">
+                                  <Plus size={18} aria-hidden /> serie
                                 </button>
                               </div>
                               {e.sets.length > 1 && (
@@ -476,37 +507,55 @@ export default function Workout({ open, onClose }) {
                   return (
                     <SortableRow key={sortId} id={sortId}>
                       {handleProps => (
-                        <div data-ex={e.exerciseId} className={`card p-3 transition-colors duration-300 ${doneCard} ${focusRing}`}>
+                        <div data-ex={e.exerciseId} className={`card p-3 transition-colors duration-300 ${doneCard} ${focusRing} ${stage} ${sweep}`}>
                           {head(handleProps)}
-                          <div className="mt-2.5 flex flex-col gap-1.5">
-                            {e.sets.map((st, si) => (
-                              <div key={si} className={`flex items-center gap-2 transition-opacity duration-300 ${st.done ? 'opacity-70' : ''}`}>
-                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-card2 text-[11px] font-bold text-ink2" aria-hidden>{si + 1}</span>
-                                <input
-                                  type="number" inputMode="decimal" placeholder={ghostW(si) != null ? String(ghostW(si)) : unitLbl()} aria-label={`Peso serie ${si + 1} (${unitLbl()})`}
-                                  disabled={ex.weight === false}
-                                  value={st.w != null ? fromKg(st.w) : ''}
-                                  onChange={ev => setField(ei, si, 'w', ev.target.value)}
-                                  className="h-11 w-0 flex-1 rounded-lg border border-line bg-card2 text-center font-display text-base font-bold outline-none placeholder:font-sans placeholder:font-normal placeholder:text-ink3 focus:border-brand-500 disabled:opacity-40"
-                                />
-                                <span className="text-xs text-ink2" aria-hidden>{timed ? '' : '×'}</span>
-                                <input
-                                  type="number" inputMode="numeric" placeholder={timed ? `${timed.max}s` : ghostR(si) != null ? String(ghostR(si)) : 'reps'} aria-label={`Reps serie ${si + 1}`}
-                                  value={st.r ?? ''}
-                                  onChange={ev => setField(ei, si, 'r', ev.target.value)}
-                                  className="h-11 w-0 flex-1 rounded-lg border border-line bg-card2 text-center font-display text-base font-bold outline-none placeholder:font-sans placeholder:font-normal placeholder:text-ink3 focus:border-brand-500"
-                                />
-                                {timerBtn(st, si, 'w-16 shrink-0')}
-                                {checkBtn(st, si, 'w-11')}
-                              </div>
-                            ))}
+                          {/* Encabezado de columnas: # | peso | reps | ✓ */}
+                          <div className={`mt-3 grid items-center gap-2 px-0.5 text-[11px] font-bold uppercase tracking-wider text-ink2 ${timed ? 'grid-cols-[2rem_1fr_1fr_4rem_3rem]' : 'grid-cols-[2rem_1fr_1fr_3rem]'}`} aria-hidden>
+                            <span>#</span>
+                            <span className="text-center">{ex.weight === false ? '' : unitLbl()}</span>
+                            <span className="text-center">{timed ? 'seg' : 'reps'}</span>
+                            {timed && <span className="text-center">timer</span>}
+                            <span className="text-center">✓</span>
+                          </div>
+                          <div className="mt-1 flex flex-col gap-1.5">
+                            {e.sets.map((st, si) => {
+                              const hint = ghostTxt(si)
+                              return (
+                                <div key={si} className={`transition-opacity duration-300 ${st.done ? 'opacity-70' : ''}`}>
+                                  <div className={`grid items-center gap-2 ${timed ? 'grid-cols-[2rem_1fr_1fr_4rem_3rem]' : 'grid-cols-[2rem_1fr_1fr_3rem]'}`}>
+                                    <span className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${st.done ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-card2 text-ink2'}`} aria-hidden>{si + 1}</span>
+                                    <input
+                                      type="number" inputMode="decimal" placeholder={ghostW(si) != null ? String(ghostW(si)) : unitLbl()} aria-label={`Peso serie ${si + 1} (${unitLbl()})`}
+                                      disabled={ex.weight === false}
+                                      value={st.w != null ? fromKg(st.w) : ''}
+                                      onChange={ev => setField(ei, si, 'w', ev.target.value)}
+                                      className="h-12 w-full min-w-0 rounded-xl border border-line bg-card2 text-center font-display text-lg font-bold outline-none placeholder:font-sans placeholder:text-base placeholder:font-normal placeholder:text-ink3 focus:border-brand-500 focus:bg-card disabled:opacity-40"
+                                    />
+                                    <input
+                                      type="number" inputMode="numeric" placeholder={timed ? `${timed.max}s` : ghostR(si) != null ? String(ghostR(si)) : 'reps'} aria-label={`Reps serie ${si + 1}`}
+                                      value={st.r ?? ''}
+                                      onChange={ev => setField(ei, si, 'r', ev.target.value)}
+                                      className="h-12 w-full min-w-0 rounded-xl border border-line bg-card2 text-center font-display text-lg font-bold outline-none placeholder:font-sans placeholder:text-base placeholder:font-normal placeholder:text-ink3 focus:border-brand-500 focus:bg-card"
+                                    />
+                                    {timerBtn(st, si, 'w-full min-w-0 px-0')}
+                                    {checkBtn(st, si, 'w-full')}
+                                  </div>
+                                  {hint && !st.done && (
+                                    <div className={`grid gap-2 px-0.5 ${timed ? 'grid-cols-[2rem_1fr_7rem]' : 'grid-cols-[2rem_1fr_3rem]'}`}>
+                                      <span />
+                                      <span className="mt-0.5 text-center text-[11px] text-ink2">{hint}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            })}
                           </div>
                           {!allDone && ghostR(0) != null && e.sets.some(st => !st.done && st.w == null && st.r == null) && (
-                            <p className="mt-1.5 text-[11px] text-ink2">Toca ✓ sin escribir para repetir la serie de la última vez.</p>
+                            <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1.5 text-[11px] font-medium text-brand-800 dark:bg-brand-900/30 dark:text-brand-200"><Repeat2 size={12} aria-hidden /> Toca ✓ sin escribir para repetir la serie de la última vez.</p>
                           )}
-                          <div className="mt-1 flex gap-2">
-                            <button onClick={() => addSet(ei)} className="flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-brand-700 active:bg-card2 dark:text-brand-300"><Plus size={14} /> serie</button>
-                            {e.sets.length > 1 && <button onClick={() => delSet(ei)} className="flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-ink2 active:bg-card2"><Minus size={14} /> serie</button>}
+                          <div className="mt-1.5 flex gap-1.5">
+                            <button onClick={() => addSet(ei)} className="flex min-h-11 items-center gap-1 rounded-lg px-2.5 text-xs font-bold text-brand-700 active:bg-card2 dark:text-brand-300"><Plus size={14} aria-hidden /> Agregar serie</button>
+                            {e.sets.length > 1 && <button onClick={() => delSet(ei)} className="flex min-h-11 items-center gap-1 rounded-lg px-2.5 text-xs font-semibold text-ink2 active:bg-card2"><Minus size={14} aria-hidden /> Quitar</button>}
                           </div>
                         </div>
                       )}
@@ -517,16 +566,17 @@ export default function Workout({ open, onClose }) {
             </SortableContext>
           </DndContext>
         </div>
-      ))}
+        )
+      })}
 
       {/* ── Barra inferior fija: agregar + terminar siempre a un toque ── */}
       <div className="sticky bottom-0 z-10 -mx-5 mt-4 border-t border-line bg-bg2/95 px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
         <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setPickerOpen(true)} className="flex flex-1 items-center justify-center gap-2"><Plus size={16} /> Agregar ejercicio</Button>
-          <Button onClick={finish} className="flex flex-1 items-center justify-center gap-2"><Flag size={16} /> Terminar</Button>
+          <Button variant="ghost" onClick={() => setPickerOpen(true)} className="flex w-auto shrink-0 items-center justify-center gap-1.5 px-4"><Plus size={16} aria-hidden /> Agregar</Button>
+          <Button onClick={finish} className={`flex flex-1 items-center justify-center gap-2 ${pendingEx === 0 && totalSets > 0 ? 'bg-emerald-600! hover:bg-emerald-500!' : ''}`}><Flag size={16} aria-hidden /> Terminar{doneSets > 0 ? ` · ${doneSets} series` : ''}</Button>
         </div>
         <button onClick={() => { if (confirm('¿Descartar la sesión en curso? Se perderán las series registradas.')) { discardSession(); onClose() } }}
-          className="mt-2 flex min-h-11 w-full items-center justify-center text-xs font-semibold text-ink2">
+          className="mt-1 flex min-h-11 w-full items-center justify-center text-xs font-semibold text-ink2">
           Descartar sesión
         </button>
       </div>
@@ -542,9 +592,9 @@ export default function Workout({ open, onClose }) {
           ))}
         </div>
         <SectionTitle right={
-          <div className="flex overflow-hidden rounded-lg border border-line text-[11px] font-bold" role="group" aria-label="Modo de búsqueda">
-            <button onClick={() => setPickMode('search')} aria-pressed={pickMode === 'search'} className={`flex min-h-9 items-center gap-1 px-3 transition-colors ${pickMode === 'search' ? 'bg-brand-600 text-white' : 'text-ink2 hover:bg-card2'}`}><Search size={13} /> Buscar</button>
-            <button onClick={() => setPickMode('map')} aria-pressed={pickMode === 'map'} className={`flex min-h-9 items-center gap-1 px-3 transition-colors ${pickMode === 'map' ? 'bg-brand-600 text-white' : 'text-ink2 hover:bg-card2'}`}><PersonStanding size={13} /> Mapa</button>
+          <div className="flex overflow-hidden rounded-lg border border-line text-xs font-bold" role="group" aria-label="Modo de búsqueda">
+            <button onClick={() => setPickMode('search')} aria-pressed={pickMode === 'search'} className={`flex min-h-9 items-center gap-1 px-3 transition-colors ${pickMode === 'search' ? 'bg-brand-700 text-white' : 'text-ink2 hover:bg-card2'}`}><Search size={13} /> Buscar</button>
+            <button onClick={() => setPickMode('map')} aria-pressed={pickMode === 'map'} className={`flex min-h-9 items-center gap-1 px-3 transition-colors ${pickMode === 'map' ? 'bg-brand-700 text-white' : 'text-ink2 hover:bg-card2'}`}><PersonStanding size={13} /> Mapa</button>
           </div>
         }>Buscar en el banco</SectionTitle>
         {pickMode === 'search' ? (

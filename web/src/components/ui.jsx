@@ -23,7 +23,9 @@ export function Button({ children, variant = 'primary', className = '', loading 
   // Tailwind ya limita "hover:" a dispositivos con puntero real
   // (@media (hover: hover)) — en touch no se queda "pegado" tras tocar.
   const styles = {
-    primary: 'bg-brand-600 text-white shadow-[0_2px_10px_-2px_rgb(8_145_178/0.45)] hover:bg-brand-500 active:bg-brand-700 active:brightness-90 active:shadow-none disabled:opacity-50 disabled:shadow-none disabled:hover:bg-brand-600',
+    // Relleno brand-700 (#0e7490, 4.9:1 con blanco) en vez de brand-600
+    // (3.7:1, no pasa AA en texto de 14px). brand-600 queda para hover.
+    primary: 'bg-brand-700 text-white shadow-[0_2px_10px_-2px_rgb(14_116_144/0.5)] hover:bg-brand-600 active:bg-brand-800 active:shadow-none disabled:opacity-50 disabled:shadow-none disabled:hover:bg-brand-700',
     ghost: 'border border-line text-ink2 bg-card hover:bg-card2 hover:border-brand-300 active:bg-card2 dark:hover:border-brand-800',
     accent: 'bg-accent-600 text-white shadow-[0_2px_10px_-2px_rgb(124_58_237/0.45)] hover:bg-accent-500 active:bg-accent-500 active:brightness-90 active:shadow-none disabled:opacity-50 disabled:shadow-none disabled:hover:bg-accent-600',
     danger: 'border border-red-300 text-red-500 bg-transparent hover:bg-red-50 active:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40 dark:active:bg-red-950/40',
@@ -131,7 +133,7 @@ export function Sheet({ open, onClose, title, subtitle, children, locked = false
 export function SectionTitle({ children, right }) {
   return (
     <div className="mb-2.5 mt-5 flex items-center justify-between">
-      <h3 className="text-[11px] font-bold uppercase tracking-wider text-ink3">{children}</h3>
+      <h3 className="text-[11px] font-bold uppercase tracking-wider text-ink2">{children}</h3>
       {right}
     </div>
   )
@@ -140,8 +142,8 @@ export function SectionTitle({ children, right }) {
 // ── Estado vacío ─────────────────────────────────────────
 export function Empty({ icon: Icon, children }) {
   return (
-    <div className="card flex flex-col items-center gap-2 border-dashed px-4 py-6 text-center text-xs leading-relaxed text-ink3">
-      {Icon && <Icon size={22} strokeWidth={1.5} />}
+    <div className="card flex flex-col items-center gap-2 border-dashed px-4 py-6 text-center text-xs leading-relaxed text-ink2">
+      {Icon && <Icon size={22} strokeWidth={1.5} className="text-ink3" />}
       <div>{children}</div>
     </div>
   )
@@ -182,7 +184,7 @@ export function Bar({ pct, className = 'bg-brand-500' }) {
 export function Input({ className = '', ...props }) {
   return (
     <input
-      className={`w-full rounded-xl border border-line bg-card px-3.5 py-3 text-sm text-ink outline-none transition-shadow placeholder:text-ink3 focus:border-brand-500 focus:shadow-[0_0_0_3px_rgb(6_182_212/0.12)] ${className}`}
+      className={`w-full rounded-xl border border-line bg-card px-3.5 py-3 text-base text-ink outline-none transition-shadow placeholder:text-ink3 focus:border-brand-500 focus:shadow-[0_0_0_3px_rgb(6_182_212/0.12)] ${className}`}
       {...props}
     />
   )

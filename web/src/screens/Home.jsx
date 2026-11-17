@@ -55,9 +55,9 @@ function CaloriesPreview({ go }) {
   const pct = Math.min(1, t.kcal / n.kcal)
   return (
     <button onClick={() => go({ tab: 'calories' })} className="card card-tap mt-3 flex w-full items-center gap-3.5 p-4 text-left active:scale-[0.99]">
-      <Ring pct={pct} size={72} stroke={7}>
+      <Ring pct={pct} size={84} stroke={7}>
         <span className="font-display text-[15px] font-bold leading-tight">{rem}</span>
-        <span className="text-[7px] text-ink3">kcal libres</span>
+        <span className="text-[11px] text-ink2">libres</span>
       </Ring>
       <div className="flex flex-1 flex-col gap-2.5">
         <div className="flex items-center justify-between">

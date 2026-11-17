@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Dumbbell, Hash, Timer, LineChart, History, PlayCircle } from 'lucide-react'
+import { Hash, Timer, LineChart, History, PlayCircle, Trophy } from 'lucide-react'
 import { Sheet, ExerciseImg, SectionTitle, Empty } from '../components/ui'
 import { Bars } from '../components/charts'
 import { MUSCLES, EQUIP } from '../data/exercises'
@@ -17,33 +17,37 @@ export default function ExerciseSheet({ exercise, onClose }) {
 
   return (
     <Sheet open={!!exercise} onClose={onClose} title={exercise.name}>
-      <div className="flex justify-center">
-        <ExerciseImg exercise={exercise} size="h-52 w-52" rounded="rounded-2xl" />
+      <div className="flex justify-center rounded-3xl bg-white p-2 shadow-sm ring-1 ring-line">
+        <ExerciseImg exercise={exercise} size="h-56 w-56" rounded="rounded-2xl" />
       </div>
 
-      <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-ink2">
-        <span className="flex items-center gap-1.5"><Dumbbell size={13} className="text-brand-600" /> {exercise.muscle.map(m => MUSCLES[m] || m).join(' · ')}</span>
-        <span className="flex items-center gap-1.5"><Hash size={13} className="text-brand-600" /> {exercise.sets} series × {exercise.reps}</span>
-        <span className="flex items-center gap-1.5"><Timer size={13} className="text-brand-600" /> {exercise.rest}s descanso</span>
-        <span className="rounded-full bg-card2 px-2 py-0.5 text-[11px]">{EQUIP[exercise.equipment] || exercise.equipment}</span>
+      <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+        {exercise.muscle.map((m, i) => (
+          <span key={m} className={`rounded-full px-2.5 py-1 text-xs font-bold ${i === 0 ? 'bg-brand-100 text-brand-800 dark:bg-brand-900/50 dark:text-brand-200' : 'bg-card2 text-ink2'}`}>{MUSCLES[m] || m}</span>
+        ))}
+        <span className="rounded-full bg-accent-100 px-2.5 py-1 text-xs font-bold text-accent-800 dark:bg-accent-900/40 dark:text-accent-200">{EQUIP[exercise.equipment] || exercise.equipment}</span>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+        <div className="card p-2.5"><Hash size={14} className="mx-auto text-brand-700 dark:text-brand-300" aria-hidden="true" /><div className="mt-0.5 font-display text-base font-bold">{exercise.sets} × {exercise.reps}</div><div className="text-[11px] text-ink2">series × reps</div></div>
+        <div className="card p-2.5"><Timer size={14} className="mx-auto text-brand-700 dark:text-brand-300" aria-hidden="true" /><div className="mt-0.5 font-display text-base font-bold">{exercise.rest}s</div><div className="text-[11px] text-ink2">descanso</div></div>
       </div>
 
       {/* Video corto de la ejecución (o el guardado en el ejercicio) */}
       <a
         href={exercise.video || `https://www.youtube.com/results?search_query=${encodeURIComponent(exercise.name + ' técnica ejercicio')}`}
         target="_blank" rel="noopener noreferrer"
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 py-2.5 text-xs font-bold text-red-600 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400"
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 min-h-11 text-xs font-bold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400"
       >
         <PlayCircle size={15} /> Ver video corto de la técnica
       </a>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <button onClick={() => setView('info')}
-          className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-semibold ${view === 'info' ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'border-line text-ink2'}`}>
+        <button onClick={() => setView('info')} aria-pressed={view === 'info'}
+          className={`flex items-center justify-center gap-1.5 rounded-xl border min-h-11 text-xs font-semibold ${view === 'info' ? 'border-brand-500 bg-brand-50 text-brand-800 dark:bg-brand-900/30 dark:text-brand-200' : 'border-line text-ink2'}`}>
           <History size={14} /> Técnica
         </button>
-        <button onClick={() => setView('progress')}
-          className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-semibold ${view === 'progress' ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'border-line text-ink2'}`}>
+        <button onClick={() => setView('progress')} aria-pressed={view === 'progress'}
+          className={`flex items-center justify-center gap-1.5 rounded-xl border min-h-11 text-xs font-semibold ${view === 'progress' ? 'border-brand-500 bg-brand-50 text-brand-800 dark:bg-brand-900/30 dark:text-brand-200' : 'border-line text-ink2'}`}>
           <LineChart size={14} /> Ver progreso
         </button>
       </div>
@@ -70,13 +74,13 @@ export default function ExerciseSheet({ exercise, onClose }) {
               <div className="flex flex-col gap-2">
                 {history.slice(-8).reverse().map((h, i) => (
                   <div key={i} className="card px-4 py-3">
-                    <div className="mb-1.5 flex justify-between text-[11px] text-ink3">
+                    <div className="mb-1.5 flex justify-between text-xs text-ink2">
                       <span>{h.date}</span>
-                      {h.pr && <span className="font-bold text-amber-500">PR</span>}
+                      {h.pr && <span className="flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 font-bold text-amber-700 dark:text-amber-400"><Trophy size={11} aria-hidden="true" /> PR</span>}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {h.sets.map((st, j) => (
-                        <span key={j} className="rounded-lg bg-card2 px-2 py-1 text-[11px] font-medium">
+                        <span key={j} className="rounded-lg bg-card2 px-2 py-1 text-xs font-semibold">
                           {st.w ? `${fromKg(st.w)} ${unitLbl()} × ` : ''}{st.r} reps
                         </span>
                       ))}

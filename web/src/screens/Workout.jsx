@@ -13,7 +13,7 @@ import { norm } from '../lib/calc'
 import { playAlert, playComplete, DEFAULT_ALERT } from '../lib/sound'
 import ExerciseSheet from './ExerciseSheet'
 import BodyMap from '../components/BodyMap'
-import { BankRow, SortableRow, DragHandle, useDragSensors } from './RoutineBuilder'
+import { BankRow, SortableRow, useLongPressSensors } from './RoutineBuilder'
 
 const BLOCKS = [
   { id: 'warmup', label: 'Calentamiento', color: 'text-amber-600 dark:text-amber-400' },
@@ -39,7 +39,7 @@ export default function Workout({ open, onClose }) {
   const [focusId, setFocusId] = useState(null) // exerciseId a enfocar (recién agregado o "siguiente")
   const [sweepId, setSweepId] = useState(null) // exerciseId recién completado: barrido de luz (solo visual)
   const [, tick] = useState(0)
-  const sensors = useDragSensors()
+  const sensors = useLongPressSensors()
 
   const setViewMode = m => { setViewModeState(m); try { localStorage.setItem('zs_view', m) } catch { /* sin localStorage */ } }
   const toggleCollapse = id => setCollapsed(prev => {
@@ -289,12 +289,8 @@ export default function Workout({ open, onClose }) {
       .sort((a, b2) => (exDone(a.e) === exDone(b2.e)) ? 0 : exDone(a.e) ? -1 : 1),
   })).filter(b => b.list.length)
 
-  return (
-    <Sheet open={open} onClose={() => onClose()} title={w.name} locked
-      subtitle={pendingEx === 0 && totalSets > 0 ? '¡Todo completado! Termina cuando quieras' : `${doneSets}/${totalSets} series · ${pendingEx} ejercicio${pendingEx === 1 ? '' : 's'} pendiente${pendingEx === 1 ? '' : 's'}`}>
-
-      {/* ── Cabecera fija: progreso + reloj; en descanso, el contador manda ── */}
-      <div className="sticky -top-4 z-10 -mx-1 mb-3 rounded-2xl border border-line bg-bg2/95 p-2.5 backdrop-blur">
+  const header = (
+      <div className="rounded-2xl border border-line bg-card p-2.5 shadow-sm">
         <div className="flex items-center gap-1.5">
           <button onClick={onClose} className="icon-btn flex items-center gap-1 rounded-xl px-2.5 text-xs font-semibold active:scale-95" aria-label="Minimizar sesión">
             <ChevronDown size={16} aria-hidden /> <span className="hidden sm:inline">Minimizar</span>
@@ -322,16 +318,16 @@ export default function Workout({ open, onClose }) {
           <span className="text-xs font-bold tabular-nums text-ink2">{doneSets}<span className="font-medium text-ink3">/{totalSets}</span></span>
         </div>
         {rest && (
-          <div className="relative mt-3 overflow-hidden rounded-2xl border border-accent-400/50 bg-accent-500/10 p-3.5 dark:bg-accent-500/15" role="timer" aria-live="off">
+          <div className="relative mt-2.5 overflow-hidden rounded-xl border border-accent-400/50 bg-accent-500/10 px-3 py-2.5 dark:bg-accent-500/15" role="timer" aria-live="off">
             <div className="rest-glow pointer-events-none absolute left-1/2 top-1/2 h-32 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500/25 blur-2xl" aria-hidden />
             <div className="relative flex items-center gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-accent-800 dark:text-accent-200">
                   <Timer size={13} aria-hidden /> Descanso{rest.next ? ` · luego serie ${rest.next}` : ''}
                 </div>
-                <div className="mt-0.5 font-display text-5xl font-bold leading-none tabular-nums text-accent-800 dark:text-accent-200">{fmtClock(restLeft)}</div>
+                <div className="mt-0.5 font-display text-3xl font-bold leading-none tabular-nums text-accent-800 dark:text-accent-200">{fmtClock(restLeft)}</div>
               </div>
-              <div className="flex shrink-0 flex-col gap-1.5">
+              <div className="flex shrink-0 items-center gap-1.5">
                 <div className="flex gap-1.5">
                   <button onClick={() => patchW({ rest: { ...rest, end: rest.end - 15000 } })} className="icon-btn flex items-center justify-center rounded-xl px-2 text-xs font-bold" aria-label="Quitar 15 segundos de descanso">−15</button>
                   <button onClick={() => patchW({ rest: { ...rest, end: rest.end + 15000, total: rest.total + 15 } })} className="icon-btn flex items-center justify-center rounded-xl px-2 text-xs font-bold" aria-label="Agregar 15 segundos de descanso">+15</button>
@@ -339,10 +335,33 @@ export default function Workout({ open, onClose }) {
                 <button onClick={() => patchW({ rest: null })} className="flex h-11 items-center justify-center gap-1 rounded-xl bg-accent-700 px-3 text-sm font-bold text-white shadow-[0_2px_10px_-2px_rgb(124_58_237/0.5)] active:scale-95" aria-label="Saltar descanso">Saltar <ArrowRight size={14} aria-hidden /></button>
               </div>
             </div>
-            <div className="relative mt-2.5"><Bar pct={(restLeft / rest.total) * 100} className="bg-accent-500" /></div>
+            <div className="relative mt-2"><Bar pct={(restLeft / rest.total) * 100} className="bg-accent-500" /></div>
           </div>
         )}
       </div>
+  )
+
+  const footer = (
+      <div>
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={() => setPickerOpen(true)} className="flex w-auto! shrink-0 items-center justify-center gap-1.5 px-4"><Plus size={16} aria-hidden /> Agregar</Button>
+          <Button onClick={finish} className={`flex min-w-0 flex-1 items-center justify-center gap-2 ${pendingEx === 0 && totalSets > 0 ? 'bg-emerald-600! hover:bg-emerald-500!' : ''}`}><Flag size={16} aria-hidden /> Terminar{doneSets > 0 ? ` · ${doneSets} series` : ''}</Button>
+        </div>
+        <button onClick={() => { if (confirm('¿Descartar la sesión en curso? Se perderán las series registradas.')) { discardSession(); onClose() } }}
+          className="mt-1 flex min-h-10 w-full items-center justify-center text-xs font-semibold text-ink2">
+          Descartar sesión
+        </button>
+      </div>
+  )
+
+  return (
+    <Sheet open={open} onClose={() => onClose()} title={w.name} locked
+      top={header} footer={footer}
+      subtitle={pendingEx === 0 && totalSets > 0 ? '¡Todo completado! Termina cuando quieras' : `${doneSets}/${totalSets} series · ${pendingEx} ejercicio${pendingEx === 1 ? '' : 's'} pendiente${pendingEx === 1 ? '' : 's'}`}>
+
+      {/* ── Cabecera fija: progreso + reloj; en descanso, el contador manda ── */}
+
+      {w.exercises.length > 1 && <p className="mb-2 text-center text-[11px] text-ink2">Mantén presionado un ejercicio para moverlo de lugar</p>}
 
       {w.exercises.length === 0 && <Empty icon={Search}>Agrega ejercicios o un bloque de calentamiento con el botón de abajo</Empty>}
 
@@ -354,7 +373,7 @@ export default function Workout({ open, onClose }) {
             <p className={`text-[11px] font-bold uppercase tracking-wider ${block.color}`}>{block.label}</p>
             <span className="text-[11px] font-semibold tabular-nums text-ink2">{blockDone}/{block.list.length}</span>
           </div>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd(block.id)}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => { try { navigator.vibrate?.(20) } catch { /* sin vibración */ } }} onDragEnd={onDragEnd(block.id)}>
             <SortableContext items={block.list.map(x => `${x.e.exerciseId}::${x.ei}`)} strategy={verticalListSortingStrategy}>
               <div className="flex flex-col gap-2.5">
                 {block.list.map(({ e, ei }) => {
@@ -404,10 +423,9 @@ export default function Workout({ open, onClose }) {
                   // ── Comprimida a una línea (manual o al completarse) ──
                   if (isCollapsed) {
                     return (
-                      <SortableRow key={sortId} id={sortId}>
-                        {handleProps => (
+                      <SortableRow key={sortId} id={sortId} whole>
+                        {() => (
                           <div data-ex={e.exerciseId} className={`card flex w-full items-center gap-1.5 p-1.5 pr-2.5 transition-colors duration-300 ${doneCard} ${focusRing} ${sweep}`}>
-                            <DragHandle {...handleProps} />
                             <button onClick={() => toggleCollapse(e.exerciseId)} aria-expanded={false}
                               className="flex min-h-11 min-w-0 flex-1 items-center gap-2.5 text-left active:scale-[0.99]">
                               <ExerciseImg exercise={ex} size="h-10 w-10" rounded="rounded-lg" />
@@ -425,9 +443,8 @@ export default function Workout({ open, onClose }) {
                     )
                   }
 
-                  const head = handleProps => (
+                  const head = () => (
                     <div className="flex items-center gap-1.5">
-                      <DragHandle {...handleProps} />
                       <button onClick={() => setDetail(ex)} className="flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={`Ver detalle de ${ex.name || e.exerciseId}`}>
                         {viewMode === 'list' && <ExerciseImg exercise={ex} size="h-16 w-16" rounded="rounded-xl" />}
                         <div className="min-w-0 flex-1">
@@ -459,14 +476,14 @@ export default function Workout({ open, onClose }) {
                   // ── Vista cuadrícula: el GIF protagonista + celdas de sets ──
                   if (viewMode === 'grid') {
                     return (
-                      <SortableRow key={sortId} id={sortId}>
-                        {handleProps => (
+                      <SortableRow key={sortId} id={sortId} whole>
+                        {() => (
                           <div data-ex={e.exerciseId} className={`card overflow-hidden transition-colors duration-300 ${doneCard} ${focusRing} ${stage} ${sweep}`}>
                             <button onClick={() => setDetail(ex)} className="block w-full bg-white" aria-label={`Ver detalle de ${ex.name || e.exerciseId}`}>
                               <ExerciseHero ex={ex} />
                             </button>
                             <div className="p-3">
-                              {head(handleProps)}
+                              {head()}
                               <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
                                 {e.sets.map((st, si) => (
                                   <div key={si} className={`rounded-xl border p-1.5 text-center transition-colors duration-300 ${st.done ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30' : 'border-line bg-card2'}`}>
@@ -505,10 +522,10 @@ export default function Workout({ open, onClose }) {
                   }
 
                   return (
-                    <SortableRow key={sortId} id={sortId}>
-                      {handleProps => (
+                    <SortableRow key={sortId} id={sortId} whole>
+                      {() => (
                         <div data-ex={e.exerciseId} className={`card p-3 transition-colors duration-300 ${doneCard} ${focusRing} ${stage} ${sweep}`}>
-                          {head(handleProps)}
+                          {head()}
                           {/* Encabezado de columnas: # | peso | reps | ✓ */}
                           <div className={`mt-3 grid items-center gap-2 px-0.5 text-[11px] font-bold uppercase tracking-wider text-ink2 ${timed ? 'grid-cols-[2rem_1fr_1fr_4rem_3rem]' : 'grid-cols-[2rem_1fr_1fr_3rem]'}`} aria-hidden>
                             <span>#</span>
@@ -570,16 +587,6 @@ export default function Workout({ open, onClose }) {
       })}
 
       {/* ── Barra inferior fija: agregar + terminar siempre a un toque ── */}
-      <div className="sticky bottom-0 z-10 -mx-5 mt-4 border-t border-line bg-bg2/95 px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={() => setPickerOpen(true)} className="flex w-auto shrink-0 items-center justify-center gap-1.5 px-4"><Plus size={16} aria-hidden /> Agregar</Button>
-          <Button onClick={finish} className={`flex flex-1 items-center justify-center gap-2 ${pendingEx === 0 && totalSets > 0 ? 'bg-emerald-600! hover:bg-emerald-500!' : ''}`}><Flag size={16} aria-hidden /> Terminar{doneSets > 0 ? ` · ${doneSets} series` : ''}</Button>
-        </div>
-        <button onClick={() => { if (confirm('¿Descartar la sesión en curso? Se perderán las series registradas.')) { discardSession(); onClose() } }}
-          className="mt-1 flex min-h-11 w-full items-center justify-center text-xs font-semibold text-ink2">
-          Descartar sesión
-        </button>
-      </div>
 
       {/* ── Selector de ejercicios (panel aparte, se queda abierto) ── */}
       <Sheet open={pickerOpen} onClose={() => setPickerOpen(false)} title="Agregar ejercicio" subtitle="Se agrega a la sesión y puedes seguir buscando">

@@ -75,7 +75,7 @@ export function Chip({ on, children, className = '', ...props }) {
 let openSheets = 0
 let sheetSeq = 0
 
-export function Sheet({ open, onClose, title, subtitle, children, locked = false }) {
+export function Sheet({ open, onClose, title, subtitle, children, locked = false, top, footer }) {
   const [id] = useState(() => `sheet-${++sheetSeq}`)
 
   useEffect(() => {
@@ -121,9 +121,11 @@ export function Sheet({ open, onClose, title, subtitle, children, locked = false
             )}
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        {top && <div className="shrink-0 px-4 pt-3">{top}</div>}
+        <div className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-4 ${footer ? '' : 'pb-[calc(1rem+env(safe-area-inset-bottom))]'}`}>
           {children}
         </div>
+        {footer && <div className="shrink-0 border-t border-line bg-bg2 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">{footer}</div>}
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Search, Trash2, Plus, ChevronDown, Info, PersonStanding, List, GripVertical, Play, Volume2 } from 'lucide-react'
-import { DndContext, closestCenter, PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { DndContext, closestCenter, PointerSensor, MouseSensor, TouchSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Sheet, Input, Button, Chip, SectionTitle, ExerciseImg, Empty } from '../components/ui'
@@ -23,16 +23,28 @@ export function useDragSensors() {
   )
 }
 
+// Sesión en vivo: se arrastra manteniendo presionada la tarjeta (sin asa).
+// Mouse con distancia, táctil con pulsación larga — hacer scroll con el dedo
+// nunca reordena por accidente.
+export function useLongPressSensors() {
+  return useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 400, tolerance: 10 } }),
+  )
+}
+
 // Fila reordenable — el arrastre solo se activa desde el "asa" (GripVertical),
 // así los demás controles de la fila (inputs, botones) siguen funcionando
 // normal al tocarlos.
-export function SortableRow({ id, children, className = '' }) {
+export function SortableRow({ id, children, className = '', whole = false }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id })
   const style = { transform: CSS.Transform.toString(transform), transition }
   const handleProps = { ...attributes, ...listeners, ref: setActivatorNodeRef }
+  // `whole`: toda la tarjeta es el activador (pulsación larga), sin asa visible.
   return (
-    <div ref={setNodeRef} style={style} className={`${isDragging ? 'relative z-20 opacity-90 drop-shadow-xl' : ''} ${className}`}>
-      {children(handleProps)}
+    <div ref={setNodeRef} style={style} {...(whole ? listeners : {})}
+      className={`${whole ? 'select-none [-webkit-touch-callout:none] [&_input]:select-text' : ''} ${isDragging ? 'relative z-20 scale-[1.02] opacity-95 drop-shadow-2xl' : ''} ${className}`}>
+      {children(whole ? {} : handleProps)}
     </div>
   )
 }

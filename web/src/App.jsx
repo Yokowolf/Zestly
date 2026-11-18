@@ -8,6 +8,7 @@ import { getActiveReminders } from './lib/reminders'
 import { EX_BY_ID } from './data/exercises'
 import { watchAuth } from './lib/firebase'
 import { Toasts } from './components/ui'
+import { autoFinishIfIdle } from './lib/train'
 import Welcome from './screens/Welcome'
 import Onboarding from './screens/Onboarding'
 import HomeScreen from './screens/Home'
@@ -262,8 +263,11 @@ function SessionPill({ onResume }) {
   const [, tick] = useState(0)
   useEffect(() => {
     if (!w) return
-    const t = setInterval(() => tick(x => x + 1), 1000)
-    return () => clearInterval(t)
+    autoFinishIfIdle()
+    const t = setInterval(() => { tick(x => x + 1); autoFinishIfIdle() }, 1000)
+    const onVis = () => { if (!document.hidden) autoFinishIfIdle() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', onVis) }
   }, [!!w]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!w) return null
   const s = Math.floor((Date.now() - w.startTs) / 1000)

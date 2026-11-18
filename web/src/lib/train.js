@@ -59,6 +59,7 @@ export function startSession({ routine = null, name = 'Entreno libre' } = {}) {
       routineName: routine?.name || null,
       name: routine?.name || name,
       startTs: Date.now(),
+      lastActivity: Date.now(),
       // Tono/volumen del aviso de descanso configurado en la rutina — se
       // copia a la sesión para que no cambie a mitad de entreno si editan
       // la rutina, y para que "Entreno libre" use el predeterminado.
@@ -69,7 +70,7 @@ export function startSession({ routine = null, name = 'Entreno libre' } = {}) {
 }
 
 // Finaliza la sesión → log con PRs, volumen, tiempos reales
-export function finishSession() {
+export function finishSession({ endTs = Date.now() } = {}) {
   const s = useStore.getState()
   const w = s.activeWorkout
   if (!w) return null
@@ -92,8 +93,8 @@ export function finishSession() {
   const log = {
     name: w.name, routineName: w.routineName,
     date: new Date().toDateString(),
-    startTs: w.startTs, endTs: Date.now(),
-    duration_min: Math.max(1, Math.round((Date.now() - w.startTs) / 60000)),
+    startTs: w.startTs, endTs,
+    duration_min: Math.max(1, Math.round((endTs - w.startTs) / 60000)),
     exercises: doneEx,
     volume: sessionVolume(doneEx),
     totalSets: doneEx.reduce((n, e) => n + e.sets.length, 0),
@@ -130,4 +131,25 @@ export function finishSession() {
 
 export function discardSession() {
   useStore.getState().patch({ activeWorkout: null })
+}
+
+// ── Cierre automático por inactividad ───────────────────
+// Si pasan 45 min sin tocar nada (series, pesos, descanso, agregar), la sesión
+// se guarda sola con la hora de la última actividad — así un entreno olvidado
+// no queda abierto horas ni infla la duración. Sin series hechas, se descarta.
+export const IDLE_LIMIT_MS = 45 * 60 * 1000
+
+export function idleLeftMs(w) {
+  return IDLE_LIMIT_MS - (Date.now() - (w?.lastActivity || w?.startTs || Date.now()))
+}
+
+export function autoFinishIfIdle() {
+  const st = useStore.getState()
+  const w = st.activeWorkout
+  if (!w || idleLeftMs(w) > 0) return false
+  const last = w.lastActivity || w.startTs
+  const res = finishSession({ endTs: last })
+  if (res) st.toast('Entrenamiento finalizado y guardado por 45 min de inactividad', 'ok')
+  else { st.patch({ activeWorkout: null }); st.toast('Sesión sin series descartada por inactividad') }
+  return true
 }

@@ -8,7 +8,7 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-ki
 import { Sheet, Input, Button, Chip, SectionTitle, ExerciseImg, Empty, Bar } from '../components/ui'
 import { useStore, fromKg, toKg, unitLbl } from '../store'
 import { EXERCISES, EX_BY_ID, WARMUP_BLOCKS } from '../data/exercises'
-import { bestWeight, exerciseHistory, buildSessionExercises, finishSession, discardSession } from '../lib/train'
+import { bestWeight, exerciseHistory, buildSessionExercises, finishSession, discardSession, idleLeftMs } from '../lib/train'
 import { norm } from '../lib/calc'
 import { playAlert, playComplete, DEFAULT_ALERT } from '../lib/sound'
 import ExerciseSheet from './ExerciseSheet'
@@ -61,7 +61,7 @@ export default function Workout({ open, onClose }) {
   // parches seguidos en el mismo tick (sets + descanso) no se pisan.
   const patchW = partial => {
     const cur = useStore.getState().activeWorkout
-    if (cur) s.patch({ activeWorkout: { ...cur, ...partial } })
+    if (cur) s.patch({ activeWorkout: { ...cur, ...partial, lastActivity: Date.now() } })
   }
   const patchWorkout = exercises => patchW({ exercises })
 
@@ -289,6 +289,7 @@ export default function Workout({ open, onClose }) {
       .sort((a, b2) => (exDone(a.e) === exDone(b2.e)) ? 0 : exDone(a.e) ? -1 : 1),
   })).filter(b => b.list.length)
 
+  const idleLeft = idleLeftMs(w)
   const header = (
       <div className="rounded-2xl border border-line bg-card p-2.5 shadow-sm">
         <div className="flex items-center gap-1.5">
@@ -317,6 +318,11 @@ export default function Workout({ open, onClose }) {
           <div className="flex-1"><Bar pct={totalSets ? (doneSets / totalSets) * 100 : 0} className={pendingEx === 0 && totalSets > 0 ? 'bg-emerald-500' : 'bg-brand-500'} /></div>
           <span className="text-xs font-bold tabular-nums text-ink2">{doneSets}<span className="font-medium text-ink3">/{totalSets}</span></span>
         </div>
+        {idleLeft < 5 * 60 * 1000 && idleLeft > 0 && (
+          <div role="status" className="mt-2.5 rounded-xl border border-orange-300 bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-700 dark:border-orange-900 dark:text-orange-300">
+            Sin actividad: la sesión se guardará y cerrará en {fmtClock(Math.ceil(idleLeft / 1000))}. Toca cualquier serie para continuar.
+          </div>
+        )}
         {rest && (
           <div className="relative mt-2.5 overflow-hidden rounded-xl border border-accent-400/50 bg-accent-500/10 px-3 py-2.5 dark:bg-accent-500/15" role="timer" aria-live="off">
             <div className="rest-glow pointer-events-none absolute left-1/2 top-1/2 h-32 w-56 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500/25 blur-2xl" aria-hidden />

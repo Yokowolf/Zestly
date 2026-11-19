@@ -42,11 +42,12 @@ export default function Workout({ open, onClose }) {
   const sensors = useLongPressSensors()
 
   const setViewMode = m => { setViewModeState(m); try { localStorage.setItem('zs_view', m) } catch { /* sin localStorage */ } }
+  // Acordeón: solo un ejercicio abierto a la vez. Ese queda fijo arriba de la
+  // lista (sticky) mientras se hacen sus series; para ir a otro se minimiza
+  // o se toca otro, que pasa a ser el abierto.
   const toggleCollapse = id => setCollapsed(prev => {
-    const next = new Set(prev)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    return next
+    if (prev.has(id)) return new Set(useStore.getState().activeWorkout?.exercises.map(e => e.exerciseId).filter(x => x !== id) || [])
+    return new Set([...prev, id])
   })
 
   // Al arrancar (o retomar) una sesión, todos los ejercicios inician
@@ -226,7 +227,7 @@ export default function Workout({ open, onClose }) {
   const addExercise = (ex, block = 'main') => {
     patchWorkout([...w.exercises, ...buildSessionExercises([{ exerciseId: ex.id, block }])])
     setQ('')
-    setCollapsed(prev => { const n = new Set(prev); n.delete(ex.id); return n })
+    setCollapsed(new Set(w.exercises.map(x => x.exerciseId).filter(id => id !== ex.id)))
     setFocusId(ex.id)
     s.toast(`${ex.name} agregado`, 'ok')
   }
@@ -482,9 +483,9 @@ export default function Workout({ open, onClose }) {
                   // ── Vista cuadrícula: el GIF protagonista + celdas de sets ──
                   if (viewMode === 'grid') {
                     return (
-                      <SortableRow key={sortId} id={sortId} whole>
+                      <SortableRow key={sortId} id={sortId} whole className="sticky top-0 z-10">
                         {() => (
-                          <div data-ex={e.exerciseId} className={`card overflow-hidden transition-colors duration-300 ${doneCard} ${focusRing} ${stage} ${sweep}`}>
+                          <div data-ex={e.exerciseId} className={`card max-h-[52dvh] overflow-y-auto overscroll-contain transition-colors duration-300 ${doneCard} ${focusRing} ${stage} ${sweep}`}>
                             <button onClick={() => setDetail(ex)} className="block w-full bg-white" aria-label={`Ver detalle de ${ex.name || e.exerciseId}`}>
                               <ExerciseHero ex={ex} />
                             </button>
@@ -528,9 +529,9 @@ export default function Workout({ open, onClose }) {
                   }
 
                   return (
-                    <SortableRow key={sortId} id={sortId} whole>
+                    <SortableRow key={sortId} id={sortId} whole className="sticky top-0 z-10">
                       {() => (
-                        <div data-ex={e.exerciseId} className={`card p-3 transition-colors duration-300 ${doneCard} ${focusRing} ${stage} ${sweep}`}>
+                        <div data-ex={e.exerciseId} className={`card max-h-[52dvh] overflow-y-auto overscroll-contain p-3 shadow-lg transition-colors duration-300 ${doneCard} ${focusRing} ${stage} ${sweep}`}>
                           {head()}
                           {/* Encabezado de columnas: # | peso | reps | ✓ */}
                           <div className={`mt-3 grid items-center gap-2 px-0.5 text-[11px] font-bold uppercase tracking-wider text-ink2 ${timed ? 'grid-cols-[2rem_1fr_1fr_4rem_3rem]' : 'grid-cols-[2rem_1fr_1fr_3rem]'}`} aria-hidden>
